@@ -4,13 +4,13 @@ namespace Swarm.Domain.Primitives;
 
 public readonly record struct Direction
 {
-    public readonly Vector2 Value;
-    public Direction(Vector2 value)
+    public readonly Vector2 Vector;
+    public Direction(Vector2 vector)
     {
-        var lenSq = Value.LengthSquared();
+        var lenSq = Vector.LengthSquared();
         Guard.True(lenSq > 0.999f && lenSq < 1.001f, "Direction must be normalized.");
 
-        Value = value;
+        Vector = vector;
     }
 
     public static Direction From(float x, float y) => new(new Vector2(x, y).Normalized());
