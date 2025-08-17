@@ -24,8 +24,12 @@ public readonly record struct Bounds
     public float Width => Right - Left;
     public float Height => Bottom - Top;
 
-     public Vector2 Clamp(Vector2 p) => new(
-        MathF.Min(MathF.Max(p.X, Left), Right),
-        MathF.Min(MathF.Max(p.Y, Top), Bottom)
-    );
+    public Vector2 Clamp(Vector2 p) => new(
+       MathF.Min(MathF.Max(p.X, Left), Right),
+       MathF.Min(MathF.Max(p.Y, Top), Bottom));
+    
+    public bool Contains(Vector2 p) =>
+        p.X >= Left && p.X <= Right &&
+        p.Y >= Top && p.Y <= Bottom;
+    
 }
