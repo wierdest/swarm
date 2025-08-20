@@ -16,7 +16,8 @@ public readonly record struct Cooldown
         RemainingSeconds = remainingSeconds;
     }
 
-
+    public Cooldown(float periodSeconds) : this(periodSeconds, 0f) { }
+    
     public bool IsReady => RemainingSeconds <= 0f;
 
     public Cooldown Start() => new(PeriodSeconds, PeriodSeconds);
