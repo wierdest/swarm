@@ -7,7 +7,7 @@ public readonly record struct Direction
     public readonly Vector2 Vector;
     public Direction(Vector2 vector)
     {
-        var lenSq = Vector.LengthSquared();
+        var lenSq = vector.LengthSquared();
         Guard.True(lenSq > 0.999f && lenSq < 1.001f, "Direction must be normalized.");
 
         Vector = vector;
