@@ -45,7 +45,7 @@ Agora já é possível rodar o jogo e **mover + atirar**! 🚀
 ---
 
 ## 🚧 Próximos Passos
-
+- 🔄 Rotação do jogador de acordo com a posição do mouse -- em progresso  
 - 🤝 Adicionar **detecção de colisão** (player ↔ inimigo, projétil ↔ inimigo)  
 - 🧠 Implementar **IA de inimigos e spawners**  
 - 💾 Criar **sistema de score e persistência** (Infrastructure)
@@ -54,7 +54,7 @@ Agora já é possível rodar o jogo e **mover + atirar**! 🚀
 ---
 
 ## 🛠️ Stack Tecnológico
-- ⚙️ **.NET 9**
+- ⚙️ **.NET 8**
 - 🎮 **MonoGame**
 - 🏗️ **Clean Architecture** (Domain, Application, Presentation)
 
