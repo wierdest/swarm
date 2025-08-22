@@ -33,7 +33,7 @@ public sealed class Player(
     }
 
     public bool TryFire(out IEnumerable<Projectile> projectiles) =>
-        ActiveWeapon.TryFire(Position, out projectiles);
+        ActiveWeapon.TryFire(Position, Rotation, out projectiles);
 
     public void Tick(DeltaTime dt, Bounds stage)
     {
