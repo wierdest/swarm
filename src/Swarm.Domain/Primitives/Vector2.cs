@@ -7,6 +7,7 @@ public readonly record struct Vector2(float X, float Y)
     public static readonly Vector2 Zero = new(0f, 0f);
     public static readonly Vector2 UnitX = new(1f, 0f);
     public static readonly Vector2 UnitY = new(0f, 1f);
+    public bool IsZero() => Math.Abs(X) < 1e-6f && Math.Abs(Y) < 1e-6f;
     public float Length() => MathF.Sqrt(X * X + Y * Y);
     public float LengthSquared() => X * X + Y * Y;
 
@@ -29,5 +30,4 @@ public readonly record struct Vector2(float X, float Y)
     }
 
     public static float Dot(in Vector2 a, in Vector2 b) => a.X * b.X + a.Y * b.Y;
-
 }
