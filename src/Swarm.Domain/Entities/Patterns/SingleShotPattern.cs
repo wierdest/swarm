@@ -11,12 +11,12 @@ public sealed class SingleShotPattern(
     float lifetime = 1.5f
 ) : IFirePattern
 {
-    public IEnumerable<Projectile> Fire(Vector2 origin)
+    public IEnumerable<Projectile> Fire(Vector2 origin, Direction facing)
     {
         yield return new Projectile(
             EntityId.New(),
             origin,
-            Direction.From(1f, 0f),
+            facing,
             projectileSpeed,
             projectileRadius,
             damage,

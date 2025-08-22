@@ -11,7 +11,7 @@ public sealed class Weapon(
 {
     public IFirePattern Pattern { get; } = pattern;
     public Cooldown Cooldown { get; private set; } = cooldown;
-    public bool TryFire(Vector2 origin, out IEnumerable<Projectile> projectiles)
+    public bool TryFire(Vector2 origin, Direction facing, out IEnumerable<Projectile> projectiles)
     {
         Cooldown = Cooldown.ConsumeIfReady(out var fired);
         if (!fired)
@@ -20,7 +20,7 @@ public sealed class Weapon(
             return false;
         }
 
-        projectiles = Pattern.Fire(origin);
+        projectiles = Pattern.Fire(origin, facing);
         return true;
     }
 

@@ -5,5 +5,5 @@ namespace Swarm.Domain.Interfaces;
 
 public interface IFirePattern
 {
-    IEnumerable<Projectile> Fire(Vector2 origin);
+    IEnumerable<Projectile> Fire(Vector2 origin, Direction facing);
 }
