@@ -15,7 +15,9 @@ public class Swarm : Game
     private readonly IGameSessionService _service = new GameSessionService();
     private readonly Dictionary<int, Texture2D> _circleCache = new();
     private float _moveSpeed = 220f;
-    private KeyboardState _prev;
+    private KeyboardState _prevKb;
+
+    private MouseState _prevMouse;
 
     public Swarm()
     {
@@ -63,7 +65,9 @@ public class Swarm : Game
 
         _service.ApplyInput(dx, dy, (dx == 0f && dy == 0f) ? 0f : _moveSpeed);
 
-        if (kb.IsKeyDown(Keys.Space) && !_prev.IsKeyDown(Keys.Space)) _service.Fire();
+        if (kb.IsKeyDown(Keys.Space) && !_prevKb.IsKeyDown(Keys.Space)) _service.Fire();
+
+        if (mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released) _service.Fire();
 
         _service.RotateTowards(mouse.X, mouse.Y);
 
@@ -71,7 +75,8 @@ public class Swarm : Game
         
         if (dt > 0f) _service.Tick(dt);
 
-        _prev = kb;
+        _prevKb = kb;
+        _prevMouse = mouse;
 
         base.Update(gameTime);
     }
