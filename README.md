@@ -101,6 +101,21 @@ Agora já é possível rodar o jogo e **mover + atirar**! 🚀
 - :broom: Removendo referências desnecessárias  
 - :sparkles: Protótipo inicial de renderização com **MonoGame**
 
+### 🔹 Step 5 – Player Rotation
+- :gun: Adicionando controle de tiro com o clique, já que estamos usando o mouse  
+- :joystick: Desenhando player como um quadrado para visualizar rotação  
+- :cyclone: Capturando rotação a partir da posição do mouse  
+- :recycle: Making _session readonly  
+- :earth_africa: DomainMapper converts Direction vector to radians  
+- :joystick: PlayerDTO oferece ângulo de rotação  
+- :video_game: GameSessionService implementa IGameSessionService RotateTowards  
+- :video_game: IGameSessionService implementa RotateTowards  
+- :video_game: :bangbang: RotatePlayerTowards na GameSession! Uma mudança de domínio necessária que passou desapercebida. GameSession é o aggregate entry-point do domínio. Application vai se comunicar com ele, apenas. GameSessionService da Application é responsável pela instância.  
+- :gun: IFirePattern TryFire recebe facing  
+- :joystick: Player tem rotação  
+- :cyclone: Adicionando próximo passo, rotação do jogador  
+
+
 ---
 
 ## ▶️ Como Rodar
