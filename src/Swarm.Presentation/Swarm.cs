@@ -10,7 +10,7 @@ namespace Swarm.Presentation;
 
 public class Swarm : Game
 {
-    private GraphicsDeviceManager _graphics;
+    private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
     private readonly IGameSessionService _service = new GameSessionService();
     private readonly Dictionary<int, Texture2D> _circleCache = new();
