@@ -10,7 +10,10 @@ static class DomainMappers
     {
         var stage = new BoundsDTO(s.Stage.Left, s.Stage.Top, s.Stage.Right, s.Stage.Bottom);
         var p = s.Player;
-        var player = new PlayerDTO(p.Position.X, p.Position.Y, p.Radius.Value);
+
+        var rotationAngle = MathF.Atan2(p.Rotation.Vector.Y, p.Rotation.Vector.X);
+
+        var player = new PlayerDTO(p.Position.X, p.Position.Y, p.Radius.Value, rotationAngle);
 
         var list = new List<ProjectileDTO>(s.Projectiles.Count);
         foreach (var proj in s.Projectiles)

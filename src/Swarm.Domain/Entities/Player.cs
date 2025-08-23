@@ -16,7 +16,16 @@ public sealed class Player(
     public Radius Radius { get; } = radius;
     public Weapon ActiveWeapon { get; private set; } = weapon;
     public Direction Direction { get; private set; } = Direction.From(1, 0);
+    public Direction Rotation { get; private set; } = Direction.From(1, 0);
     public float Speed { get; private set; } = 0f;
+
+    public void RotateTowards(Vector2 target)
+    {
+        var lookDir = target - Position;
+
+        if (!lookDir.IsZero())
+            Rotation = Direction.From(lookDir.X, lookDir.Y);
+    }
     public void ApplyInput(Direction dir, float speed)
     {
         Direction = dir;
@@ -24,7 +33,7 @@ public sealed class Player(
     }
 
     public bool TryFire(out IEnumerable<Projectile> projectiles) =>
-        ActiveWeapon.TryFire(Position, out projectiles);
+        ActiveWeapon.TryFire(Position, Rotation, out projectiles);
 
     public void Tick(DeltaTime dt, Bounds stage)
     {

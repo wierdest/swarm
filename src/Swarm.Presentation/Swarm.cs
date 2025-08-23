@@ -10,12 +10,14 @@ namespace Swarm.Presentation;
 
 public class Swarm : Game
 {
-    private GraphicsDeviceManager _graphics;
+    private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
     private readonly IGameSessionService _service = new GameSessionService();
     private readonly Dictionary<int, Texture2D> _circleCache = new();
     private float _moveSpeed = 220f;
-    private KeyboardState _prev;
+    private KeyboardState _prevKb;
+
+    private MouseState _prevMouse;
 
     public Swarm()
     {
@@ -54,6 +56,8 @@ public class Swarm : Game
         var kb = Keyboard.GetState();
         if (kb.IsKeyDown(Keys.Escape)) Exit();
 
+        var mouse = Mouse.GetState();
+
         float dx = (kb.IsKeyDown(Keys.Right) || kb.IsKeyDown(Keys.D) ? 1f : 0f)
                 - (kb.IsKeyDown(Keys.Left)  || kb.IsKeyDown(Keys.A) ? 1f : 0f);
         float dy = (kb.IsKeyDown(Keys.Down)  || kb.IsKeyDown(Keys.S) ? 1f : 0f)
@@ -61,13 +65,18 @@ public class Swarm : Game
 
         _service.ApplyInput(dx, dy, (dx == 0f && dy == 0f) ? 0f : _moveSpeed);
 
-        if (kb.IsKeyDown(Keys.Space) && !_prev.IsKeyDown(Keys.Space)) _service.Fire();
+        if (kb.IsKeyDown(Keys.Space) && !_prevKb.IsKeyDown(Keys.Space)) _service.Fire();
+
+        if (mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released) _service.Fire();
+
+        _service.RotateTowards(mouse.X, mouse.Y);
 
         var dt = MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 0.05f);
         
         if (dt > 0f) _service.Tick(dt);
 
-        _prev = kb;
+        _prevKb = kb;
+        _prevMouse = mouse;
 
         base.Update(gameTime);
     }
@@ -81,7 +90,7 @@ public class Swarm : Game
 
         DrawRect(new Rectangle((int)snap.Stage.Left, (int)snap.Stage.Top, (int)(snap.Stage.Right - snap.Stage.Left), (int)(snap.Stage.Bottom - snap.Stage.Top)), new Color(20, 20, 20));
 
-        DrawCircle(new Vector2(snap.Player.X, snap.Player.Y), (int)snap.Player.Radius, Color.DeepSkyBlue);
+        DrawPlayer(new Vector2(snap.Player.X, snap.Player.Y), (int)snap.Player.Radius, snap.Player.RotationAngle, Color.DeepSkyBlue);
 
         foreach (var p in snap.Projectiles)
             DrawCircle(new Vector2(p.X, p.Y), (int)p.Radius, Color.OrangeRed);
@@ -118,6 +127,23 @@ public class Swarm : Game
         var pos = new Vector2(center.X - radius, center.Y - radius);
         _spriteBatch.Draw(tex, pos, color);
     }
+
+    private void DrawPlayer(Vector2 pos, int radius, float rotation, Color color)
+    {
+        _spriteBatch.Draw(
+            Pixel,                     // 1x1 white
+            position: pos,             // center at player's position
+            sourceRectangle: null,
+            color: color,
+            rotation: rotation,
+            origin: new Vector2(0.5f, 0.5f),     // center of the 1x1 texel
+            scale: new Vector2(radius * 2f, radius * 2f), // final size in pixels
+            effects: SpriteEffects.None,
+            layerDepth: 0f
+        );
+    }
+
+
     
     private static Texture2D? _pixel;
     private Texture2D Pixel
