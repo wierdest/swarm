@@ -20,6 +20,9 @@ public sealed class GameSession(
         if (Player.TryFire(out var projectiles))
             _projectiles.AddRange(projectiles);
     }
+
+    public void RotatePlayerTowards(Vector2 target) =>
+        Player.RotateTowards(target);
     
     public void Tick(DeltaTime dt)
     {
