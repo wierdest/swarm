@@ -4,6 +4,8 @@ Projeto de aprendizado feito com **.NET 8 + MonoGame**, seguindo princípios de 
 O jogo é um protótipo de shooter 2D top-down, com camadas bem organizadas: **Domain → Application → Presentation**.  
 
 ---
+# Protótipo:
+Foi feito em 3 etapas. A partir desse ponto, registramos o progresso na linha do tempo a baixo e nos próximos passos.
 
 ## ✨ Etapa 1 – Primitivos do Domínio & Core
 Começamos definindo as **bases** da camada de Domínio:
