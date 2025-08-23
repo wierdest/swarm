@@ -25,7 +25,12 @@ public sealed class GameSessionService : IGameSessionService
 
     public GameSnapshot GetSnapshot()
         => _session is null ? default : DomainMappers.ToSnapshot(_session);
-    
+
+    public void RotateTowards(float targetX, float targetY)
+    {
+        if (_session is null) return;
+        _session.RotatePlayerTowards(new Vector2(targetX, targetY));
+    }
 
     public void StartNewSession(StageConfig config)
     {
