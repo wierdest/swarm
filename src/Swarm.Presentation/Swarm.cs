@@ -54,6 +54,8 @@ public class Swarm : Game
         var kb = Keyboard.GetState();
         if (kb.IsKeyDown(Keys.Escape)) Exit();
 
+        var mouse = Mouse.GetState();
+
         float dx = (kb.IsKeyDown(Keys.Right) || kb.IsKeyDown(Keys.D) ? 1f : 0f)
                 - (kb.IsKeyDown(Keys.Left)  || kb.IsKeyDown(Keys.A) ? 1f : 0f);
         float dy = (kb.IsKeyDown(Keys.Down)  || kb.IsKeyDown(Keys.S) ? 1f : 0f)
@@ -62,6 +64,8 @@ public class Swarm : Game
         _service.ApplyInput(dx, dy, (dx == 0f && dy == 0f) ? 0f : _moveSpeed);
 
         if (kb.IsKeyDown(Keys.Space) && !_prev.IsKeyDown(Keys.Space)) _service.Fire();
+
+        _service.RotateTowards(mouse.X, mouse.Y);
 
         var dt = MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 0.05f);
         
