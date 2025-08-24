@@ -1,6 +1,5 @@
 ﻿using Swarm.Domain.Combat;
 using Swarm.Domain.Primitives;
-using Swarm.Domain.Time;
 
 namespace Swarm.Domain.Interfaces;
 
