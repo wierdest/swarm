@@ -97,7 +97,7 @@ public class Swarm : Game
             DrawCircle(new Vector2(p.X, p.Y), (int)p.Radius, Color.OrangeRed);
         
         foreach (var e in snap.Enemies)
-            DrawEnemy(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, Color.Yellow);
+            DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, Color.Yellow);
 
         _spriteBatch.End();
 
@@ -147,24 +147,6 @@ public class Swarm : Game
         );
     }
 
-    private void DrawEnemy(Vector2 pos, int size, float rotation, Color color)
-    {
-        var scale = new Vector2(size * 2f, size * 2f);
-        _spriteBatch.Draw(
-            Pixel,
-            pos,
-            sourceRectangle: null,
-            color: color,
-            rotation: rotation,
-            origin: new Vector2(0.5f, 0.5f),
-            scale: scale,
-            effects: SpriteEffects.None,
-            layerDepth: 0f
-        );
-    }
-
-
-    
     private static Texture2D? _pixel;
     private Texture2D Pixel
     {

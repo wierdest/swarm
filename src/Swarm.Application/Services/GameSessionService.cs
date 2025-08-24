@@ -71,9 +71,9 @@ public sealed class GameSessionService : IGameSessionService
                     new BasicEnemy(
                         id: EntityId.New(),
                         startPosition: pos,
-                        radius: new Radius(0.5f),
-                        initialHitPoints: new HitPoints(10),
-                        behaviour: new ChaseBehaviour(speed: 1f)
+                        radius: new Radius(10f),
+                        initialHitPoints: new HitPoints(1),
+                        behaviour: new ChaseBehaviour(speed: 80f)
                     )
             )
         );
