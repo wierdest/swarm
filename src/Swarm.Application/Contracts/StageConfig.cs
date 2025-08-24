@@ -9,5 +9,7 @@ public readonly record struct StageConfig(
     float PlayerStartX,
     float PlayerStartY,
     float PlayerRadius,
+    float FixedSpawnPosX,
+    float FixedSpawnPosY,
     WeaponConfig Weapon
 );
