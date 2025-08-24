@@ -76,7 +76,7 @@ public sealed class GameSession(
     {
         foreach (var enemy in _enemies)
         {
-            if (enemy.IsDead) 
+            if (enemy.IsDead)
                 continue;
 
             if (projectile.CollidesWith(enemy))
@@ -86,5 +86,11 @@ public sealed class GameSession(
             }
         }
         return false;
+    }
+    
+    public void AddEnemy(IEnemy enemy)
+    {
+        if (enemy != null)
+            _enemies.Add(enemy);
     }
 }
