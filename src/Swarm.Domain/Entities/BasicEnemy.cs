@@ -31,10 +31,29 @@ public sealed class BasicEnemy(
         HP = HP.Take(damage.Value);
     }
 
-    public void Tick(DeltaTime dt, Vector2 playerPosition, Bounds stage)
+    public void Tick(DeltaTime dt, Vector2 playerPosition, Bounds stage, IReadOnlyList<IEnemy> enemies, int selfIndex)
     {
         var movement = behaviour.DecideMovement(Position, playerPosition, dt);
-        if (movement.HasValue)
-            Position = MovementIntegrator.Advance(Position, movement.Value.direction, movement.Value.speed, dt, stage);
+
+        if (!movement.HasValue) return;
+
+        var newPos = MovementIntegrator.Advance(Position, movement.Value.direction, movement.Value.speed, dt, stage);
+
+        for (int i = 0; i < enemies.Count; i++)
+        {
+            if (i == selfIndex) continue;
+
+            var other = enemies[i];
+            if (other.IsDead) continue;
+
+            if (CollisionExtensions.Intersects(this, newPos, other))
+            {
+                // simple bounce
+                var away = (Position - other.Position).Normalized();
+                newPos += away * 0.1f;
+            }
+        }
+
+        Position = newPos;
     }
 }
