@@ -24,6 +24,8 @@ public sealed class BasicEnemy(
 
     public Radius Radius { get; } = radius;
 
+    public Direction Rotation { get; private set; } = Direction.From(1, 0);
+
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
 
     public void TakeDamage(Damage damage)
@@ -54,6 +56,8 @@ public sealed class BasicEnemy(
             }
         }
 
+        Rotation = Rotation.Rotated(MathF.PI * dt.Seconds);
+        
         Position = newPos;
     }
 }
