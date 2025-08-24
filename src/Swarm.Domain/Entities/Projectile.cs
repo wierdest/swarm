@@ -1,5 +1,6 @@
 ﻿using Swarm.Domain.Combat;
 using Swarm.Domain.Common;
+using Swarm.Domain.Interfaces;
 using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
@@ -14,7 +15,7 @@ public sealed class Projectile(
     Radius radius,
     Damage damage,
     float lifetime
-)
+) : ICollidable
 {
     public EntityId Id { get; } = id;
     public Vector2 Position { get; private set; } = position;
@@ -36,5 +37,6 @@ public sealed class Projectile(
         LifetimeRemaining -= dt;
     }
 
+    public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
     public bool IsExpired => LifetimeRemaining <= 0f;
 }
