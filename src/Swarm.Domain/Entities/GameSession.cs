@@ -54,6 +54,8 @@ public sealed class GameSession(
             if (Player.CollidesWith(enemy))
                 Player.TakeDamage(new Damage(1));
         }
+
+        _enemies.RemoveAll(e => e.IsDead);
     }
 
     private void UpdateProjectiles(DeltaTime dt)

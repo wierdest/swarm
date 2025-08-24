@@ -33,6 +33,7 @@ public class Swarm : Game
         var cfg = new StageConfig(
             Left: 0, Top: 0, Right: _graphics.PreferredBackBufferWidth, Bottom: _graphics.PreferredBackBufferHeight,
             PlayerStartX: 100, PlayerStartY: _graphics.PreferredBackBufferHeight / 2f, PlayerRadius: 12,
+            FixedSpawnPosX: 400, FixedSpawnPosY: _graphics.PreferredBackBufferHeight / 2f,
             Weapon: new WeaponConfig(
                 Damage: 1,
                 ProjectileSpeed: 420f,
@@ -94,6 +95,9 @@ public class Swarm : Game
 
         foreach (var p in snap.Projectiles)
             DrawCircle(new Vector2(p.X, p.Y), (int)p.Radius, Color.OrangeRed);
+        
+        foreach (var e in snap.Enemies)
+            DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, Color.Yellow);
 
         _spriteBatch.End();
 
@@ -131,20 +135,18 @@ public class Swarm : Game
     private void DrawPlayer(Vector2 pos, int radius, float rotation, Color color)
     {
         _spriteBatch.Draw(
-            Pixel,                     // 1x1 white
-            position: pos,             // center at player's position
+            Pixel,                     
+            position: pos,
             sourceRectangle: null,
             color: color,
             rotation: rotation,
-            origin: new Vector2(0.5f, 0.5f),     // center of the 1x1 texel
-            scale: new Vector2(radius * 2f, radius * 2f), // final size in pixels
+            origin: new Vector2(0.5f, 0.5f),
+            scale: new Vector2(radius * 2f, radius * 2f),
             effects: SpriteEffects.None,
             layerDepth: 0f
         );
     }
 
-
-    
     private static Texture2D? _pixel;
     private Texture2D Pixel
     {
