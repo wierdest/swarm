@@ -1,4 +1,6 @@
-﻿using Swarm.Domain.Primitives;
+﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Interfaces;
+using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
 namespace Swarm.Domain.Entities;
@@ -12,6 +14,8 @@ public sealed class GameSession(
     public Player Player { get; } = player;
     private readonly List<Projectile> _projectiles = [];
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
+    private readonly List<IEnemy> _enemies = [];
+    public IReadOnlyList<IEnemy> Enemies => _enemies;
     public void ApplyInput(Direction dir, float speed) =>
         Player.ApplyInput(dir, speed);
 
@@ -23,19 +27,64 @@ public sealed class GameSession(
 
     public void RotatePlayerTowards(Vector2 target) =>
         Player.RotateTowards(target);
-    
+
     public void Tick(DeltaTime dt)
     {
+        UpdatePlayer(dt);
+        UpdateEnemies(dt);
+        UpdateProjectiles(dt);
+    }
+
+    private void UpdatePlayer(DeltaTime dt)
+    {
         Player.Tick(dt, Stage);
+    }
 
-        for (int i = _projectiles.Count - 1; i >= 0; i--)
+    private void UpdateEnemies(DeltaTime dt)
+    {
+        for (int i = 0; i < _enemies.Count; i++)
         {
-            var p = _projectiles[i];
-            p.Tick(dt);
+            var enemy = _enemies[i];
+            if (enemy.IsDead)
+                continue;
 
-            if (p.IsExpired || !Stage.Contains(p.Position))
-                _projectiles.RemoveAt(i);
+            // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
+            enemy.Tick(dt, Player.Position, Stage, _enemies, i);
+
+            if (Player.CollidesWith(enemy))
+                Player.TakeDamage(new Damage(1));
         }
     }
 
+    private void UpdateProjectiles(DeltaTime dt)
+    {
+        for (int i = _projectiles.Count - 1; i >= 0; i--)
+        {
+            var projectile = _projectiles[i];
+            projectile.Tick(dt);
+
+            if (IsProjectileExpired(projectile) || HandleProjectileCollisions(projectile))
+            {
+                _projectiles.RemoveAt(i);
+            }
+        }
+    }
+
+    private bool IsProjectileExpired(Projectile projectile) => projectile.IsExpired || !Stage.Contains(projectile.Position);
+
+    private bool HandleProjectileCollisions(Projectile projectile)
+    {
+        foreach (var enemy in _enemies)
+        {
+            if (enemy.IsDead) 
+                continue;
+
+            if (projectile.CollidesWith(enemy))
+            {
+                enemy.TakeDamage(projectile.Damage);
+                return true;
+            }
+        }
+        return false;
+    }
 }
