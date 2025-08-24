@@ -49,7 +49,7 @@ Agora já é possível rodar o jogo e **mover + atirar**! 🚀
 ## 🚧 Próximos Passos
 - 🔄 Rotação do jogador de acordo com a posição do mouse -- FEITO!  
 - 🤝 Adicionar **detecção de colisão** (player ↔ inimigo, projétil ↔ inimigo) -- em progresso  
-- 🧠 Implementar **IA de inimigos e spawners** -- em progreso
+- 🧠 Implementar **IA de inimigos e spawners** -- em progresso
 - 💾 Criar **sistema de score e persistência** (Infrastructure)
 
 
