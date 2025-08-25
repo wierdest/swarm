@@ -41,18 +41,26 @@ public sealed class BasicEnemy(
 
         var newPos = MovementIntegrator.Advance(Position, movement.Value.direction, movement.Value.speed, dt, stage);
 
-        for (int i = 0; i < enemies.Count; i++)
+       for (int i = 0; i < enemies.Count; i++)
         {
             if (i == selfIndex) continue;
 
             var other = enemies[i];
             if (other.IsDead) continue;
 
-            if (CollisionExtensions.Intersects(this, newPos, other))
+            float minDist = Radius.Value + other.Radius.Value;
+            var delta = newPos - other.Position;
+            float distSq = delta.LengthSquared();
+
+            if (distSq < minDist * minDist)
             {
-                // simple bounce
-                var away = (Position - other.Position).Normalized();
-                newPos += away * 0.1f;
+                float dist = MathF.Sqrt(distSq);
+
+                var pushDir = dist > 1e-8f ? delta / dist : Rotation.Vector;
+
+                float overlap = minDist - dist;
+
+                newPos += pushDir * overlap;
             }
         }
 
