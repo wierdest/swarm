@@ -47,32 +47,9 @@ Agora já é possível rodar o jogo e **mover + atirar**! 🚀
 ---
 
 ## 🚧 Próximos Passos
-- 🖥️ Adicionar interface de usuario para mostrar vida, score e game state na tela (HudRenderer) --em progresso
-- 🗺️ Implementar **Spawning level elements* (obstáculos, ponto a e ponto b) --em progresso
-
-```
-
-+------------------------------------------+
-| Ponto A                                  |
-|  | A |                                   |
-|                                          |
-|        |####|        (Spawner *)         |
-|        |####|                            |
-|                                          |
-|                      |####|              |
-|                      |####|    * Spawner |
-|                                          |
-|                                  | B |   |
-|                                 Ponto B  |
-+------------------------------------------+
-
-Legenda:
-| A | → Ponto A (área de trigger no canto superior esquerdo)  
-| B | → Ponto B (área de trigger no canto inferior direito)  
-|####| → Obstáculos fixos (paredes / blocos de colisão)  
-* → Spawner Point de inimigos
-```
-
+- 🔄 Rotação do jogador de acordo com a posição do mouse -- FEITO!  
+- 🤝 Adicionar **detecção de colisão** (player ↔ inimigo, projétil ↔ inimigo) -- em progresso  
+- 🧠 Implementar **IA de inimigos e spawners** -- em progresso
 - 💾 Criar **sistema de score e persistência** (Infrastructure)
 
 
