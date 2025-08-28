@@ -16,6 +16,9 @@ public sealed class GameSession(
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
     private readonly List<IEnemy> _enemies = [];
     public IReadOnlyList<IEnemy> Enemies => _enemies;
+    private Score _score = new();
+    public Score Score => _score;
+
     public void ApplyInput(Direction dir, float speed) =>
         Player.ApplyInput(dir, speed);
 
@@ -84,6 +87,11 @@ public sealed class GameSession(
             if (projectile.CollidesWith(enemy))
             {
                 enemy.TakeDamage(projectile.Damage);
+
+                if (enemy.IsDead) {
+                    _score += 1;
+                }
+
                 return true;
             }
         }
