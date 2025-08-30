@@ -1,4 +1,6 @@
-﻿using Swarm.Domain.Physics;
+﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Interfaces;
+using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
@@ -9,14 +11,25 @@ public sealed class Player(
     Vector2 startPos,
     Radius radius,
     Weapon weapon
-)
+) : ILivingEntity
 {
     public EntityId Id { get; } = id;
     public Vector2 Position { get; private set; } = startPos;
     public Radius Radius { get; } = radius;
     public Weapon ActiveWeapon { get; private set; } = weapon;
     public Direction Direction { get; private set; } = Direction.From(1, 0);
+    public Direction Rotation { get; private set; } = Direction.From(1, 0);
     public float Speed { get; private set; } = 0f;
+    public HitPoints HP { get; private set; } = new(100);
+    public bool IsDead => HP.IsZero;
+
+    public void RotateTowards(Vector2 target)
+    {
+        var lookDir = target - Position;
+
+        if (!lookDir.IsZero())
+            Rotation = Direction.From(lookDir.X, lookDir.Y);
+    }
     public void ApplyInput(Direction dir, float speed)
     {
         Direction = dir;
@@ -24,11 +37,18 @@ public sealed class Player(
     }
 
     public bool TryFire(out IEnumerable<Projectile> projectiles) =>
-        ActiveWeapon.TryFire(Position, out projectiles);
+        ActiveWeapon.TryFire(Position, Rotation, out projectiles);
 
     public void Tick(DeltaTime dt, Bounds stage)
     {
         ActiveWeapon.Tick(dt);
         Position = MovementIntegrator.Advance(Position, Direction, Speed, dt, stage);
     }
+
+    public void TakeDamage(Damage damage)
+    {
+        HP = HP.Take(damage.Value);
+    }
+
+    public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
 }

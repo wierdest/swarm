@@ -72,7 +72,6 @@ Legenda:
 |####| → Obstáculos fixos (paredes / blocos de colisão)  
 * → Spawner Point de inimigos
 ```
-
 - 💾 Criar **sistema de score e persistência** (Infrastructure)
 
 

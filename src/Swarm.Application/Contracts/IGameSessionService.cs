@@ -6,6 +6,7 @@ public interface IGameSessionService
     void ApplyInput(float dirX, float dirY, float speed);
     void Stop();
     void Fire();
+    void RotateTowards(float targetX, float targetY);
     void Tick(float deltaSeconds);
     GameSnapshot GetSnapshot();
 }

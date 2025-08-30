@@ -1,6 +1,8 @@
 ﻿using Swarm.Application.Contracts;
+using Swarm.Application.Contracts.Behaviours;
 using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
+using Swarm.Domain.Entities.Behaviours;
 using Swarm.Domain.Entities.Patterns;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
@@ -10,6 +12,8 @@ namespace Swarm.Application.Services;
 public sealed class GameSessionService : IGameSessionService
 {
     private GameSession? _session;
+    private IEnemySpawnerService? _spawner;
+
     public void ApplyInput(float dirX, float dirY, float speed)
     {
         if (_session is null) return;
@@ -25,7 +29,12 @@ public sealed class GameSessionService : IGameSessionService
 
     public GameSnapshot GetSnapshot()
         => _session is null ? default : DomainMappers.ToSnapshot(_session);
-    
+
+    public void RotateTowards(float targetX, float targetY)
+    {
+        if (_session is null) return;
+        _session.RotatePlayerTowards(new Vector2(targetX, targetY));
+    }
 
     public void StartNewSession(StageConfig config)
     {
@@ -45,6 +54,29 @@ public sealed class GameSessionService : IGameSessionService
         var player = new Player(EntityId.New(), playerStart, playerRadius, weapon);
 
         _session = new GameSession(stage, player);
+
+        StartSpawner(config);
+    }
+
+    private void StartSpawner(StageConfig config)
+    {
+        if (_session is null) return;
+        var spawnPos = new Vector2(config.FixedSpawnPosX, config.FixedSpawnPosY);
+        _spawner = new EnemySpawnerService(
+            _session,
+            new FixedPositionSpawnBehaviour(
+                position: spawnPos,
+                cooldownSeconds: 3f,
+                enemyFactory: pos =>
+                    new BasicEnemy(
+                        id: EntityId.New(),
+                        startPosition: pos,
+                        radius: new Radius(10f),
+                        initialHitPoints: new HitPoints(1),
+                        behaviour: new ChaseBehaviour(speed: 80f)
+                    )
+            )
+        );
     }
 
     public void Stop()
@@ -56,6 +88,8 @@ public sealed class GameSessionService : IGameSessionService
     public void Tick(float deltaSeconds)
     {
         if (_session is null) return;
+
+        _spawner?.Tick(new DeltaTime(deltaSeconds));
         _session.Tick(new DeltaTime(deltaSeconds));
     }
 }
