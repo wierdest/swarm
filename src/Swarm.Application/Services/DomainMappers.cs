@@ -26,7 +26,9 @@ static class DomainMappers
             enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius.Value, enemyRotation));
         }
 
-        return new GameSnapshot(stage, player, projectiles, enemies);
+        var hud = new HudDTO(s.Score.Value, p.HP.Value, enemies.Count, "Esse é o level inicial de um protótipo.");
+
+        return new GameSnapshot(stage, player, hud, projectiles, enemies);
     }
 
 }
