@@ -2,9 +2,10 @@
 
 namespace Swarm.Application.Contracts;
 
-public readonly record struct GameSnapshot(
+public readonly record struct GameSnapshot( 
     BoundsDTO Stage,
     PlayerDTO Player,
+    HudDTO Hud,
     IReadOnlyList<ProjectileDTO> Projectiles,
     IReadOnlyList<EnemyDTO> Enemies
 );
