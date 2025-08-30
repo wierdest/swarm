@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Entities/Spawners/" />
+    <Folder Include="Entities/Spawners/Behaviours/" />
+  </ItemGroup>
+
 </Project>

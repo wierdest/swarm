@@ -1,9 +1,10 @@
 ﻿using Swarm.Application.Contracts;
-using Swarm.Application.Contracts.Behaviours;
 using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
 using Swarm.Domain.Entities.Behaviours;
 using Swarm.Domain.Entities.Patterns;
+using Swarm.Domain.Entities.Spawners;
+using Swarm.Domain.Entities.Spawners.Behaviours;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
@@ -12,7 +13,7 @@ namespace Swarm.Application.Services;
 public sealed class GameSessionService : IGameSessionService
 {
     private GameSession? _session;
-    private IEnemySpawnerService? _spawner;
+    private EnemySpawner? _spawner;
 
     public void ApplyInput(float dirX, float dirY, float speed)
     {
@@ -62,11 +63,12 @@ public sealed class GameSessionService : IGameSessionService
     {
         if (_session is null) return;
         var spawnPos = new Vector2(config.FixedSpawnPosX, config.FixedSpawnPosY);
-        _spawner = new EnemySpawnerService(
+        _spawner = new EnemySpawner(
             _session,
-            new FixedPositionSpawnBehaviour(
+            spawnPos,
+            new FixedPositionSpawnerBehaviour(
                 position: spawnPos,
-                cooldownSeconds: 3f,
+                cooldownSeconds: 0.8f,
                 enemyFactory: pos =>
                     new BasicEnemy(
                         id: EntityId.New(),

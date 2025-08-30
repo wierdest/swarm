@@ -1,9 +1,10 @@
 ﻿using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 
-namespace Swarm.Application.Contracts;
+namespace Swarm.Domain.Interfaces;
 
-public interface IEnemySpawnerBehaviour
+public interface ISpawnerBehaviour
 {
     IEnemy? TrySpawn(float deltaSeconds, Bounds stage);
+
 }
