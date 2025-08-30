@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Swarm.Application.Contracts;
 using Swarm.Application.Services;
+using Swarm.Presentation.Renderers;
 
 namespace Swarm.Presentation;
 
@@ -16,8 +17,10 @@ public class Swarm : Game
     private readonly Dictionary<int, Texture2D> _circleCache = new();
     private float _moveSpeed = 220f;
     private KeyboardState _prevKb;
-
     private MouseState _prevMouse;
+
+    private HudRenderer _hud;
+    private SpriteFont _font;
 
     public Swarm()
     {
@@ -49,6 +52,11 @@ public class Swarm : Game
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+        _font = Content.Load<SpriteFont>("DefaultFont");
+
+        _hud = new HudRenderer(_spriteBatch, _font, GraphicsDevice);
+
         base.LoadContent();
     }
 
@@ -98,6 +106,8 @@ public class Swarm : Game
         
         foreach (var e in snap.Enemies)
             DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, Color.Yellow);
+
+        _hud.Draw(snap.Hud);
 
         _spriteBatch.End();
 
