@@ -3,8 +3,8 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Interfaces;
 
-public interface ISpawnerBehaviour
+public interface ISpawnerBehaviour<out T>
 {
-    IEnemy? TrySpawn(float deltaSeconds, Bounds stage);
+    T? TrySpawn(float deltaSeconds, Bounds stage);
 
 }

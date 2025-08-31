@@ -7,7 +7,7 @@ public sealed class FixedPositionEnemySpawnerBehaviour(
     Vector2 position,
     float cooldownSeconds,
     Func<Vector2, IEnemy> enemyFactory
-) : ISpawnerBehaviour
+) : ISpawnerBehaviour<IEnemy>
 {
     private float _timeSinceLastSpawn = 0f;
 
