@@ -1,4 +1,5 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.GameObjects;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;

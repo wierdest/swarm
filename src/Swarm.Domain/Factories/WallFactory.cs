@@ -1,4 +1,4 @@
-﻿using Swarm.Domain.Entities;
+﻿using Swarm.Domain.GameObjects;
 using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Factories;

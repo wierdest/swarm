@@ -1,8 +1,8 @@
-﻿using Swarm.Domain.Interfaces;
-using Swarm.Domain.Primitives;
+﻿using Swarm.Domain.Entities;
+using Swarm.Domain.Interfaces;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities.Spawners;
+namespace Swarm.Domain.GameObjects.Spawners;
 
 public sealed class EnemySpawner(
     GameSession session,

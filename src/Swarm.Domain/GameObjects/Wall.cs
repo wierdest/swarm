@@ -2,7 +2,7 @@
 using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
 
-namespace Swarm.Domain.Entities;
+namespace Swarm.Domain.GameObjects;
 
 public sealed class Wall(Vector2 position, Radius radius) : ICollidable
 {
