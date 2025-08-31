@@ -1,4 +1,5 @@
-﻿using Swarm.Domain.Primitives;
+﻿using Swarm.Domain.Entities;
+using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Factories;
 
