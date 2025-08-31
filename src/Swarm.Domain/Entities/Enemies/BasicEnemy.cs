@@ -4,7 +4,7 @@ using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities;
+namespace Swarm.Domain.Entities.Enemies;
 
 public sealed class BasicEnemy(
     EntityId id,
@@ -27,6 +27,11 @@ public sealed class BasicEnemy(
     public Direction Rotation { get; private set; } = Direction.From(1, 0);
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
+
+    public void Heal(Damage damage)
+    {
+        throw new NotImplementedException();
+    }
 
     public void TakeDamage(Damage damage)
     {

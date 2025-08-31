@@ -51,4 +51,9 @@ public sealed class Player(
     }
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
+
+    public void Heal(Damage damage)
+    {
+        HP = HP.Heal(damage.Value);
+    }
 }

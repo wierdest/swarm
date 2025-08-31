@@ -9,5 +9,6 @@ public interface ILivingEntity : ICollidable
     HitPoints HP { get; }
     bool IsDead { get; }
     void TakeDamage(Damage damage);
+    void Heal(Damage damage);
 
 }
