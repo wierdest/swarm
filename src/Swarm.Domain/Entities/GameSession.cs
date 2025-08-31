@@ -6,11 +6,13 @@ using Swarm.Domain.Time;
 namespace Swarm.Domain.Entities;
 
 public sealed class GameSession(
+    EntityId id,
     Bounds stage,
     Player player,
     List<Wall> walls
 )
 {
+    public EntityId Id { get; } = id;
     public Bounds Stage { get; } = stage;
     public Player Player { get; } = player;
     private readonly List<Projectile> _projectiles = [];
