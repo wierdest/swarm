@@ -1,13 +1,13 @@
 ﻿using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 
-namespace Swarm.Application.Contracts.Behaviours;
+namespace Swarm.Domain.GameObjects.Spawners.Behaviours;
 
-public sealed class FixedPositionSpawnBehaviour(
+public sealed class FixedPositionEnemySpawnerBehaviour(
     Vector2 position,
     float cooldownSeconds,
     Func<Vector2, IEnemy> enemyFactory
-) : IEnemySpawnerBehaviour
+) : ISpawnerBehaviour<IEnemy>
 {
     private float _timeSinceLastSpawn = 0f;
 
@@ -24,4 +24,3 @@ public sealed class FixedPositionSpawnBehaviour(
         return null;
     }
 }
-

@@ -1,4 +1,5 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Entities.Weapons;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
@@ -51,4 +52,14 @@ public sealed class Player(
     }
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
+
+    public void Heal(Damage damage)
+    {
+        HP = HP.Heal(damage.Value);
+    }
+
+    public void Respawn(Vector2 position)
+    {
+        Position = position;
+    }
 }

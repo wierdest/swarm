@@ -1,9 +1,13 @@
 ﻿using Swarm.Application.Contracts;
-using Swarm.Application.Contracts.Behaviours;
 using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
-using Swarm.Domain.Entities.Behaviours;
-using Swarm.Domain.Entities.Patterns;
+using Swarm.Domain.Entities.Enemies;
+using Swarm.Domain.Entities.Enemies.Behaviours;
+using Swarm.Domain.Entities.Weapons;
+using Swarm.Domain.Entities.Weapons.Patterns;
+using Swarm.Domain.Factories;
+using Swarm.Domain.GameObjects.Spawners;
+using Swarm.Domain.GameObjects.Spawners.Behaviours;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
@@ -12,7 +16,7 @@ namespace Swarm.Application.Services;
 public sealed class GameSessionService : IGameSessionService
 {
     private GameSession? _session;
-    private IEnemySpawnerService? _spawner;
+    private EnemySpawner? _spawner;
 
     public void ApplyInput(float dirX, float dirY, float speed)
     {
@@ -53,7 +57,15 @@ public sealed class GameSessionService : IGameSessionService
         var weapon = new Weapon(pattern, cooldown);
         var player = new Player(EntityId.New(), playerStart, playerRadius, weapon);
 
-        _session = new GameSession(stage, player);
+        var wallDefs = new List<(Vector2, Radius)>
+        {
+            (new Vector2(100, 100), new Radius(10)),
+            (new Vector2(200, 100), new Radius(10)),
+        };
+
+        var walls = WallFactory.CreateWalls(wallDefs).ToList();
+
+        _session = new GameSession(EntityId.New(), stage, player, walls);
 
         StartSpawner(config);
     }
@@ -62,11 +74,11 @@ public sealed class GameSessionService : IGameSessionService
     {
         if (_session is null) return;
         var spawnPos = new Vector2(config.FixedSpawnPosX, config.FixedSpawnPosY);
-        _spawner = new EnemySpawnerService(
+        _spawner = new EnemySpawner(
             _session,
-            new FixedPositionSpawnBehaviour(
+            new FixedPositionEnemySpawnerBehaviour(
                 position: spawnPos,
-                cooldownSeconds: 3f,
+                cooldownSeconds: 0.8f,
                 enemyFactory: pos =>
                     new BasicEnemy(
                         id: EntityId.New(),
