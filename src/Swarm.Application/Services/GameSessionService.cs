@@ -65,7 +65,7 @@ public sealed class GameSessionService : IGameSessionService
         var spawnPos = new Vector2(config.FixedSpawnPosX, config.FixedSpawnPosY);
         _spawner = new EnemySpawner(
             _session,
-            new FixedPositionSpawnerBehaviour(
+            new FixedPositionEnemySpawnerBehaviour(
                 position: spawnPos,
                 cooldownSeconds: 0.8f,
                 enemyFactory: pos =>

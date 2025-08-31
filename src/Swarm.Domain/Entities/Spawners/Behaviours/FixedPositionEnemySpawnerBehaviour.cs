@@ -3,7 +3,7 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Entities.Spawners.Behaviours;
 
-public sealed class FixedPositionSpawnerBehaviour(
+public sealed class FixedPositionEnemySpawnerBehaviour(
     Vector2 position,
     float cooldownSeconds,
     Func<Vector2, IEnemy> enemyFactory
