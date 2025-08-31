@@ -57,4 +57,9 @@ public sealed class Player(
     {
         HP = HP.Heal(damage.Value);
     }
+
+    public void Respawn(Vector2 position)
+    {
+        Position = position;
+    }
 }
