@@ -2,7 +2,7 @@
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities.Behaviours;
+namespace Swarm.Domain.Entities.Enemies.Behaviours;
 
 public sealed class ChaseBehaviour(float speed) : IEnemyBehaviour
 {

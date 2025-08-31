@@ -1,10 +1,12 @@
 ﻿using Swarm.Application.Contracts;
 using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
-using Swarm.Domain.Entities.Behaviours;
-using Swarm.Domain.Entities.Patterns;
+using Swarm.Domain.Entities.Enemies;
+using Swarm.Domain.Entities.Enemies.Behaviours;
 using Swarm.Domain.Entities.Spawners;
 using Swarm.Domain.Entities.Spawners.Behaviours;
+using Swarm.Domain.Entities.Weapons;
+using Swarm.Domain.Entities.Weapons.Patterns;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 

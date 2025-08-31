@@ -2,7 +2,7 @@
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities;
+namespace Swarm.Domain.Entities.Weapons;
 
 public sealed class Weapon(
     IFirePattern pattern,
