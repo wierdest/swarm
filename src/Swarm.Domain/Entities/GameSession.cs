@@ -23,6 +23,19 @@ public sealed class GameSession(
     private Score _score = new();
     public Score Score => _score;
     public List<Wall> Walls { get; } = walls;
+    private bool _isLevelCompleted = false;
+    public bool IsLevelCompleted => _isLevelCompleted;
+    public event Action<GameSession>? LevelCompleted;
+
+    public void CompleteLevel()
+    {
+        if (_isLevelCompleted)
+            return;
+
+        _isLevelCompleted = true;
+
+        LevelCompleted?.Invoke(this);
+    }
 
     public void ApplyInput(Direction dir, float speed) =>
         Player.ApplyInput(dir, speed);
