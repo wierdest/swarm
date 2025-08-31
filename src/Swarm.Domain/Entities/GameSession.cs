@@ -7,7 +7,8 @@ namespace Swarm.Domain.Entities;
 
 public sealed class GameSession(
     Bounds stage,
-    Player player
+    Player player,
+    List<Wall> walls
 )
 {
     public Bounds Stage { get; } = stage;
@@ -18,6 +19,7 @@ public sealed class GameSession(
     public IReadOnlyList<IEnemy> Enemies => _enemies;
     private Score _score = new();
     public Score Score => _score;
+    public List<Wall> Walls { get; } = walls;
 
     public void ApplyInput(Direction dir, float speed) =>
         Player.ApplyInput(dir, speed);
