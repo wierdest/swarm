@@ -16,11 +16,13 @@ public sealed class BasicEnemy(
 {
     public EntityId Id { get; } = id;
 
-    public HitPoints HP { get; private set;  } = initialHitPoints;
+    public HitPoints HP { get; private set; } = initialHitPoints;
 
     public bool IsDead => HP.IsZero;
 
     public Vector2 Position { get; private set; } = startPosition;
+
+    private Vector2 _lastPosition = startPosition;
 
     public Radius Radius { get; } = radius;
 
@@ -46,7 +48,7 @@ public sealed class BasicEnemy(
 
         var newPos = MovementIntegrator.Advance(Position, movement.Value.direction, movement.Value.speed, dt, stage);
 
-       for (int i = 0; i < enemies.Count; i++)
+        for (int i = 0; i < enemies.Count; i++)
         {
             if (i == selfIndex) continue;
 
@@ -70,7 +72,14 @@ public sealed class BasicEnemy(
         }
 
         Rotation = Rotation.Rotated(MathF.PI * dt.Seconds);
-        
+
+        _lastPosition = Position;
+
         Position = newPos;
+    }
+    
+    public void RevertLastMovement()
+    {
+        Position = _lastPosition;
     }
 }

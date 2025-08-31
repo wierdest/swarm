@@ -59,6 +59,14 @@ public sealed class GameSession(
     private void UpdatePlayer(DeltaTime dt)
     {
         Player.Tick(dt, Stage);
+
+        foreach (var wall in Walls)
+        {
+            if (Player.CollidesWith(wall))
+            {
+                Player.RevertLastMovement();
+            }
+        }
     }
 
     private void UpdateEnemies(DeltaTime dt)
@@ -71,6 +79,14 @@ public sealed class GameSession(
 
             // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
             enemy.Tick(dt, Player.Position, Stage, _enemies, i);
+
+            foreach (var wall in Walls)
+            {
+                if (enemy.CollidesWith(wall))
+                {
+                    enemy.RevertLastMovement();
+                }
+            }
 
             if (Player.CollidesWith(enemy))
                 Player.TakeDamage(new Damage(1));
@@ -97,6 +113,12 @@ public sealed class GameSession(
 
     private bool HandleProjectileCollisions(Projectile projectile)
     {
+        foreach (var wall in Walls)
+        {
+            if (projectile.CollidesWith(wall))
+                return true;
+        }
+
         foreach (var enemy in _enemies)
         {
             if (enemy.IsDead)
@@ -106,7 +128,8 @@ public sealed class GameSession(
             {
                 enemy.TakeDamage(projectile.Damage);
 
-                if (enemy.IsDead) {
+                if (enemy.IsDead)
+                {
                     _score += 1;
                 }
 

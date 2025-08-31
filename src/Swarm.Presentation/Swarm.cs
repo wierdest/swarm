@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -13,7 +14,7 @@ public class Swarm : Game
 {
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
-    private readonly IGameSessionService _service = new GameSessionService();
+    private readonly IGameSessionService _service;
     private readonly Dictionary<int, Texture2D> _circleCache = new();
     private float _moveSpeed = 220f;
     private KeyboardState _prevKb;
@@ -29,24 +30,53 @@ public class Swarm : Game
         IsMouseVisible = true;
         _graphics.PreferredBackBufferWidth = 960;
         _graphics.PreferredBackBufferHeight = 540;
+
+        var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder
+                .AddFilter("Swarm", LogLevel.Information)
+                .AddConsole();
+        });
+
+        var logger = loggerFactory.CreateLogger<GameSessionService>();
+        _service = new GameSessionService(logger);
     }
 
     protected override void Initialize()
     {
-        var cfg = new StageConfig(
-            Left: 0, Top: 0, Right: _graphics.PreferredBackBufferWidth, Bottom: _graphics.PreferredBackBufferHeight,
-            PlayerStartX: 100, PlayerStartY: _graphics.PreferredBackBufferHeight / 2f, PlayerRadius: 12,
-            FixedSpawnPosX: 400, FixedSpawnPosY: _graphics.PreferredBackBufferHeight / 2f,
+        var gameConfig = new GameConfig(
+        StageConfig: new StageConfig(
+            Left: 0,
+            Top: 0,
+            Right: _graphics.PreferredBackBufferWidth,
+            Bottom: _graphics.PreferredBackBufferHeight
+        ),
+        LevelConfig: new LevelConfig(
             Weapon: new WeaponConfig(
                 Damage: 1,
                 ProjectileSpeed: 420f,
                 ProjectileRadius: 4f,
                 RatePerSecond: 6f,
                 ProjectileLifetimeSeconds: 2.0f
-            )
-        );
-        _service.StartNewSession(cfg);
-        base.Initialize();
+            ),
+            PlayerAreaConfig: new AreaConfig(X: 50, Y: 50, Radius: 20),
+            TargetAreaConfig: new AreaConfig(X: 900, Y: 500, Radius: 20),
+            Walls:
+            [
+                new(X: 200, Y: 100, Radius: 30),
+                new(X: 400, Y: 200, Radius: 30)
+            ],
+            Spawners:
+            [
+                new(X: 400, Y: 300, CooldownSeconds: 0.8f, BehaviourType: "")
+            ]
+        ),
+        PlayerRadius: 12
+    );
+
+    _service.StartNewSession(gameConfig);
+
+    base.Initialize();
     }
 
     protected override void LoadContent()
@@ -98,6 +128,35 @@ public class Swarm : Game
         _spriteBatch.Begin();
 
         DrawRect(new Rectangle((int)snap.Stage.Left, (int)snap.Stage.Top, (int)(snap.Stage.Right - snap.Stage.Left), (int)(snap.Stage.Bottom - snap.Stage.Top)), new Color(20, 20, 20));
+
+        foreach (var wall in snap.Walls)
+        {
+            DrawRect(new Rectangle(
+                (int)(wall.X - wall.Radius),
+                (int)(wall.Y - wall.Radius),
+                (int)(wall.Radius * 2),
+                (int)(wall.Radius * 2)),
+                Color.Gray
+            );
+        }
+
+        var pa = snap.PlayerArea;
+        DrawRect(new Rectangle(
+            (int)(pa.X - pa.Radius),
+            (int)(pa.Y - pa.Radius),
+            (int)(pa.Radius * 2),
+            (int)(pa.Radius * 2)),
+            Color.Green * 0.5f
+        );
+
+        var ta = snap.TargetArea;
+        DrawRect(new Rectangle(
+            (int)(ta.X - ta.Radius),
+            (int)(ta.Y - ta.Radius),
+            (int)(ta.Radius * 2),
+            (int)(ta.Radius * 2)),
+            Color.OrangeRed * 0.5f
+        );
 
         DrawPlayer(new Vector2(snap.Player.X, snap.Player.Y), (int)snap.Player.Radius, snap.Player.RotationAngle, Color.DeepSkyBlue);
 
