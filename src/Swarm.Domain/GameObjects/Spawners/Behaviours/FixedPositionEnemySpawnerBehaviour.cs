@@ -1,7 +1,7 @@
 ﻿using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 
-namespace Swarm.Domain.Entities.Spawners.Behaviours;
+namespace Swarm.Domain.GameObjects.Spawners.Behaviours;
 
 public sealed class FixedPositionEnemySpawnerBehaviour(
     Vector2 position,
