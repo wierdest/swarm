@@ -7,5 +7,8 @@ public readonly record struct GameSnapshot(
     PlayerDTO Player,
     HudDTO Hud,
     IReadOnlyList<ProjectileDTO> Projectiles,
-    IReadOnlyList<EnemyDTO> Enemies
+    IReadOnlyList<EnemyDTO> Enemies,
+    IReadOnlyCollection<DrawableDTO> Walls,
+    DrawableDTO PlayerArea,
+    DrawableDTO TargetArea
 );

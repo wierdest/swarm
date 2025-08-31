@@ -39,4 +39,9 @@ public sealed class Projectile(
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
     public bool IsExpired => LifetimeRemaining <= 0f;
+
+    public void Expire()
+    {
+        LifetimeRemaining = 0f;
+    }
 }

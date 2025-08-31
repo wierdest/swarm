@@ -8,4 +8,5 @@ public interface IEnemy : ILivingEntity
 {
     Direction Rotation { get; }
     void Tick(DeltaTime dt, Vector2 playerPosition, Bounds stage, IReadOnlyList<IEnemy> enemies, int selfIndex);
+    void RevertLastMovement();
 }

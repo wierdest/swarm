@@ -1,18 +1,36 @@
-﻿using Swarm.Application.Contracts;
-using Swarm.Application.Contracts.Behaviours;
+﻿using Microsoft.Extensions.Logging;
+using Swarm.Application.Contracts;
 using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
-using Swarm.Domain.Entities.Behaviours;
-using Swarm.Domain.Entities.Patterns;
+using Swarm.Domain.Entities.Enemies;
+using Swarm.Domain.Entities.Enemies.Behaviours;
+using Swarm.Domain.Entities.Weapons;
+using Swarm.Domain.Entities.Weapons.Patterns;
+using Swarm.Domain.Factories;
+using Swarm.Domain.GameObjects;
+using Swarm.Domain.GameObjects.Spawners;
+using Swarm.Domain.GameObjects.Spawners.Behaviours;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
 namespace Swarm.Application.Services;
 
-public sealed class GameSessionService : IGameSessionService
+public sealed class GameSessionService(
+    ILogger<GameSessionService> logger
+) : IGameSessionService
 {
+    private readonly ILogger<GameSessionService> _logger = logger;
     private GameSession? _session;
-    private IEnemySpawnerService? _spawner;
+    private EnemySpawner? _spawner;
+    private PlayerArea? _playerArea;
+    private TargetArea? _targetArea;
+
+    private void OnLevelCompleted(GameSession session)
+    {
+        Stop();
+        _logger.LogInformation("Level completed for session {SessionId}", session.Id);
+
+    }
 
     public void ApplyInput(float dirX, float dirY, float speed)
     {
@@ -28,7 +46,11 @@ public sealed class GameSessionService : IGameSessionService
     public void Fire() => _session?.Fire();
 
     public GameSnapshot GetSnapshot()
-        => _session is null ? default : DomainMappers.ToSnapshot(_session);
+        => _session is null || _playerArea is null || _targetArea is null ? default : DomainMappers.ToSnapshot(
+            _session,
+            _playerArea,
+            _targetArea
+            );
 
     public void RotateTowards(float targetX, float targetY)
     {
@@ -36,47 +58,97 @@ public sealed class GameSessionService : IGameSessionService
         _session.RotatePlayerTowards(new Vector2(targetX, targetY));
     }
 
-    public void StartNewSession(StageConfig config)
+    public void StartNewSession(GameConfig config)
     {
-        var stage = new Bounds(config.Left, config.Top, config.Right, config.Bottom);
-        var playerStart = new Vector2(config.PlayerStartX, config.PlayerStartY);
+        var level = config.LevelConfig;
+
+        var stageConfig = config.StageConfig;
+
+        var stage = new Bounds(
+            stageConfig.Left,
+            stageConfig.Top,
+            stageConfig.Right,
+            stageConfig.Bottom
+        );
+
+        var playerArea = level.PlayerAreaConfig;
+        var playerStart = new Vector2(playerArea.X, playerArea.Y);
         var playerRadius = new Radius(config.PlayerRadius);
 
+        var weaponConfig = level.Weapon;
+
         var pattern = new SingleShotPattern(
-            new Damage(config.Weapon.Damage),
-            config.Weapon.ProjectileSpeed,
-            new Radius(config.Weapon.ProjectileRadius),
-            config.Weapon.ProjectileLifetimeSeconds
+            new Damage(weaponConfig.Damage),
+            weaponConfig.ProjectileSpeed,
+            new Radius(weaponConfig.ProjectileRadius),
+            weaponConfig.ProjectileLifetimeSeconds
         );
 
-        var cooldown = new Cooldown(1f / config.Weapon.RatePerSecond);
+        var cooldown = new Cooldown(1f / weaponConfig.RatePerSecond);
+
         var weapon = new Weapon(pattern, cooldown);
+
         var player = new Player(EntityId.New(), playerStart, playerRadius, weapon);
 
-        _session = new GameSession(stage, player);
+        var wallsDefs = level.Walls
+            .Select(a => (new Vector2(a.X, a.Y), new Radius(a.Radius)));
 
-        StartSpawner(config);
+        var walls = WallFactory.CreateWalls(wallsDefs).ToList();
+
+
+        _session = new GameSession(EntityId.New(), stage, player, walls);
+
+        // Subscribe to event!
+        _session.LevelCompleted += OnLevelCompleted;
+
+        StartSpawner(level);
+        StartAreas(level);
+
     }
 
-    private void StartSpawner(StageConfig config)
+    private void StartAreas(LevelConfig level)
     {
         if (_session is null) return;
-        var spawnPos = new Vector2(config.FixedSpawnPosX, config.FixedSpawnPosY);
-        _spawner = new EnemySpawnerService(
+
+        var playerAreaConfig = level.PlayerAreaConfig;
+
+        _playerArea = new PlayerArea(
             _session,
-            new FixedPositionSpawnBehaviour(
-                position: spawnPos,
-                cooldownSeconds: 3f,
-                enemyFactory: pos =>
-                    new BasicEnemy(
-                        id: EntityId.New(),
-                        startPosition: pos,
-                        radius: new Radius(10f),
-                        initialHitPoints: new HitPoints(1),
-                        behaviour: new ChaseBehaviour(speed: 80f)
-                    )
-            )
+            new Vector2(playerAreaConfig.X, playerAreaConfig.Y),
+            new Radius(level.PlayerAreaConfig.Radius)
         );
+
+        _targetArea = new TargetArea(
+            _session,
+            new Vector2(level.TargetAreaConfig.X, level.TargetAreaConfig.Y),
+            new Radius(level.TargetAreaConfig.Radius)
+        );
+    }
+
+    private void StartSpawner(LevelConfig level)
+    {
+        if (_session is null) return;
+
+        foreach (var spawnerConfig in level.Spawners)
+        {
+            // TODO refine SpawnerConfig to fully control Spawner Behaviour
+            var spawnPos = new Vector2(spawnerConfig.X, spawnerConfig.Y);
+            _spawner = new EnemySpawner(
+                _session,
+                new FixedPositionEnemySpawnerBehaviour(
+                    position: spawnPos,
+                    cooldownSeconds: spawnerConfig.CooldownSeconds,
+                    enemyFactory: pos =>
+                        new BasicEnemy(
+                            id: EntityId.New(),
+                            startPosition: pos,
+                            radius: new Radius(10f),
+                            initialHitPoints: new HitPoints(1),
+                            behaviour: new ChaseBehaviour(speed: 80f)
+                        )
+                )
+            );
+        }
     }
 
     public void Stop()
@@ -88,8 +160,10 @@ public sealed class GameSessionService : IGameSessionService
     public void Tick(float deltaSeconds)
     {
         if (_session is null) return;
-
-        _spawner?.Tick(new DeltaTime(deltaSeconds));
-        _session.Tick(new DeltaTime(deltaSeconds));
+         var dt = new DeltaTime(deltaSeconds);
+        _playerArea?.Tick(dt);
+        _targetArea?.Tick(dt);
+        _spawner?.Tick(dt);
+        _session.Tick(dt);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.GameObjects;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
@@ -6,10 +7,13 @@ using Swarm.Domain.Time;
 namespace Swarm.Domain.Entities;
 
 public sealed class GameSession(
+    EntityId id,
     Bounds stage,
-    Player player
+    Player player,
+    List<Wall> walls
 )
 {
+    public EntityId Id { get; } = id;
     public Bounds Stage { get; } = stage;
     public Player Player { get; } = player;
     private readonly List<Projectile> _projectiles = [];
@@ -18,6 +22,20 @@ public sealed class GameSession(
     public IReadOnlyList<IEnemy> Enemies => _enemies;
     private Score _score = new();
     public Score Score => _score;
+    public List<Wall> Walls { get; } = walls;
+    private bool _isLevelCompleted = false;
+    public bool IsLevelCompleted => _isLevelCompleted;
+    public event Action<GameSession>? LevelCompleted;
+
+    public void CompleteLevel()
+    {
+        if (_isLevelCompleted)
+            return;
+
+        _isLevelCompleted = true;
+
+        LevelCompleted?.Invoke(this);
+    }
 
     public void ApplyInput(Direction dir, float speed) =>
         Player.ApplyInput(dir, speed);
@@ -41,6 +59,14 @@ public sealed class GameSession(
     private void UpdatePlayer(DeltaTime dt)
     {
         Player.Tick(dt, Stage);
+
+        foreach (var wall in Walls)
+        {
+            if (Player.CollidesWith(wall))
+            {
+                Player.RevertLastMovement();
+            }
+        }
     }
 
     private void UpdateEnemies(DeltaTime dt)
@@ -53,6 +79,14 @@ public sealed class GameSession(
 
             // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
             enemy.Tick(dt, Player.Position, Stage, _enemies, i);
+
+            foreach (var wall in Walls)
+            {
+                if (enemy.CollidesWith(wall))
+                {
+                    enemy.RevertLastMovement();
+                }
+            }
 
             if (Player.CollidesWith(enemy))
                 Player.TakeDamage(new Damage(1));
@@ -79,6 +113,12 @@ public sealed class GameSession(
 
     private bool HandleProjectileCollisions(Projectile projectile)
     {
+        foreach (var wall in Walls)
+        {
+            if (projectile.CollidesWith(wall))
+                return true;
+        }
+
         foreach (var enemy in _enemies)
         {
             if (enemy.IsDead)
@@ -88,7 +128,8 @@ public sealed class GameSession(
             {
                 enemy.TakeDamage(projectile.Damage);
 
-                if (enemy.IsDead) {
+                if (enemy.IsDead)
+                {
                     _score += 1;
                 }
 

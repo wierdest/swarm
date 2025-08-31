@@ -1,4 +1,5 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Entities.Weapons;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
@@ -15,6 +16,7 @@ public sealed class Player(
 {
     public EntityId Id { get; } = id;
     public Vector2 Position { get; private set; } = startPos;
+    private Vector2 _lastPosition = startPos;  
     public Radius Radius { get; } = radius;
     public Weapon ActiveWeapon { get; private set; } = weapon;
     public Direction Direction { get; private set; } = Direction.From(1, 0);
@@ -42,7 +44,13 @@ public sealed class Player(
     public void Tick(DeltaTime dt, Bounds stage)
     {
         ActiveWeapon.Tick(dt);
+        _lastPosition = Position;
         Position = MovementIntegrator.Advance(Position, Direction, Speed, dt, stage);
+    }
+
+    public void RevertLastMovement()
+    {
+        Position = _lastPosition;
     }
 
     public void TakeDamage(Damage damage)
@@ -51,4 +59,15 @@ public sealed class Player(
     }
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
+
+    public void Heal(Damage damage)
+    {
+        HP = HP.Heal(damage.Value);
+    }
+
+    public void Respawn(Vector2 position)
+    {
+        Position = position;
+        _lastPosition = position;
+    }
 }
