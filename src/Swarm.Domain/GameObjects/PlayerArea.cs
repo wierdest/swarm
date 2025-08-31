@@ -37,6 +37,12 @@ public sealed class PlayerArea(
                 projectile.Expire();
             }
         }
+
+        foreach (var enemy in _session.Enemies)
+        {
+            if (IsInside(enemy.Position))
+                enemy.RevertLastMovement();
+        }
     }
     private bool IsInside(Vector2 point)
     {
