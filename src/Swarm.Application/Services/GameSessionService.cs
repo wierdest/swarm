@@ -28,7 +28,7 @@ public sealed class GameSessionService(
     private void OnLevelCompleted(GameSession session)
     {
         Stop();
-        _logger.LogInformation("Llevel completeded for session {SessionId}", session.Id);
+        _logger.LogInformation("Level completed for session {SessionId}", session.Id);
 
     }
 
