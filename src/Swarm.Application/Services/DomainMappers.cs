@@ -1,12 +1,14 @@
-﻿using Swarm.Application.Contracts;
+﻿using System.Runtime.CompilerServices;
+using Swarm.Application.Contracts;
 using Swarm.Application.DTOs;
 using Swarm.Domain.Entities;
+using Swarm.Domain.GameObjects;
 
 namespace Swarm.Application.Services;
 
 static class DomainMappers
 {
-    public static GameSnapshot ToSnapshot(GameSession s)
+    public static GameSnapshot ToSnapshot(GameSession s, PlayerArea pA, TargetArea t)
     {
         var stage = new BoundsDTO(s.Stage.Left, s.Stage.Top, s.Stage.Right, s.Stage.Bottom);
         var p = s.Player;
@@ -26,9 +28,33 @@ static class DomainMappers
             enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius.Value, enemyRotation));
         }
 
-        var hud = new HudDTO(s.Score.Value, p.HP.Value, enemies.Count, "Esse é o level inicial de um protótipo.");
+        // This is just a prototype
+        var levelStateString = s.IsLevelCompleted ?
+        "A descrição do level muda quando chega na TargetArea" :
+        "Esse é o level inicial de um protótipo.";
 
-        return new GameSnapshot(stage, player, hud, projectiles, enemies);
+        var hud = new HudDTO(s.Score.Value, p.HP.Value, enemies.Count, levelStateString);
+
+        var walls = new List<DrawableDTO>(s.Walls.Count);
+        foreach (var w in s.Walls)
+        {
+            walls.Add(new DrawableDTO(w.Position.X, w.Position.Y, w.Radius.Value));
+        }
+
+        var playerArea = new DrawableDTO(pA.Position.X, pA.Position.Y, pA.Radius.Value);
+
+        var targetArea = new DrawableDTO(t.Position.X, t.Position.Y, t.Radius.Value);
+
+        return new GameSnapshot(
+            stage,
+            player,
+            hud,
+            projectiles,
+            enemies,
+            walls,
+            playerArea,
+            targetArea
+        );
     }
 
 }

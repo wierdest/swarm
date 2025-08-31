@@ -2,7 +2,7 @@
 
 public interface IGameSessionService
 {
-    void StartNewSession(StageConfig config);
+    void StartNewSession(GameConfig config);
     void ApplyInput(float dirX, float dirY, float speed);
     void Stop();
     void Fire();
