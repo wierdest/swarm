@@ -39,7 +39,7 @@ Por fim, deixamos o jogo **jogável**:
 - 🔌 **Services**: `IGameSessionService` + `GameSessionService` conectando Domain ↔ Presentation
 - 🎮 **Presentation**: loop do MonoGame (`Swarm`)  
   - Captura inputs ⌨️  
-  - Renderiza player & projéteis como círculos 🔵 🔴  
+  - Renderiza
   - Chama serviços para atualizar e disparar  
 
 Agora já é possível rodar o jogo e **mover + atirar**! 🚀
@@ -47,33 +47,20 @@ Agora já é possível rodar o jogo e **mover + atirar**! 🚀
 ---
 
 ## 🚧 Próximos Passos
-- 🖥️ Adicionar interface de usuario para mostrar vida, score e game state na tela (HudRenderer) FEITO!
-- 🗺️ Implementar **Spawning level elements* (obstáculos, ponto a e ponto b) --em progresso
+fizemos:
 
-```
+[Screenshot Image](./screen.png)
 
-+------------------------------------------+
-| Ponto A                                  |
-|  | A |                                   |
-|                                          |
-|        |####|        (Spawner *)         |
-|        |####|                            |
-|                                          |
-|                      |####|              |
-|                      |####|    * Spawner |
-|                                          |
-|                                  | B |   |
-|                                 Ponto B  |
-+------------------------------------------+
+em andamento, é o Step 7, último antes de um release de algo testável...
 
-Legenda:
-| A | → Ponto A (área de trigger no canto superior esquerdo)  
-| B | → Ponto B (área de trigger no canto inferior direito)  
-|####| → Obstáculos fixos (paredes / blocos de colisão)  
-* → Spawner Point de inimigos
-```
-- 💾 Criar **sistema de score e persistência** (Infrastructure)
+- Timer
+- Score (persistence)
+- Domain Enrichment (mais behaviours firepatterns)
+- Items
+- Level design
+- Narrative (level)
 
+It is a `feature/GameState`, our last step before a testable release!
 
 ---
 
@@ -137,6 +124,24 @@ Legenda:
 - :joystick: Player tem rotação  
 - :cyclone: Adicionando próximo passo, rotação do jogador  
 
+### 🔹 Step 6 – GameObject & Colisões
+- :bricks: **Walls** como collidables simples
+- :house: **PlayerArea** GameObject (respawn, cura, bloqueio de projéteis e inimigos)
+- :checkered_flag: **TargetArea** chama `session.CompleteLevel()`
+- :video_game: Colisões implementadas:
+      - Player ↔ Walls
+      - Enemies ↔ Walls
+      - Player ↔ Enemies
+      - Projectiles ↔ Walls
+      - Enemies ↔ PlayerArea
+      - Projectiles ↔ PlayerArea
+
+- :joystick: **Player** ganhou `RevertLastMovement()`
+- :space_invader: **Enemy** ganhou `RevertLastMovement()`
+
+- :recycle: Segregação clara:
+- **Entities** → auditáveis (Player, Enemy, Projectile)
+- **GameObjects** → acoplados à `GameSession` (PlayerArea, TargetArea, Walls, Spawners)q
 
 
 
