@@ -10,7 +10,8 @@ public sealed class GameSession(
     EntityId id,
     Bounds stage,
     Player player,
-    List<Wall> walls
+    List<Wall> walls,
+    RoundTimer timer
 )
 {
     public EntityId Id { get; } = id;
@@ -26,6 +27,13 @@ public sealed class GameSession(
     private bool _isLevelCompleted = false;
     public bool IsLevelCompleted => _isLevelCompleted;
     public event Action<GameSession>? LevelCompleted;
+    private RoundTimer _timer = timer;
+    public RoundTimer Timer => _timer;
+    private float _accumulator = 0f;
+
+    public event Action<GameSession, RoundTimer>? TimeUpdated;
+    public event Action<GameSession> TimeIsUp;
+    private bool _isTimeUp = false;
 
     public void CompleteLevel()
     {
@@ -51,9 +59,31 @@ public sealed class GameSession(
 
     public void Tick(DeltaTime dt)
     {
+        UpdateTimer(dt);
         UpdatePlayer(dt);
         UpdateEnemies(dt);
         UpdateProjectiles(dt);
+    }
+
+    private void UpdateTimer(DeltaTime dt)
+    {
+        _accumulator += dt;
+        if (_accumulator >= 1f)
+        {
+            int secondsPassed = (int)_accumulator;
+            _accumulator -= secondsPassed;
+
+            _timer = _timer.Tick(secondsPassed);
+
+            TimeUpdated?.Invoke(this, _timer);
+
+            if (_timer.IsExpired && !_isTimeUp)
+            {
+                _isTimeUp = true;
+                TimeIsUp?.Invoke(this);
+            }
+
+        }
     }
 
     private void UpdatePlayer(DeltaTime dt)
