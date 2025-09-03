@@ -25,13 +25,6 @@ public sealed class GameSessionService(
     private PlayerArea? _playerArea;
     private TargetArea? _targetArea;
 
-    private void OnLevelCompleted(GameSession session)
-    {
-        Stop();
-        _logger.LogInformation("Level completed for session {SessionId}", session.Id);
-
-    }
-
     public void ApplyInput(float dirX, float dirY, float speed)
     {
         if (_session is null) return;
@@ -51,6 +44,7 @@ public sealed class GameSessionService(
             _playerArea,
             _targetArea
             );
+
 
     public void RotateTowards(float targetX, float targetY)
     {
@@ -95,11 +89,14 @@ public sealed class GameSessionService(
 
         var walls = WallFactory.CreateWalls(wallsDefs).ToList();
 
+        var timer = new RoundTimer(config.RoundLength);
 
-        _session = new GameSession(EntityId.New(), stage, player, walls);
+        _session = new GameSession(EntityId.New(), stage, player, walls, timer);
 
-        // Subscribe to event!
+        // Subscribe to events!
         _session.LevelCompleted += OnLevelCompleted;
+        _session.TimeIsUp += OnTimeIsUp;
+        _session.TimeUpdated += OnTimeUpdated;
 
         StartSpawner(level);
         StartAreas(level);
@@ -160,10 +157,29 @@ public sealed class GameSessionService(
     public void Tick(float deltaSeconds)
     {
         if (_session is null) return;
-         var dt = new DeltaTime(deltaSeconds);
+        var dt = new DeltaTime(deltaSeconds);
         _playerArea?.Tick(dt);
         _targetArea?.Tick(dt);
         _spawner?.Tick(dt);
         _session.Tick(dt);
+    }
+
+    private void OnLevelCompleted(GameSession session)
+    {
+        Stop();
+        _logger.LogInformation("Level completed for session {SessionId}", session.Id);
+
+    }
+
+    private void OnTimeIsUp(GameSession session)
+    {
+        Stop();
+        _logger.LogInformation("Time is up for session {SessionId}", session.Id);
+    }
+    
+    private void OnTimeUpdated(GameSession session, RoundTimer secondsRemaining)
+    {
+        
+        _logger.LogInformation("Session {SessionId} timer: {Seconds} seconds remaining", session.Id, secondsRemaining);
     }
 }
