@@ -5,6 +5,9 @@ namespace Swarm.Domain.Primitives;
 public readonly record struct Direction
 {
     public readonly Vector2 Vector;
+
+    public float X => Vector.X;
+    public float Y => Vector.Y;
     public Direction(Vector2 vector)
     {
         var lenSq = vector.LengthSquared();
@@ -24,4 +27,5 @@ public readonly record struct Direction
         var y = Vector.X * sin + Vector.Y * cos;
         return new Direction(new Vector2(x, y));
     }
+
 }
