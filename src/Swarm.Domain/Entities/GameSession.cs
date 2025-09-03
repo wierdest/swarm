@@ -28,12 +28,12 @@ public sealed class GameSession(
     public bool IsLevelCompleted => _isLevelCompleted;
     public event Action<GameSession>? LevelCompleted;
     private RoundTimer _timer = timer;
-    public RoundTimer Timer => _timer;
     private float _accumulator = 0f;
-
     public event Action<GameSession, RoundTimer>? TimeUpdated;
-    public event Action<GameSession> TimeIsUp;
+    public event Action<GameSession>? TimeIsUp;
     private bool _isTimeUp = false;
+    public bool IsTimeUp => _isTimeUp;
+    public String TimeString => _timer.ToString();
 
     public void CompleteLevel()
     {
@@ -75,12 +75,14 @@ public sealed class GameSession(
 
             _timer = _timer.Tick(secondsPassed);
 
-            TimeUpdated?.Invoke(this, _timer);
-
             if (_timer.IsExpired && !_isTimeUp)
             {
                 _isTimeUp = true;
                 TimeIsUp?.Invoke(this);
+            }
+            else
+            {
+                TimeUpdated?.Invoke(this, _timer);
             }
 
         }

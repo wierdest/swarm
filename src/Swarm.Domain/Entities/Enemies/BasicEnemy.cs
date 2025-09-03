@@ -37,7 +37,7 @@ public sealed class BasicEnemy(
 
     public void TakeDamage(Damage damage)
     {
-        HP = HP.Take(damage.Value);
+        HP = HP.Take(damage);
     }
 
     public void Tick(DeltaTime dt, Vector2 playerPosition, Bounds stage, IReadOnlyList<IEnemy> enemies, int selfIndex)

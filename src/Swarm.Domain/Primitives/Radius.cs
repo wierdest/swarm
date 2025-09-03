@@ -11,4 +11,8 @@ public readonly record struct Radius
 
         Value = value;
     }
+
+    public static implicit operator float(Radius radius) => radius.Value;
+
+    public static explicit operator Radius(float value) => new(value);
 }

@@ -55,14 +55,14 @@ public sealed class Player(
 
     public void TakeDamage(Damage damage)
     {
-        HP = HP.Take(damage.Value);
+        HP = HP.Take(damage);
     }
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
 
     public void Heal(Damage damage)
     {
-        HP = HP.Heal(damage.Value);
+        HP = HP.Heal(damage);
     }
 
     public void Respawn(Vector2 position)
