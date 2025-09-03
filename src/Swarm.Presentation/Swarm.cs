@@ -71,7 +71,8 @@ public class Swarm : Game
                 new(X: 400, Y: 300, CooldownSeconds: 0.8f, BehaviourType: "")
             ]
         ),
-        PlayerRadius: 12
+        PlayerRadius: 12,
+        RoundLength: 99
     );
 
     _service.StartNewSession(gameConfig);
