@@ -22,8 +22,10 @@ public class HudRenderer(
         var scoreText = $"Score: {hud.Score}";
         var hpText = $"HP: {hud.HP}";
         var enemiesText = $"Enemies alive: {hud.NumberOfEnemiesAlive}";
+
+        var timerText = $"Timer: {hud.Timer}";
         
-        var leftText = $"{hpText} {scoreText} {enemiesText}";
+        var leftText = $"{hpText} {scoreText} {enemiesText} {timerText}";
         var leftPos = new Vector2(10, 10);
 
         var levelText = $"{hud.GameLevel}";
