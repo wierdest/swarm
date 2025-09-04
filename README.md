@@ -53,7 +53,7 @@ fizemos:
 
 em andamento, é o Step 7, último antes de um release de algo testável...
 
-- Timer
+- Timer ✅
 - Score (persistence)
 - Domain Enrichment (mais behaviours firepatterns)
 - Items
