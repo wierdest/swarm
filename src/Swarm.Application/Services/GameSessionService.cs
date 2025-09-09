@@ -43,12 +43,12 @@ public sealed class GameSessionService(
     public void Fire() => _session?.Fire();
 
     public GameSnapshot GetSnapshot()
-        => _session is null || _playerArea is null || _targetArea is null ? default : DomainMappers.ToSnapshot(
-            _session,
-            _playerArea,
-            _targetArea
-            );
+    {
+        if (_session is null || _playerArea is null || _targetArea is null)
+            throw new InvalidOperationException("Game snapshot cannot be created before session and areas are initialized.");
 
+        return DomainMappers.ToSnapshot(_session, _playerArea, _targetArea);
+    }
 
     public void RotateTowards(float targetX, float targetY)
     {
