@@ -34,6 +34,10 @@ public sealed class GameSession(
     private bool _isTimeUp = false;
     public bool IsTimeUp => _isTimeUp;
     public String TimeString => _timer.ToString();
+    private bool _isPaused;
+    public bool IsPaused => _isPaused;
+    public void Pause() => _isPaused = true;
+    public void Resume() => _isPaused = false;
 
     public void CompleteLevel()
     {
@@ -59,6 +63,8 @@ public sealed class GameSession(
 
     public void Tick(DeltaTime dt)
     {
+        if (_isPaused) return;
+
         UpdateTimer(dt);
         UpdatePlayer(dt);
         UpdateEnemies(dt);

@@ -10,6 +10,8 @@ public interface IGameSessionService
     void Stop();
     void Fire();
     void RotateTowards(float targetX, float targetY);
+    void Pause();
+    void Resume();
     void Tick(float deltaSeconds);
     GameSnapshot GetSnapshot();
     Task SaveAsync(SaveName saveName, CancellationToken cancellationToken = default);

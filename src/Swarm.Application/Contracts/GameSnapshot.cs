@@ -10,5 +10,6 @@ public record class GameSnapshot(
     IReadOnlyList<EnemyDTO> Enemies,
     IReadOnlyCollection<DrawableDTO> Walls,
     DrawableDTO PlayerArea,
-    DrawableDTO TargetArea
+    DrawableDTO TargetArea,
+    bool IsPaused
 );

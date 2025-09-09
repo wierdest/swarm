@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Swarm.Application.Contracts;
+﻿using Swarm.Application.Contracts;
 using Swarm.Application.DTOs;
 using Swarm.Domain.Entities;
 using Swarm.Domain.GameObjects;
@@ -55,7 +54,8 @@ static class DomainMappers
             enemies,
             walls,
             playerArea,
-            targetArea
+            targetArea,
+            s.IsPaused
         );
     }
 

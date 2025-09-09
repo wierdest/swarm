@@ -152,15 +152,33 @@ public sealed class GameSessionService(
         }
     }
 
+    // TODO revise this usage
     public void Stop()
     {
         if (_session is null) return;
         _session.ApplyInput(Direction.From(1, 0), 0f);
     }
 
+    public void Pause()
+    {
+        if (_session is null) return;
+        _session.Pause();
+        _logger.LogInformation("Session {SessionId} paused", _session.Id);
+    }
+
+    public void Resume()
+    {
+        if (_session is null) return;
+        _session.Resume();
+        _logger.LogInformation("Session {SessionId} resumed", _session.Id);
+    }
+
     public void Tick(float deltaSeconds)
     {
         if (_session is null) return;
+
+        if (_session.IsPaused) return;  
+
         var dt = new DeltaTime(deltaSeconds);
         _playerArea?.Tick(dt);
         _targetArea?.Tick(dt);
