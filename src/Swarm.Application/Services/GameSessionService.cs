@@ -18,10 +18,12 @@ using Swarm.Domain.Time;
 namespace Swarm.Application.Services;
 
 public sealed class GameSessionService(
-    ILogger<GameSessionService> logger
+    ILogger<GameSessionService> logger,
+    IGameSnapshotRepository repository
 ) : IGameSessionService
 {
     private readonly ILogger<GameSessionService> _logger = logger;
+    private readonly IGameSnapshotRepository _repository = repository;
     private GameSession? _session;
     private EnemySpawner? _spawner;
     private PlayerArea? _playerArea;
@@ -182,6 +184,19 @@ public sealed class GameSessionService(
     private void OnTimeUpdated(GameSession session, RoundTimer secondsRemaining)
     {
         
-        _logger.LogInformation("Session {SessionId} timer: {Seconds} seconds remaining", session.Id, secondsRemaining);
+        // _logger.LogInformation("Session {SessionId} timer: {Seconds} seconds remaining", session.Id, secondsRemaining);
+    }
+
+    public async Task SaveAsync(SaveName saveName, CancellationToken cancellationToken = default)
+    {
+        if (_session is null || _playerArea is null || _targetArea is null) return;
+
+        var snapshot = DomainMappers.ToSnapshot(_session, _playerArea, _targetArea);
+        await _repository.SaveAsync(snapshot, saveName, cancellationToken);
+    }
+
+    public async Task<GameSnapshot?> LoadAsync(SaveName saveName, CancellationToken cancellationToken = default)
+    {
+        return await _repository.LoadAsync(saveName, cancellationToken);
     }
 }
