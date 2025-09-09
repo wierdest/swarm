@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Swarm.Application.Config;
 using Swarm.Application.Contracts;
 using Swarm.Application.Services;
 using Swarm.Presentation.Renderers;

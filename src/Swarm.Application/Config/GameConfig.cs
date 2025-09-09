@@ -1,6 +1,6 @@
-﻿namespace Swarm.Application.Contracts;
+﻿namespace Swarm.Application.Config;
 
-public readonly record struct GameConfig(
+public sealed record class GameConfig(
     StageConfig StageConfig,
     LevelConfig LevelConfig,
     float PlayerRadius,

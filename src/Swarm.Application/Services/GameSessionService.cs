@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Swarm.Application.Contracts;
+using Swarm.Application.Config;
+using Swarm.Application.Primitives;
 using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
 using Swarm.Domain.Entities.Enemies;

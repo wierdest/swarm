@@ -1,6 +1,6 @@
-﻿namespace Swarm.Application.Contracts;
+﻿namespace Swarm.Application.Config;
 
-public readonly record struct LevelConfig(
+public sealed record class LevelConfig(
     WeaponConfig Weapon,
     AreaConfig PlayerAreaConfig,
     AreaConfig TargetAreaConfig,
