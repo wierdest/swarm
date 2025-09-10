@@ -1,4 +1,4 @@
-﻿namespace Swarm.Application.Contracts;
+﻿namespace Swarm.Application.Config;
 
 public readonly record struct AreaConfig(
     float X,

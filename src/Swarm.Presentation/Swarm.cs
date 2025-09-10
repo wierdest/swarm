@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Swarm.Application.Config;
 using Swarm.Application.Contracts;
-using Swarm.Application.Services;
+using Swarm.Application.Primitives;
+using Swarm.Presentation.Input;
 using Swarm.Presentation.Renderers;
 
 namespace Swarm.Presentation;
@@ -15,69 +18,61 @@ public class Swarm : Game
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
     private readonly IGameSessionService _service;
+    private readonly ILogger<Swarm> _logger;
     private readonly Dictionary<int, Texture2D> _circleCache = new();
     private float _moveSpeed = 220f;
-    private KeyboardState _prevKb;
-    private MouseState _prevMouse;
-
     private HudRenderer _hud;
     private SpriteFont _font;
+    private InputManager _input;
 
-    public Swarm()
+    public Swarm(IGameSessionService service, ILogger<Swarm> logger)
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
         _graphics.PreferredBackBufferWidth = 960;
         _graphics.PreferredBackBufferHeight = 540;
-
-        var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder
-                .AddFilter("Swarm", LogLevel.Information)
-                .AddConsole();
-        });
-
-        var logger = loggerFactory.CreateLogger<GameSessionService>();
-        _service = new GameSessionService(logger);
+        _service = service;
+        _logger = logger;
+        _input = new InputManager();
     }
 
     protected override void Initialize()
     {
         var gameConfig = new GameConfig(
-        StageConfig: new StageConfig(
-            Left: 0,
-            Top: 0,
-            Right: _graphics.PreferredBackBufferWidth,
-            Bottom: _graphics.PreferredBackBufferHeight
-        ),
-        LevelConfig: new LevelConfig(
-            Weapon: new WeaponConfig(
-                Damage: 1,
-                ProjectileSpeed: 420f,
-                ProjectileRadius: 4f,
-                RatePerSecond: 6f,
-                ProjectileLifetimeSeconds: 2.0f
+            StageConfig: new StageConfig(
+                Left: 0,
+                Top: 0,
+                Right: _graphics.PreferredBackBufferWidth,
+                Bottom: _graphics.PreferredBackBufferHeight
             ),
-            PlayerAreaConfig: new AreaConfig(X: 50, Y: 50, Radius: 20),
-            TargetAreaConfig: new AreaConfig(X: 900, Y: 500, Radius: 20),
-            Walls:
-            [
-                new(X: 200, Y: 100, Radius: 30),
-                new(X: 400, Y: 200, Radius: 30)
-            ],
-            Spawners:
-            [
-                new(X: 400, Y: 300, CooldownSeconds: 0.8f, BehaviourType: "")
-            ]
-        ),
-        PlayerRadius: 12,
-        RoundLength: 99
-    );
+            LevelConfig: new LevelConfig(
+                Weapon: new WeaponConfig(
+                    Damage: 1,
+                    ProjectileSpeed: 420f,
+                    ProjectileRadius: 4f,
+                    RatePerSecond: 6f,
+                    ProjectileLifetimeSeconds: 2.0f
+                ),
+                PlayerAreaConfig: new AreaConfig(X: 50, Y: 50, Radius: 20),
+                TargetAreaConfig: new AreaConfig(X: 900, Y: 500, Radius: 20),
+                Walls:
+                [
+                    new(X: 200, Y: 100, Radius: 30),
+                    new(X: 400, Y: 200, Radius: 30)
+                ],
+                Spawners:
+                [
+                    new(X: 400, Y: 300, CooldownSeconds: 0.8f, BehaviourType: "")
+                ]
+            ),
+            PlayerRadius: 12,
+            RoundLength: 99
+        ) ;
 
-    _service.StartNewSession(gameConfig);
+        _service.StartNewSession(gameConfig);
 
-    base.Initialize();
+        base.Initialize();
     }
 
     protected override void LoadContent()
@@ -93,32 +88,59 @@ public class Swarm : Game
 
     protected override void Update(GameTime gameTime)
     {
+        var state = _input.Update(); 
+
         var kb = Keyboard.GetState();
         if (kb.IsKeyDown(Keys.Escape)) Exit();
 
-        var mouse = Mouse.GetState();
+        var snap = _service.GetSnapshot();
 
-        float dx = (kb.IsKeyDown(Keys.Right) || kb.IsKeyDown(Keys.D) ? 1f : 0f)
-                - (kb.IsKeyDown(Keys.Left)  || kb.IsKeyDown(Keys.A) ? 1f : 0f);
-        float dy = (kb.IsKeyDown(Keys.Down)  || kb.IsKeyDown(Keys.S) ? 1f : 0f)
-                - (kb.IsKeyDown(Keys.Up)    || kb.IsKeyDown(Keys.W) ? 1f : 0f);
+        if (state.Pause)
+        {
+            if (snap.IsPaused)
+                _service.Resume();
+            else
+                _service.Pause();
+            
+            snap = _service.GetSnapshot();
+        }
 
-        _service.ApplyInput(dx, dy, (dx == 0f && dy == 0f) ? 0f : _moveSpeed);
+        if (snap.IsPaused)
+            return;
 
-        if (kb.IsKeyDown(Keys.Space) && !_prevKb.IsKeyDown(Keys.Space)) _service.Fire();
+        _service.ApplyInput(state.DirX, state.DirY, (state.DirX == 0f && state.DirY == 0f) ? 0f : _moveSpeed);
 
-        if (mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released) _service.Fire();
+        if (state.Fire) _service.Fire();
 
-        _service.RotateTowards(mouse.X, mouse.Y);
+        _service.RotateTowards(state.MouseX, state.MouseY);
 
         var dt = MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 0.05f);
         
         if (dt > 0f) _service.Tick(dt);
 
-        _prevKb = kb;
-        _prevMouse = mouse;
+        if (state.Save) _ = SaveGameAsync(new SaveName("QuickSave"));
+        if (state.Load) _ = LoadGameAsync(new SaveName("QuickSave"));
 
         base.Update(gameTime);
+    }
+
+    private async Task SaveGameAsync(SaveName saveName)
+    {
+        await _service.SaveAsync(saveName);
+        _logger.LogInformation("Game saved to {SaveName}", saveName);
+    }
+    
+    private async Task LoadGameAsync(SaveName saveName)
+    {
+        var loadedSnapshot = await _service.LoadAsync(saveName);
+        if (loadedSnapshot != null)
+        {
+            _logger.LogInformation("Game loaded from {SaveName}", saveName);
+        }
+        else
+        {
+            _logger.LogInformation("No save found with name {SaveName}", saveName);
+        }
     }
 
     protected override void Draw(GameTime gameTime)
@@ -163,11 +185,14 @@ public class Swarm : Game
 
         foreach (var p in snap.Projectiles)
             DrawCircle(new Vector2(p.X, p.Y), (int)p.Radius, Color.OrangeRed);
-        
+
         foreach (var e in snap.Enemies)
             DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, Color.Yellow);
 
         _hud.Draw(snap.Hud);
+
+        if (snap.IsPaused)
+            _spriteBatch.DrawString(_font, "PAUSED", new Vector2(400, 250), Color.White);
 
         _spriteBatch.End();
 

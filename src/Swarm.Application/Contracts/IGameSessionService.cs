@@ -1,4 +1,7 @@
-﻿namespace Swarm.Application.Contracts;
+﻿using Swarm.Application.Config;
+using Swarm.Application.Primitives;
+
+namespace Swarm.Application.Contracts;
 
 public interface IGameSessionService
 {
@@ -7,6 +10,10 @@ public interface IGameSessionService
     void Stop();
     void Fire();
     void RotateTowards(float targetX, float targetY);
+    void Pause();
+    void Resume();
     void Tick(float deltaSeconds);
     GameSnapshot GetSnapshot();
+    Task SaveAsync(SaveName saveName, CancellationToken cancellationToken = default);
+    Task<GameSnapshot?> LoadAsync(SaveName saveName, CancellationToken cancellationToken = default);
 }

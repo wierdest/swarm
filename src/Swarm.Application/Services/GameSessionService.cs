@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Swarm.Application.Contracts;
+using Swarm.Application.Config;
+using Swarm.Application.Primitives;
 using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
 using Swarm.Domain.Entities.Enemies;
@@ -16,10 +18,12 @@ using Swarm.Domain.Time;
 namespace Swarm.Application.Services;
 
 public sealed class GameSessionService(
-    ILogger<GameSessionService> logger
+    ILogger<GameSessionService> logger,
+    IGameSnapshotRepository repository
 ) : IGameSessionService
 {
     private readonly ILogger<GameSessionService> _logger = logger;
+    private readonly IGameSnapshotRepository _repository = repository;
     private GameSession? _session;
     private EnemySpawner? _spawner;
     private PlayerArea? _playerArea;
@@ -39,12 +43,12 @@ public sealed class GameSessionService(
     public void Fire() => _session?.Fire();
 
     public GameSnapshot GetSnapshot()
-        => _session is null || _playerArea is null || _targetArea is null ? default : DomainMappers.ToSnapshot(
-            _session,
-            _playerArea,
-            _targetArea
-            );
+    {
+        if (_session is null || _playerArea is null || _targetArea is null)
+            throw new InvalidOperationException("Game snapshot cannot be created before session and areas are initialized.");
 
+        return DomainMappers.ToSnapshot(_session, _playerArea, _targetArea);
+    }
 
     public void RotateTowards(float targetX, float targetY)
     {
@@ -148,15 +152,33 @@ public sealed class GameSessionService(
         }
     }
 
+    // TODO revise this usage
     public void Stop()
     {
         if (_session is null) return;
         _session.ApplyInput(Direction.From(1, 0), 0f);
     }
 
+    public void Pause()
+    {
+        if (_session is null) return;
+        _session.Pause();
+        _logger.LogInformation("Session {SessionId} paused", _session.Id);
+    }
+
+    public void Resume()
+    {
+        if (_session is null) return;
+        _session.Resume();
+        _logger.LogInformation("Session {SessionId} resumed", _session.Id);
+    }
+
     public void Tick(float deltaSeconds)
     {
         if (_session is null) return;
+
+        if (_session.IsPaused) return;  
+
         var dt = new DeltaTime(deltaSeconds);
         _playerArea?.Tick(dt);
         _targetArea?.Tick(dt);
@@ -180,6 +202,19 @@ public sealed class GameSessionService(
     private void OnTimeUpdated(GameSession session, RoundTimer secondsRemaining)
     {
         
-        _logger.LogInformation("Session {SessionId} timer: {Seconds} seconds remaining", session.Id, secondsRemaining);
+        // _logger.LogInformation("Session {SessionId} timer: {Seconds} seconds remaining", session.Id, secondsRemaining);
+    }
+
+    public async Task SaveAsync(SaveName saveName, CancellationToken cancellationToken = default)
+    {
+        if (_session is null || _playerArea is null || _targetArea is null) return;
+
+        var snapshot = DomainMappers.ToSnapshot(_session, _playerArea, _targetArea);
+        await _repository.SaveAsync(snapshot, saveName, cancellationToken);
+    }
+
+    public async Task<GameSnapshot?> LoadAsync(SaveName saveName, CancellationToken cancellationToken = default)
+    {
+        return await _repository.LoadAsync(saveName, cancellationToken);
     }
 }
