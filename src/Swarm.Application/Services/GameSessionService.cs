@@ -14,6 +14,8 @@ using Swarm.Domain.GameObjects.Spawners;
 using Swarm.Domain.GameObjects.Spawners.Behaviours;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
+using Swarm.Domain.Events;
+using Swarm.Domain.Interfaces;
 
 namespace Swarm.Application.Services;
 
@@ -97,11 +99,6 @@ public sealed class GameSessionService(
 
         _session = new GameSession(EntityId.New(), stage, player, walls, timer);
 
-        // Subscribe to events!
-        _session.LevelCompleted += OnLevelCompleted;
-        _session.TimeIsUp += OnTimeIsUp;
-        _session.TimeUpdated += OnTimeUpdated;
-
         StartSpawner(level);
         StartAreas(level);
 
@@ -172,37 +169,87 @@ public sealed class GameSessionService(
         _session.Resume();
         _logger.LogInformation("Session {SessionId} resumed", _session.Id);
     }
-
+    
     public void Tick(float deltaSeconds)
     {
         if (_session is null) return;
 
-        if (_session.IsPaused) return;  
+        if (_session.IsPaused) return;
 
         var dt = new DeltaTime(deltaSeconds);
         _playerArea?.Tick(dt);
         _targetArea?.Tick(dt);
         _spawner?.Tick(dt);
         _session.Tick(dt);
+
+        var events = _session.DomainEvents.ToList();
+        _session.ClearDomainEvents();
+        foreach (var evt in events)
+        {
+            HandleDomainEvent(evt);
+        }
+
+
     }
 
-    private void OnLevelCompleted(GameSession session)
+    private void HandleDomainEvent(IDomainEvent evt)
     {
-        Stop();
-        _logger.LogInformation("Level completed for session {SessionId}", session.Id);
-
-    }
-
-    private void OnTimeIsUp(GameSession session)
-    {
-        Stop();
-        _logger.LogInformation("Time is up for session {SessionId}", session.Id);
+        switch (evt)
+        {
+            case LevelCompletedEvent e:
+                OnLevelCompleted(e);
+                break;
+            case TimeIsUpEvent e:
+                OnTimeIsUp(e);
+                break;
+            case TimeUpdatedEvent e:
+                OnTimeUpdated(e);
+                break;
+            case EnemySpawnEvent e:
+                SpawnEnemies(e);
+                break;
+            default:
+                _logger.LogWarning("Unhandled domain event type: {EventType}", evt.GetType().Name);
+                break;
+        }
     }
     
-    private void OnTimeUpdated(GameSession session, RoundTimer secondsRemaining)
+    private void SpawnEnemies(EnemySpawnEvent evt)
     {
-        
-        // _logger.LogInformation("Session {SessionId} timer: {Seconds} seconds remaining", session.Id, secondsRemaining);
+        if (_session is null) return;
+
+        for (int i = 0; i < evt.Count; i++)
+        {
+            var newEnemy = new BasicEnemy(
+                id: EntityId.New(),
+                startPosition: evt.Position,
+                radius: new Radius(10f),
+                initialHitPoints: new HitPoints(1),
+                behaviour: new ChaseBehaviour(speed: 80f)
+            );
+
+            _session.AddEnemy(newEnemy);
+        }
+
+        _logger.LogInformation("{Count} enemies spawned at {Position}", evt.Count, evt.Position);
+    }
+
+    private void OnLevelCompleted(LevelCompletedEvent evt)
+    {
+        Stop();
+        _logger.LogInformation("Level completed for session {SessionId}", evt.SessionId);
+
+    }
+
+    private void OnTimeIsUp(TimeIsUpEvent evt)
+    {
+        Stop();
+        _logger.LogInformation("Time is up for session {SessionId}", evt.SessionId);
+    }
+    
+    private void OnTimeUpdated(TimeUpdatedEvent evt)
+    {
+        // _logger.LogInformation("Session {SessionId} timer: {Seconds} remaining", evt.SessionId, evt.Timer.SecondsRemaining);    
     }
 
     public async Task SaveAsync(SaveName saveName, CancellationToken cancellationToken = default)

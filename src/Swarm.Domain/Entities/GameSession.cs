@@ -1,4 +1,5 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Events;
 using Swarm.Domain.GameObjects;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
@@ -26,11 +27,8 @@ public sealed class GameSession(
     public List<Wall> Walls { get; } = walls;
     private bool _isLevelCompleted = false;
     public bool IsLevelCompleted => _isLevelCompleted;
-    public event Action<GameSession>? LevelCompleted;
     private RoundTimer _timer = timer;
     private float _accumulator = 0f;
-    public event Action<GameSession, RoundTimer>? TimeUpdated;
-    public event Action<GameSession>? TimeIsUp;
     private bool _isTimeUp = false;
     public bool IsTimeUp => _isTimeUp;
     public String TimeString => _timer.ToString();
@@ -38,7 +36,11 @@ public sealed class GameSession(
     public bool IsPaused => _isPaused;
     public void Pause() => _isPaused = true;
     public void Resume() => _isPaused = false;
-
+    private readonly List<IDomainEvent> _domainEvents = [];
+    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
+    private void RaiseEvent(IDomainEvent evt) => _domainEvents.Add(evt);
+    public void ClearDomainEvents() => _domainEvents.Clear();
+    
     public void CompleteLevel()
     {
         if (_isLevelCompleted)
@@ -46,7 +48,7 @@ public sealed class GameSession(
 
         _isLevelCompleted = true;
 
-        LevelCompleted?.Invoke(this);
+        RaiseEvent(new LevelCompletedEvent(Id));
     }
 
     public void ApplyInput(Direction dir, float speed) =>
@@ -60,6 +62,7 @@ public sealed class GameSession(
 
     public void RotatePlayerTowards(Vector2 target) =>
         Player.RotateTowards(target);
+
 
     public void Tick(DeltaTime dt)
     {
@@ -84,11 +87,11 @@ public sealed class GameSession(
             if (_timer.IsExpired && !_isTimeUp)
             {
                 _isTimeUp = true;
-                TimeIsUp?.Invoke(this);
+                RaiseEvent(new TimeIsUpEvent(Id));
             }
             else
             {
-                TimeUpdated?.Invoke(this, _timer);
+                RaiseEvent(new TimeUpdatedEvent(Id, _timer));
             }
 
         }
