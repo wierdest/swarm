@@ -1,9 +1,8 @@
-﻿using System.Numerics;
-using Swarm.Domain.Time;
+﻿using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Interfaces;
 
 public interface IDeathTrigger
 {
-    void OnDeath(DeltaTime dt, Vector2 position);
+    IEnumerable<IDomainEvent> OnDeath(Vector2 position);
 }
