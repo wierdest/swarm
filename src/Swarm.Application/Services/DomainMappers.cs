@@ -1,6 +1,7 @@
 ﻿using Swarm.Application.Contracts;
 using Swarm.Application.DTOs;
 using Swarm.Domain.Entities;
+using Swarm.Domain.Entities.Enemies;
 using Swarm.Domain.GameObjects;
 
 namespace Swarm.Application.Services;
@@ -24,7 +25,7 @@ static class DomainMappers
         foreach (var e in s.Enemies)
         {
             var enemyRotation = MathF.Atan2(e.Rotation.Y, e.Rotation.X);
-            enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius, enemyRotation));
+            enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius, enemyRotation, e is BossEnemy));
         }
 
         // This is just a prototype
