@@ -62,6 +62,7 @@ public sealed class Player(
 
     public void Heal(Damage damage)
     {
+        if (HP >= 100) return;
         HP = HP.Heal(damage);
     }
 
