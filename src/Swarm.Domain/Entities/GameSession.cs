@@ -1,4 +1,5 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.Events;
 using Swarm.Domain.GameObjects;
 using Swarm.Domain.Interfaces;
@@ -32,10 +33,12 @@ public sealed class GameSession(
     private bool _isTimeUp = false;
     public bool IsTimeUp => _isTimeUp;
     public String TimeString => _timer.ToString();
+
     private bool _isPaused;
     public bool IsPaused => _isPaused;
     public void Pause() => _isPaused = true;
     public void Resume() => _isPaused = false;
+
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
     private void RaiseEvent(IDomainEvent evt) => _domainEvents.Add(evt);
@@ -115,11 +118,32 @@ public sealed class GameSession(
         for (int i = 0; i < _enemies.Count; i++)
         {
             var enemy = _enemies[i];
-            if (enemy.IsDead)
-                continue;
-
             // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
             enemy.Tick(dt, Player.Position, Stage, _enemies, i);
+
+
+            if (enemy.DomainEvents is not null)
+            {
+                foreach (var evt in enemy.DomainEvents)
+                {
+                    switch (evt)
+                    {
+                        case EnemyFiredEvent fired:
+                            // here you translate intent -> add projectile(s) from the active weapon
+                            _projectiles.AddRange(fired.Projectiles);
+                            break;
+
+                        case EnemySpawnEvent spawned:
+                            RaiseEvent(spawned);
+                            break;
+                    }
+                }
+                enemy.ClearDomainEvents();
+            }
+
+             if (enemy.IsDead)
+                continue;
+
 
             foreach (var wall in Walls)
             {
@@ -131,6 +155,7 @@ public sealed class GameSession(
 
             if (Player.CollidesWith(enemy))
                 Player.TakeDamage(new Damage(1));
+            
         }
 
         _enemies.RemoveAll(e => e.IsDead);
@@ -160,22 +185,30 @@ public sealed class GameSession(
                 return true;
         }
 
-        foreach (var enemy in _enemies)
+        if (projectile.Owner == ProjectileOwnerTypes.Player)
         {
-            if (enemy.IsDead)
-                continue;
-
-            if (projectile.CollidesWith(enemy))
+            foreach (var enemy in _enemies)
             {
-                enemy.TakeDamage(projectile.Damage);
-
                 if (enemy.IsDead)
-                {
-                    _score += 1;
-                }
+                    continue;
 
-                return true;
+                if (projectile.CollidesWith(enemy))
+                {
+                    enemy.TakeDamage(projectile.Damage);
+                    if (enemy.IsDead)
+                        _score += 1;
+                    return true;
+                }
             }
+        }
+        else if (
+            projectile.Owner == ProjectileOwnerTypes.Enemy &&
+            projectile.CollidesWith(Player))
+        {
+
+            Player.TakeDamage(projectile.Damage);
+            return true;
+            
         }
         return false;
     }
