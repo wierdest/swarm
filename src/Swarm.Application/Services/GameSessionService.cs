@@ -14,6 +14,11 @@ using Swarm.Domain.GameObjects.Spawners;
 using Swarm.Domain.GameObjects.Spawners.Behaviours;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
+using Swarm.Domain.Events;
+using Swarm.Domain.Interfaces;
+using Swarm.Domain.Entities.Enemies.DeathTriggers;
+using Swarm.Domain.Common;
+using Swarm.Domain.Entities.Projectiles;
 
 namespace Swarm.Application.Services;
 
@@ -25,7 +30,7 @@ public sealed class GameSessionService(
     private readonly ILogger<GameSessionService> _logger = logger;
     private readonly IGameSnapshotRepository _repository = repository;
     private GameSession? _session;
-    private EnemySpawner? _spawner;
+    private readonly List<EnemySpawner> _spawners = new();
     private PlayerArea? _playerArea;
     private TargetArea? _targetArea;
 
@@ -84,9 +89,9 @@ public sealed class GameSessionService(
 
         var cooldown = new Cooldown(1f / weaponConfig.RatePerSecond);
 
-        var weapon = new Weapon(pattern, cooldown);
+        var playerWeapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Player);
 
-        var player = new Player(EntityId.New(), playerStart, playerRadius, weapon);
+        var player = new Player(EntityId.New(), playerStart, playerRadius, playerWeapon);
 
         var wallsDefs = level.Walls
             .Select(a => (new Vector2(a.X, a.Y), new Radius(a.Radius)));
@@ -97,12 +102,10 @@ public sealed class GameSessionService(
 
         _session = new GameSession(EntityId.New(), stage, player, walls, timer);
 
-        // Subscribe to events!
-        _session.LevelCompleted += OnLevelCompleted;
-        _session.TimeIsUp += OnTimeIsUp;
-        _session.TimeUpdated += OnTimeUpdated;
 
-        StartSpawner(level);
+        var bossWeapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
+
+        StartSpawners(level, bossWeapon);
         StartAreas(level);
 
     }
@@ -126,29 +129,55 @@ public sealed class GameSessionService(
         );
     }
 
-    private void StartSpawner(LevelConfig level)
+    private void StartSpawners(LevelConfig level, Weapon weapon)
     {
         if (_session is null) return;
+
+        _spawners.Clear();
 
         foreach (var spawnerConfig in level.Spawners)
         {
             // TODO refine SpawnerConfig to fully control Spawner Behaviour
             var spawnPos = new Vector2(spawnerConfig.X, spawnerConfig.Y);
-            _spawner = new EnemySpawner(
+            var spawnObjectType = SpawnObjectTypesExtensions.Parse(spawnerConfig.SpawnObjectType);
+            var spawner = new EnemySpawner(
                 _session,
                 new FixedPositionEnemySpawnerBehaviour(
                     position: spawnPos,
                     cooldownSeconds: spawnerConfig.CooldownSeconds,
                     enemyFactory: pos =>
-                        new BasicEnemy(
-                            id: EntityId.New(),
-                            startPosition: pos,
-                            radius: new Radius(10f),
-                            initialHitPoints: new HitPoints(1),
-                            behaviour: new ChaseBehaviour(speed: 80f)
-                        )
+                    {
+                        return spawnObjectType switch
+                        {
+                            SpawnObjectTypes.BasicEnemy => new BasicEnemy(
+                                id: EntityId.New(),
+                                startPosition: pos,
+                                radius: new Radius(10f),
+                                initialHitPoints: new HitPoints(1),
+                                behaviour: new ChaseBehaviour(speed: 80f)
+                            ),
+
+                            SpawnObjectTypes.BossEnemy => new BossEnemy(
+                                id: EntityId.New(),
+                                startPosition: pos,
+                                radius: new Radius(20f),
+                                initialHitPoints: new HitPoints(10),
+                                behaviour: new PatrolBehaviour(
+                                    waypoints: level.BossConfig.Waypoints.Select(p => new Vector2(p.X, p.Y)).ToList(),
+                                    speed: level.BossConfig.Speed,
+                                    shootRange: level.BossConfig.ShootRange,
+                                    shootCooldown: new Cooldown(level.BossConfig.Cooldown)
+                                ),
+                                weapon: weapon,
+                                deathTrigger: new SpawnMinionsDeathTrigger(4, new Radius(10f))
+                            ),
+                            _ => throw new DomainException($"Invalid spawn object type: {spawnObjectType}")
+                        };
+                    }
                 )
             );
+
+            _spawners.Add(spawner);
         }
     }
 
@@ -172,37 +201,93 @@ public sealed class GameSessionService(
         _session.Resume();
         _logger.LogInformation("Session {SessionId} resumed", _session.Id);
     }
-
+    
     public void Tick(float deltaSeconds)
     {
         if (_session is null) return;
 
-        if (_session.IsPaused) return;  
+        if (_session.IsPaused) return;
 
         var dt = new DeltaTime(deltaSeconds);
         _playerArea?.Tick(dt);
         _targetArea?.Tick(dt);
-        _spawner?.Tick(dt);
+
+        foreach (var spawner in _spawners)
+        {
+            spawner.Tick(dt);
+        }
+
         _session.Tick(dt);
+
+        var events = _session.DomainEvents.ToList();
+        _session.ClearDomainEvents();
+        foreach (var evt in events)
+        {
+            HandleDomainEvent(evt);
+        }
+
+
     }
 
-    private void OnLevelCompleted(GameSession session)
+    private void HandleDomainEvent(IDomainEvent evt)
     {
-        Stop();
-        _logger.LogInformation("Level completed for session {SessionId}", session.Id);
-
-    }
-
-    private void OnTimeIsUp(GameSession session)
-    {
-        Stop();
-        _logger.LogInformation("Time is up for session {SessionId}", session.Id);
+        switch (evt)
+        {
+            case LevelCompletedEvent e:
+                OnLevelCompleted(e);
+                break;
+            case TimeIsUpEvent e:
+                OnTimeIsUp(e);
+                break;
+            case TimeUpdatedEvent e:
+                OnTimeUpdated(e);
+                break;
+            case EnemySpawnEvent e:
+                SpawnEnemies(e);
+                break;
+            default:
+                _logger.LogWarning("Unhandled domain event type: {EventType}", evt.GetType().Name);
+                break;
+        }
     }
     
-    private void OnTimeUpdated(GameSession session, RoundTimer secondsRemaining)
+    private void SpawnEnemies(EnemySpawnEvent evt)
     {
-        
-        // _logger.LogInformation("Session {SessionId} timer: {Seconds} seconds remaining", session.Id, secondsRemaining);
+        Console.WriteLine("SPAWN ENEMIESSS!");
+        if (_session is null) return;
+
+        for (int i = 0; i < evt.SpawnPositions.Count; i++)
+        {
+            var newEnemy = new BasicEnemy(
+                id: EntityId.New(),
+                startPosition: evt.SpawnPositions[i],
+                radius: new Radius(10f),
+                initialHitPoints: new HitPoints(1),
+                behaviour: new ChaseBehaviour(speed: 120f)
+            );
+
+            _session.AddEnemy(newEnemy);
+        }
+
+        _logger.LogInformation("{Count} enemies spawned from events!", evt.SpawnPositions.Count);
+    }
+
+    private void OnLevelCompleted(LevelCompletedEvent evt)
+    {
+        Stop();
+        _logger.LogInformation("Level completed for session {SessionId}", evt.SessionId);
+
+    }
+
+    private void OnTimeIsUp(TimeIsUpEvent evt)
+    {
+        Stop();
+        _logger.LogInformation("Time is up for session {SessionId}", evt.SessionId);
+    }
+    
+    private void OnTimeUpdated(TimeUpdatedEvent evt)
+    {
+        // _logger.LogInformation("Session {SessionId} timer: {Seconds} remaining", evt.SessionId, evt.Timer.SecondsRemaining);    
     }
 
     public async Task SaveAsync(SaveName saveName, CancellationToken cancellationToken = default)

@@ -1,4 +1,6 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Entities.Weapons;
+using Swarm.Domain.Events;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
@@ -6,35 +8,42 @@ using Swarm.Domain.Time;
 
 namespace Swarm.Domain.Entities.Enemies;
 
-public sealed class BasicEnemy(
+public class BossEnemy(
     EntityId id,
     Vector2 startPosition,
     Radius radius,
     HitPoints initialHitPoints,
-    IEnemyBehaviour behaviour
+    IEnemyBehaviour behaviour,
+    Weapon weapon,
+    IDeathTrigger deathTrigger  
 ) : IEnemy
 {
     public EntityId Id { get; } = id;
-
     public HitPoints HP { get; private set; } = initialHitPoints;
-
     public bool IsDead => HP.IsZero;
-
     public Vector2 Position { get; private set; } = startPosition;
-
     private Vector2 _lastPosition = startPosition;
-
     public Radius Radius { get; } = radius;
-
     public Direction Rotation { get; private set; } = Direction.From(1, 0);
+    private readonly IEnemyBehaviour _behaviour = behaviour;
+    private readonly IDeathTrigger _deathTrigger = deathTrigger;
+    public Weapon ActiveWeapon { get; private set; } = weapon;
 
-    public IReadOnlyList<IDomainEvent>? DomainEvents => null;
+    private readonly List<IDomainEvent> _domainEvents = new();
+    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
+    private void RaiseEvent(IDomainEvent evt) => _domainEvents.Add(evt);
+    public void ClearDomainEvents() => _domainEvents.Clear();
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
 
     public void Heal(Damage damage)
     {
-        throw new NotImplementedException();
+        HP = HP.Heal(damage);
+    }
+
+    public void RevertLastMovement()
+    {
+        Position = _lastPosition;
     }
 
     public void TakeDamage(Damage damage)
@@ -44,7 +53,17 @@ public sealed class BasicEnemy(
 
     public void Tick(DeltaTime dt, Vector2 playerPosition, Bounds stage, IReadOnlyList<IEnemy> enemies, int selfIndex)
     {
-        var movement = behaviour.DecideMovement(Position, playerPosition, dt);
+        if (IsDead)
+        {
+            Console.WriteLine("SPAWN ENEMIESSS! 4");
+
+            foreach (var evt in _deathTrigger.OnDeath(Position))
+            {
+                RaiseEvent(evt);
+            }
+        }
+
+        var movement = _behaviour.DecideMovement(Position, playerPosition, dt);
 
         if (!movement.HasValue) return;
 
@@ -64,29 +83,28 @@ public sealed class BasicEnemy(
             if (distSq < minDist * minDist)
             {
                 float dist = MathF.Sqrt(distSq);
-
                 var pushDir = dist > 1e-8f ? delta / dist : Rotation.Vector;
-
                 float overlap = minDist - dist;
-
                 newPos += pushDir * overlap;
             }
         }
 
-        Rotation = Rotation.Rotated(MathF.PI * dt.Seconds);
+        var toPlayer = playerPosition - Position;
+        if (!toPlayer.IsZero())
+        {
+            Rotation = Direction.From(toPlayer.X, toPlayer.Y);
+        }
 
         _lastPosition = Position;
-
         Position = newPos;
-    }
-    
-    public void RevertLastMovement()
-    {
-        Position = _lastPosition;
-    }
+        
+        ActiveWeapon.Tick(dt);
 
-    public void ClearDomainEvents()
-    {
-        throw new NotImplementedException();
+        if (_behaviour.DecideAction(Position, playerPosition, dt) &&
+            ActiveWeapon.TryFire(Position, Rotation, out var projectiles))
+        {
+
+            RaiseEvent(new EnemyFiredEvent(Id, projectiles));
+        }
     }
 }

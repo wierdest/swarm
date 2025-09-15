@@ -8,6 +8,7 @@ using Microsoft.Xna.Framework.Input;
 using Swarm.Application.Config;
 using Swarm.Application.Contracts;
 using Swarm.Application.Primitives;
+using Swarm.Domain.GameObjects.Spawners;
 using Swarm.Presentation.Input;
 using Swarm.Presentation.Renderers;
 
@@ -16,14 +17,14 @@ namespace Swarm.Presentation;
 public class Swarm : Game
 {
     private readonly GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
+    private SpriteBatch _spriteBatch = null!;
     private readonly IGameSessionService _service;
     private readonly ILogger<Swarm> _logger;
     private readonly Dictionary<int, Texture2D> _circleCache = new();
-    private float _moveSpeed = 220f;
-    private HudRenderer _hud;
-    private SpriteFont _font;
-    private InputManager _input;
+    private readonly float _moveSpeed = 220f;
+    private HudRenderer _hud = null!;
+    private SpriteFont _font = null!;
+    private readonly InputManager _input;
 
     public Swarm(IGameSessionService service, ILogger<Swarm> logger)
     {
@@ -63,12 +64,36 @@ public class Swarm : Game
                 ],
                 Spawners:
                 [
-                    new(X: 400, Y: 300, CooldownSeconds: 0.8f, BehaviourType: "")
-                ]
+                    // new(
+                    //     X: 400,
+                    //     Y: 300, CooldownSeconds: 0.8f,
+                    //     BehaviourType: "",
+                    //     SpawnObjectType: "BasicEnemy"
+                    // ),
+
+                    new(
+                        X: 600,
+                        Y: 300, CooldownSeconds: 10.0f,
+                        BehaviourType: "",
+                        SpawnObjectType: "BossEnemy"
+                    )
+                ],
+                BossConfig: new BossConfig(
+                    Waypoints: new List<PointConfig>
+                    {
+                        new PointConfig(600, 300),
+                        new PointConfig(600, 100),
+                        new PointConfig(700, 100),
+                        new PointConfig(700, 400)
+                    },
+                    Speed: 60f,
+                    ShootRange: 250f,
+                    Cooldown: 2.0f
+                )
             ),
             PlayerRadius: 12,
             RoundLength: 99
-        ) ;
+        );
 
         _service.StartNewSession(gameConfig);
 
@@ -187,7 +212,7 @@ public class Swarm : Game
             DrawCircle(new Vector2(p.X, p.Y), (int)p.Radius, Color.OrangeRed);
 
         foreach (var e in snap.Enemies)
-            DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, Color.Yellow);
+            DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, e.IsBoss ? Color.Purple : Color.Yellow);
 
         _hud.Draw(snap.Hud);
 
