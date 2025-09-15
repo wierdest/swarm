@@ -5,5 +5,6 @@ public sealed record class LevelConfig(
     AreaConfig PlayerAreaConfig,
     AreaConfig TargetAreaConfig,
     IReadOnlyList<AreaConfig> Walls,
-    IReadOnlyList<SpawnerConfig> Spawners
+    IReadOnlyList<SpawnerConfig> Spawners,
+    BossConfig BossConfig
 );
