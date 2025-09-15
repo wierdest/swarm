@@ -28,6 +28,8 @@ public sealed class BasicEnemy(
 
     public Direction Rotation { get; private set; } = Direction.From(1, 0);
 
+    public IReadOnlyList<IDomainEvent>? DomainEvents => null;
+
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
 
     public void Heal(Damage damage)
@@ -81,5 +83,10 @@ public sealed class BasicEnemy(
     public void RevertLastMovement()
     {
         Position = _lastPosition;
+    }
+
+    public void ClearDomainEvents()
+    {
+        throw new NotImplementedException();
     }
 }
