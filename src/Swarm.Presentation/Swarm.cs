@@ -16,14 +16,14 @@ namespace Swarm.Presentation;
 public class Swarm : Game
 {
     private readonly GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
+    private SpriteBatch _spriteBatch = null!;
     private readonly IGameSessionService _service;
     private readonly ILogger<Swarm> _logger;
     private readonly Dictionary<int, Texture2D> _circleCache = new();
-    private float _moveSpeed = 220f;
-    private HudRenderer _hud;
-    private SpriteFont _font;
-    private InputManager _input;
+    private readonly float _moveSpeed = 220f;
+    private HudRenderer _hud = null!;
+    private SpriteFont _font = null!;
+    private readonly InputManager _input;
 
     public Swarm(IGameSessionService service, ILogger<Swarm> logger)
     {
