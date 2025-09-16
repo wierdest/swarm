@@ -11,7 +11,7 @@ public sealed class Player(
     EntityId id,
     Vector2 startPos,
     Radius radius,
-    Weapon weapon
+    PlayerWeapon weapon
 ) : ILivingEntity
 {
     public EntityId Id { get; } = id;
