@@ -4,6 +4,8 @@ Projeto de aprendizado feito com **.NET 8 + MonoGame**, seguindo princípios de 
 O jogo é um protótipo de shooter 2D top-down, com camadas bem organizadas: **Domain → Application → Presentation**.  
 
 ---
+# Protótipo:
+Foi feito em 3 etapas. A partir desse ponto, registramos o progresso na linha do tempo a baixo e nos próximos passos.
 
 ## ✨ Etapa 1 – Primitivos do Domínio & Core
 Começamos definindo as **bases** da camada de Domínio:
@@ -37,7 +39,7 @@ Por fim, deixamos o jogo **jogável**:
 - 🔌 **Services**: `IGameSessionService` + `GameSessionService` conectando Domain ↔ Presentation
 - 🎮 **Presentation**: loop do MonoGame (`Swarm`)  
   - Captura inputs ⌨️  
-  - Renderiza player & projéteis como círculos 🔵 🔴  
+  - Renderiza
   - Chama serviços para atualizar e disparar  
 
 Agora já é possível rodar o jogo e **mover + atirar**! 🚀
@@ -45,11 +47,20 @@ Agora já é possível rodar o jogo e **mover + atirar**! 🚀
 ---
 
 ## 🚧 Próximos Passos
-- 🔄 Rotação do jogador de acordo com a posição do mouse -- em progresso  
-- 🤝 Adicionar **detecção de colisão** (player ↔ inimigo, projétil ↔ inimigo)  
-- 🧠 Implementar **IA de inimigos e spawners**  
-- 💾 Criar **sistema de score e persistência** (Infrastructure)
+fizemos:
 
+[Screenshot Image](./screen.png)
+
+em andamento, é o Step 7, último antes de um release de algo testável...
+
+- Timer ✅
+- Score (persistence)
+- Domain Enrichment (mais behaviours firepatterns)
+- Items
+- Level design
+- Narrative (level)
+
+It is a `feature/GameState`, our last step before a testable release!
 
 ---
 
@@ -98,6 +109,41 @@ Agora já é possível rodar o jogo e **mover + atirar**! 🚀
 ### 🔹 Step 4 – Presentation (MonoGame)
 - :broom: Removendo referências desnecessárias  
 - :sparkles: Protótipo inicial de renderização com **MonoGame**
+
+### 🔹 Step 5 – Player Rotation
+- :gun: Adicionando controle de tiro com o clique, já que estamos usando o mouse  
+- :joystick: Desenhando player como um quadrado para visualizar rotação  
+- :cyclone: Capturando rotação a partir da posição do mouse  
+- :recycle: Making _session readonly  
+- :earth_africa: DomainMapper converts Direction vector to radians  
+- :joystick: PlayerDTO oferece ângulo de rotação  
+- :video_game: GameSessionService implementa IGameSessionService RotateTowards  
+- :video_game: IGameSessionService implementa RotateTowards  
+- :video_game: :bangbang: RotatePlayerTowards na GameSession! Uma mudança de domínio necessária que passou desapercebida. GameSession é o aggregate entry-point do domínio. Application vai se comunicar com ele, apenas. GameSessionService da Application é responsável pela instância.  
+- :gun: IFirePattern TryFire recebe facing  
+- :joystick: Player tem rotação  
+- :cyclone: Adicionando próximo passo, rotação do jogador  
+
+### 🔹 Step 6 – GameObject & Colisões
+- :bricks: **Walls** como collidables simples
+- :house: **PlayerArea** GameObject (respawn, cura, bloqueio de projéteis e inimigos)
+- :checkered_flag: **TargetArea** chama `session.CompleteLevel()`
+- :video_game: Colisões implementadas:
+      - Player ↔ Walls
+      - Enemies ↔ Walls
+      - Player ↔ Enemies
+      - Projectiles ↔ Walls
+      - Enemies ↔ PlayerArea
+      - Projectiles ↔ PlayerArea
+
+- :joystick: **Player** ganhou `RevertLastMovement()`
+- :space_invader: **Enemy** ganhou `RevertLastMovement()`
+
+- :recycle: Segregação clara:
+- **Entities** → auditáveis (Player, Enemy, Projectile)
+- **GameObjects** → acoplados à `GameSession` (PlayerArea, TargetArea, Walls, Spawners)q
+
+
 
 ---
 

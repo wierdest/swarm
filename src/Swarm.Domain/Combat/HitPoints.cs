@@ -26,4 +26,8 @@ public readonly record struct HitPoints
         var next = Value - amount;
         return new HitPoints(next < 0 ? 0 : next);
     }
+
+    public static implicit operator int(HitPoints hp) => hp.Value;
+    public static explicit operator HitPoints(int value) => new HitPoints(value);
+
 }
