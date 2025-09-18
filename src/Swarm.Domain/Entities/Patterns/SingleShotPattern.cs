@@ -1,9 +1,8 @@
 ﻿using Swarm.Domain.Combat;
-using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 
-namespace Swarm.Domain.Entities.Weapons.Patterns;
+namespace Swarm.Domain.Entities.Patterns;
 
 public sealed class SingleShotPattern(
     Damage damage,
@@ -12,16 +11,16 @@ public sealed class SingleShotPattern(
     float lifetime = 1.5f
 ) : IFirePattern
 {
-    public IEnumerable<Projectile> Fire(Vector2 origin, Direction facing, ProjectileOwnerTypes ownerType)
+    public IEnumerable<Projectile> Fire(Vector2 origin, Direction facing)
     {
-        var motionData = new ProjectileMotionData(origin, facing, projectileSpeed);
         yield return new Projectile(
             EntityId.New(),
-            motionData,
+            origin,
+            facing,
+            projectileSpeed,
             projectileRadius,
             damage,
-            lifetime,
-            ownerType
+            lifetime
         );
     }
 }

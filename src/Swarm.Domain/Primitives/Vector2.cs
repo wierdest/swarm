@@ -30,6 +30,4 @@ public readonly record struct Vector2(float X, float Y)
     }
 
     public static float Dot(in Vector2 a, in Vector2 b) => a.X * b.X + a.Y * b.Y;
-
-    public static float DistanceSquared(in Vector2 a, in Vector2 b) => (a - b).LengthSquared();
 }

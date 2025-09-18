@@ -1,6 +1,6 @@
-﻿namespace Swarm.Application.Config;
+﻿namespace Swarm.Application.Contracts;
 
-public sealed record class WeaponConfig(
+public readonly record struct WeaponConfig(
     int Damage,
     float ProjectileSpeed,
     float ProjectileRadius,

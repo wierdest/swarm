@@ -1,7 +1,5 @@
 ﻿using Swarm.Domain.Combat;
 using Swarm.Domain.Common;
-using Swarm.Domain.Entities.Projectiles;
-using Swarm.Domain.Interfaces;
 using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
@@ -10,18 +8,18 @@ namespace Swarm.Domain.Entities;
 
 public sealed class Projectile(
     EntityId id,
-    ProjectileMotionData motionData,
+    Vector2 position,
+    Direction direction,
+    float speed,
     Radius radius,
     Damage damage,
-    float lifetime,
-    ProjectileOwnerTypes owner
-) : ICollidable
+    float lifetime
+)
 {
     public EntityId Id { get; } = id;
-    public Vector2 Position { get; private set; } = motionData.Position;
-    public Direction Direction { get; } = motionData.Direction;
-    public float Speed { get; } = motionData.Speed;
-    public ProjectileOwnerTypes Owner { get; } = owner;
+    public Vector2 Position { get; private set; } = position;
+    public Direction Direction { get; } = direction;
+    public float Speed { get; } = speed;
     public Radius Radius { get; } = radius;
     public Damage Damage { get; } = damage;
     public float LifetimeRemaining { get; private set; } = GuardedLifetime(lifetime);
@@ -38,11 +36,5 @@ public sealed class Projectile(
         LifetimeRemaining -= dt;
     }
 
-    public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
     public bool IsExpired => LifetimeRemaining <= 0f;
-
-    public void Expire()
-    {
-        LifetimeRemaining = 0f;
-    }
 }

@@ -1,20 +1,17 @@
-﻿using Swarm.Domain.Entities.Projectiles;
-using Swarm.Domain.Interfaces;
+﻿using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities.Weapons;
+namespace Swarm.Domain.Entities;
 
-public class Weapon(
+public sealed class Weapon(
     IFirePattern pattern,
-    Cooldown cooldown,
-    ProjectileOwnerTypes ownerType
+    Cooldown cooldown
 )
 {
     public IFirePattern Pattern { get; } = pattern;
     public Cooldown Cooldown { get; private set; } = cooldown;
-    public ProjectileOwnerTypes Owner { get; private set; } = ownerType;
-    public virtual bool TryFire(Vector2 origin, Direction facing, out IEnumerable<Projectile> projectiles)
+    public bool TryFire(Vector2 origin, Direction facing, out IEnumerable<Projectile> projectiles)
     {
         Cooldown = Cooldown.ConsumeIfReady(out var fired);
         if (!fired)
@@ -22,8 +19,8 @@ public class Weapon(
             projectiles = [];
             return false;
         }
-        
-        projectiles = Pattern.Fire(origin, facing, Owner);
+
+        projectiles = Pattern.Fire(origin, facing);
         return true;
     }
 
