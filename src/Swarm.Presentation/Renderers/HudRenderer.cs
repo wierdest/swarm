@@ -19,13 +19,14 @@ public class HudRenderer(
 
     public void Draw(HudDTO hud)
     {
-        var scoreText = $"Score: {hud.Score}";
+        var scoreText = $"Enemies killed: {hud.Score}";
         var hpText = $"HP: {hud.HP}";
         var enemiesText = $"Enemies alive: {hud.NumberOfEnemiesAlive}";
+        var weaponString = hud.WeaponString;
 
         var timerText = $"Timer: {hud.Timer}";
         
-        var leftText = $"{hpText} {scoreText} {enemiesText} {timerText}";
+        var leftText = $"{hpText} {weaponString} {scoreText} {enemiesText} {timerText}";
         var leftPos = new Vector2(10, 10);
 
         var levelText = $"{hud.GameLevel}";
