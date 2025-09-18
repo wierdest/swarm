@@ -20,12 +20,14 @@ public sealed class InputManager
         bool fire = (kb.IsKeyDown(Keys.Space) && !_prevKb.IsKeyDown(Keys.Space))
                  || (mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released);
 
+        bool reload = kb.IsKeyDown(Keys.E) && ! _prevKb.IsKeyDown(Keys.E);
+
         bool pause = kb.IsKeyDown(Keys.P) && !_prevKb.IsKeyDown(Keys.P);
 
         bool save = kb.IsKeyDown(Keys.F5) && !_prevKb.IsKeyDown(Keys.F5);
         bool load = kb.IsKeyDown(Keys.F9) && !_prevKb.IsKeyDown(Keys.F9);
 
-        var state = new InputState(dx, dy, mouse.X, mouse.Y, fire, pause, save, load);
+        var state = new InputState(dx, dy, mouse.X, mouse.Y, fire, reload, pause, save, load);
 
         _prevKb = kb;
         _prevMouse = mouse;

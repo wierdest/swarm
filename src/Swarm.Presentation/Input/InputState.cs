@@ -6,6 +6,7 @@ public readonly record struct InputState(
     float MouseX,
     float MouseY,
     bool Fire,
+    bool Reload,
     bool Pause,
     bool Save,
     bool Load
