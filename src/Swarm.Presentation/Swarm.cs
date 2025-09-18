@@ -49,14 +49,16 @@ public class Swarm : Game
             ),
             LevelConfig: new LevelConfig(
                 Weapon: new WeaponConfig(
+                    Name: "oitão",
                     Damage: 1,
-                    ProjectileSpeed: 420f,
+                    ProjectileSpeed: 840f,
                     ProjectileRadius: 4f,
                     RatePerSecond: 6f,
-                    ProjectileLifetimeSeconds: 2.0f
+                    ProjectileLifetimeSeconds: 1.2f,
+                    MaxAmmo: 6
                 ),
-                PlayerAreaConfig: new AreaConfig(X: 50, Y: 50, Radius: 20),
-                TargetAreaConfig: new AreaConfig(X: 900, Y: 500, Radius: 20),
+                PlayerAreaConfig: new AreaConfig(X: 50, Y: 50, Radius: 40),
+                TargetAreaConfig: new AreaConfig(X: 900, Y: 500, Radius: 40),
                 Walls:
                 [
                     new(X: 200, Y: 100, Radius: 30),
@@ -64,12 +66,12 @@ public class Swarm : Game
                 ],
                 Spawners:
                 [
-                    // new(
-                    //     X: 400,
-                    //     Y: 300, CooldownSeconds: 0.8f,
-                    //     BehaviourType: "",
-                    //     SpawnObjectType: "BasicEnemy"
-                    // ),
+                    new(
+                        X: 400,
+                        Y: 300, CooldownSeconds: 0.8f,
+                        BehaviourType: "",
+                        SpawnObjectType: "BasicEnemy"
+                    ),
 
                     new(
                         X: 600,
@@ -136,6 +138,8 @@ public class Swarm : Game
         _service.ApplyInput(state.DirX, state.DirY, (state.DirX == 0f && state.DirY == 0f) ? 0f : _moveSpeed);
 
         if (state.Fire) _service.Fire();
+
+        if (state.Reload) _service.Reload();
 
         _service.RotateTowards(state.MouseX, state.MouseY);
 
