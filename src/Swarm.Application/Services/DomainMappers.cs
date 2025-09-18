@@ -35,7 +35,36 @@ static class DomainMappers
 
         levelStateString = s.IsTimeUp ? "TIME IS UP!!!" : levelStateString;
 
-        var hud = new HudDTO(s.Score.Value, p.HP.Value, s.TimeString, enemies.Count, levelStateString);
+        var weaponString = "";
+        if (p.ActiveWeapon is not null)
+        {
+            var w = p.ActiveWeapon;
+
+            if (w.CurrentAmmo == 0)
+            {
+                if (p.Ammo == 0)
+                {
+                    weaponString = $"{w.Name} [Find some ammo!]";
+                }
+                else
+                {
+                    weaponString = $"{w.Name} [Press E to reload] | Bullets: {p.Ammo}";
+                }
+            }
+            else
+            {
+                weaponString = $"{w.Name} {w.CurrentAmmo}/{w.MaxAmmo} | Bulllets: {p.Ammo}";
+            }
+        }
+
+        var hud = new HudDTO(
+            s.Score.Value,
+            p.HP,
+            s.TimeString,
+            enemies.Count,
+            levelStateString,
+            weaponString
+            );
 
         var walls = new List<DrawableDTO>(s.Walls.Count);
         foreach (var w in s.Walls)

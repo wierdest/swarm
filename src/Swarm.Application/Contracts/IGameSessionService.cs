@@ -9,6 +9,7 @@ public interface IGameSessionService
     void ApplyInput(float dirX, float dirY, float speed);
     void Stop();
     void Fire();
+    void Reload();
     void RotateTowards(float targetX, float targetY);
     void Pause();
     void Resume();
