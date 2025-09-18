@@ -47,6 +47,8 @@ public sealed class GameSessionService(
 
     public void Fire() => _session?.Fire();
 
+    public void Reload() => _session?.Reload();
+    
     public GameSnapshot GetSnapshot()
     {
         if (_session is null || _playerArea is null || _targetArea is null)
@@ -89,9 +91,22 @@ public sealed class GameSessionService(
 
         var cooldown = new Cooldown(1f / weaponConfig.RatePerSecond);
 
-        var playerWeapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Player);
+        var playerWeapon = new PlayerWeapon(
+            weaponConfig.Name,
+            pattern,
+            cooldown,
+            ProjectileOwnerTypes.Player,
+            weaponConfig.MaxAmmo
+        );
 
-        var player = new Player(EntityId.New(), playerStart, playerRadius, playerWeapon);
+        var player = new Player(
+            EntityId.New(),
+            playerStart,
+            playerRadius,
+            playerWeapon,
+            weaponConfig.MaxAmmo * 4
+            
+            );
 
         var wallsDefs = level.Walls
             .Select(a => (new Vector2(a.X, a.Y), new Radius(a.Radius)));
