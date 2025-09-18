@@ -1,11 +1,9 @@
-﻿using Swarm.Domain.Entities;
-using Swarm.Domain.Entities.Projectiles;
-using Swarm.Domain.Entities.Weapons;
+﻿using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain;
+namespace Swarm.Domain.Entities.Weapons;
 
 public class PlayerWeapon(
     string name,
@@ -33,6 +31,16 @@ public class PlayerWeapon(
 
         return fired;
     }
+    public void Reload(int availableAmmo, out int ammoUsed)
+    {
+        ammoUsed = 0;
 
-    public void Reload() => CurrentAmmo = MaxAmmo;
+        if (CurrentAmmo >= MaxAmmo || availableAmmo <= 0)
+            return;
+
+        int needed = MaxAmmo - CurrentAmmo;
+        ammoUsed = Math.Min(needed, availableAmmo);
+
+        CurrentAmmo += ammoUsed;
+    }
 }

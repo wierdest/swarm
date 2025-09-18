@@ -63,6 +63,16 @@ public sealed class GameSession(
             _projectiles.AddRange(projectiles);
     }
 
+    public void Reload()
+    {
+        Player.ReloadWeapon();
+    }
+
+    public void AddAmmo(int value)
+    {
+        Player.AddAmmo(value);
+    }
+
     public void RotatePlayerTowards(Vector2 target) =>
         Player.RotateTowards(target);
 
