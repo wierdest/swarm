@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\Swarm.Domain\Swarm.Domain.csproj" />
     <ProjectReference Include="..\Swarm.Application\Swarm.Application.csproj" />
   </ItemGroup>
 

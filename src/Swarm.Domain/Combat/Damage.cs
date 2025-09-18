@@ -11,8 +11,4 @@ public readonly record struct Damage
         Guard.NonNegative(value, nameof(Damage));
         Value = value;
     }
-
-    public static explicit operator Damage(int value) => new(value);
-    
-    public static implicit operator int(Damage d) => d.Value;
 }

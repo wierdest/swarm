@@ -1,171 +1,84 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Swarm.Application.Config;
 using Swarm.Application.Contracts;
-using Swarm.Application.Primitives;
-using Swarm.Domain.GameObjects.Spawners;
-using Swarm.Presentation.Input;
-using Swarm.Presentation.Renderers;
+using Swarm.Application.Services;
 
 namespace Swarm.Presentation;
 
 public class Swarm : Game
 {
     private readonly GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch = null!;
-    private readonly IGameSessionService _service;
-    private readonly ILogger<Swarm> _logger;
+    private SpriteBatch _spriteBatch;
+    private readonly IGameSessionService _service = new GameSessionService();
     private readonly Dictionary<int, Texture2D> _circleCache = new();
-    private readonly float _moveSpeed = 220f;
-    private HudRenderer _hud = null!;
-    private SpriteFont _font = null!;
-    private readonly InputManager _input;
+    private float _moveSpeed = 220f;
+    private KeyboardState _prevKb;
 
-    public Swarm(IGameSessionService service, ILogger<Swarm> logger)
+    private MouseState _prevMouse;
+
+    public Swarm()
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
         _graphics.PreferredBackBufferWidth = 960;
         _graphics.PreferredBackBufferHeight = 540;
-        _service = service;
-        _logger = logger;
-        _input = new InputManager();
     }
 
     protected override void Initialize()
     {
-        var gameConfig = new GameConfig(
-            StageConfig: new StageConfig(
-                Left: 0,
-                Top: 0,
-                Right: _graphics.PreferredBackBufferWidth,
-                Bottom: _graphics.PreferredBackBufferHeight
-            ),
-            LevelConfig: new LevelConfig(
-                Weapon: new WeaponConfig(
-                    Damage: 1,
-                    ProjectileSpeed: 420f,
-                    ProjectileRadius: 4f,
-                    RatePerSecond: 6f,
-                    ProjectileLifetimeSeconds: 2.0f
-                ),
-                PlayerAreaConfig: new AreaConfig(X: 50, Y: 50, Radius: 20),
-                TargetAreaConfig: new AreaConfig(X: 900, Y: 500, Radius: 20),
-                Walls:
-                [
-                    new(X: 200, Y: 100, Radius: 30),
-                    new(X: 400, Y: 200, Radius: 30)
-                ],
-                Spawners:
-                [
-                    // new(
-                    //     X: 400,
-                    //     Y: 300, CooldownSeconds: 0.8f,
-                    //     BehaviourType: "",
-                    //     SpawnObjectType: "BasicEnemy"
-                    // ),
-
-                    new(
-                        X: 600,
-                        Y: 300, CooldownSeconds: 10.0f,
-                        BehaviourType: "",
-                        SpawnObjectType: "BossEnemy"
-                    )
-                ],
-                BossConfig: new BossConfig(
-                    Waypoints: new List<PointConfig>
-                    {
-                        new PointConfig(600, 300),
-                        new PointConfig(600, 100),
-                        new PointConfig(700, 100),
-                        new PointConfig(700, 400)
-                    },
-                    Speed: 60f,
-                    ShootRange: 250f,
-                    Cooldown: 2.0f
-                )
-            ),
-            PlayerRadius: 12,
-            RoundLength: 99
+        var cfg = new StageConfig(
+            Left: 0, Top: 0, Right: _graphics.PreferredBackBufferWidth, Bottom: _graphics.PreferredBackBufferHeight,
+            PlayerStartX: 100, PlayerStartY: _graphics.PreferredBackBufferHeight / 2f, PlayerRadius: 12,
+            Weapon: new WeaponConfig(
+                Damage: 1,
+                ProjectileSpeed: 420f,
+                ProjectileRadius: 4f,
+                RatePerSecond: 6f,
+                ProjectileLifetimeSeconds: 2.0f
+            )
         );
-
-        _service.StartNewSession(gameConfig);
-
+        _service.StartNewSession(cfg);
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-        _font = Content.Load<SpriteFont>("DefaultFont");
-
-        _hud = new HudRenderer(_spriteBatch, _font, GraphicsDevice);
-
         base.LoadContent();
     }
 
     protected override void Update(GameTime gameTime)
     {
-        var state = _input.Update(); 
-
         var kb = Keyboard.GetState();
         if (kb.IsKeyDown(Keys.Escape)) Exit();
 
-        var snap = _service.GetSnapshot();
+        var mouse = Mouse.GetState();
 
-        if (state.Pause)
-        {
-            if (snap.IsPaused)
-                _service.Resume();
-            else
-                _service.Pause();
-            
-            snap = _service.GetSnapshot();
-        }
+        float dx = (kb.IsKeyDown(Keys.Right) || kb.IsKeyDown(Keys.D) ? 1f : 0f)
+                - (kb.IsKeyDown(Keys.Left)  || kb.IsKeyDown(Keys.A) ? 1f : 0f);
+        float dy = (kb.IsKeyDown(Keys.Down)  || kb.IsKeyDown(Keys.S) ? 1f : 0f)
+                - (kb.IsKeyDown(Keys.Up)    || kb.IsKeyDown(Keys.W) ? 1f : 0f);
 
-        if (snap.IsPaused)
-            return;
+        _service.ApplyInput(dx, dy, (dx == 0f && dy == 0f) ? 0f : _moveSpeed);
 
-        _service.ApplyInput(state.DirX, state.DirY, (state.DirX == 0f && state.DirY == 0f) ? 0f : _moveSpeed);
+        if (kb.IsKeyDown(Keys.Space) && !_prevKb.IsKeyDown(Keys.Space)) _service.Fire();
 
-        if (state.Fire) _service.Fire();
+        if (mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released) _service.Fire();
 
-        _service.RotateTowards(state.MouseX, state.MouseY);
+        _service.RotateTowards(mouse.X, mouse.Y);
 
         var dt = MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 0.05f);
         
         if (dt > 0f) _service.Tick(dt);
 
-        if (state.Save) _ = SaveGameAsync(new SaveName("QuickSave"));
-        if (state.Load) _ = LoadGameAsync(new SaveName("QuickSave"));
+        _prevKb = kb;
+        _prevMouse = mouse;
 
         base.Update(gameTime);
-    }
-
-    private async Task SaveGameAsync(SaveName saveName)
-    {
-        await _service.SaveAsync(saveName);
-        _logger.LogInformation("Game saved to {SaveName}", saveName);
-    }
-    
-    private async Task LoadGameAsync(SaveName saveName)
-    {
-        var loadedSnapshot = await _service.LoadAsync(saveName);
-        if (loadedSnapshot != null)
-        {
-            _logger.LogInformation("Game loaded from {SaveName}", saveName);
-        }
-        else
-        {
-            _logger.LogInformation("No save found with name {SaveName}", saveName);
-        }
     }
 
     protected override void Draw(GameTime gameTime)
@@ -177,47 +90,10 @@ public class Swarm : Game
 
         DrawRect(new Rectangle((int)snap.Stage.Left, (int)snap.Stage.Top, (int)(snap.Stage.Right - snap.Stage.Left), (int)(snap.Stage.Bottom - snap.Stage.Top)), new Color(20, 20, 20));
 
-        foreach (var wall in snap.Walls)
-        {
-            DrawRect(new Rectangle(
-                (int)(wall.X - wall.Radius),
-                (int)(wall.Y - wall.Radius),
-                (int)(wall.Radius * 2),
-                (int)(wall.Radius * 2)),
-                Color.Gray
-            );
-        }
-
-        var pa = snap.PlayerArea;
-        DrawRect(new Rectangle(
-            (int)(pa.X - pa.Radius),
-            (int)(pa.Y - pa.Radius),
-            (int)(pa.Radius * 2),
-            (int)(pa.Radius * 2)),
-            Color.Green * 0.5f
-        );
-
-        var ta = snap.TargetArea;
-        DrawRect(new Rectangle(
-            (int)(ta.X - ta.Radius),
-            (int)(ta.Y - ta.Radius),
-            (int)(ta.Radius * 2),
-            (int)(ta.Radius * 2)),
-            Color.OrangeRed * 0.5f
-        );
-
         DrawPlayer(new Vector2(snap.Player.X, snap.Player.Y), (int)snap.Player.Radius, snap.Player.RotationAngle, Color.DeepSkyBlue);
 
         foreach (var p in snap.Projectiles)
             DrawCircle(new Vector2(p.X, p.Y), (int)p.Radius, Color.OrangeRed);
-
-        foreach (var e in snap.Enemies)
-            DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, e.IsBoss ? Color.Purple : Color.Yellow);
-
-        _hud.Draw(snap.Hud);
-
-        if (snap.IsPaused)
-            _spriteBatch.DrawString(_font, "PAUSED", new Vector2(400, 250), Color.White);
 
         _spriteBatch.End();
 
@@ -255,18 +131,20 @@ public class Swarm : Game
     private void DrawPlayer(Vector2 pos, int radius, float rotation, Color color)
     {
         _spriteBatch.Draw(
-            Pixel,                     
-            position: pos,
+            Pixel,                     // 1x1 white
+            position: pos,             // center at player's position
             sourceRectangle: null,
             color: color,
             rotation: rotation,
-            origin: new Vector2(0.5f, 0.5f),
-            scale: new Vector2(radius * 2f, radius * 2f),
+            origin: new Vector2(0.5f, 0.5f),     // center of the 1x1 texel
+            scale: new Vector2(radius * 2f, radius * 2f), // final size in pixels
             effects: SpriteEffects.None,
             layerDepth: 0f
         );
     }
 
+
+    
     private static Texture2D? _pixel;
     private Texture2D Pixel
     {
