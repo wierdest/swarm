@@ -45,7 +45,7 @@ public sealed class GameSessionService(
         _session.ApplyInput(Direction.From(dirX, dirY), speed);
     }
 
-    public void Fire() => _session?.Fire();
+    public void Fire(bool isPressed, bool isHeld) => _session?.Fire(isPressed, isHeld);
 
     public void Reload() => _session?.Reload();
     
@@ -96,7 +96,8 @@ public sealed class GameSessionService(
             pattern,
             cooldown,
             ProjectileOwnerTypes.Player,
-            weaponConfig.MaxAmmo
+            weaponConfig.MaxAmmo,
+            WeaponTypes.SemiAutomatic
         );
 
         var player = new Player(
