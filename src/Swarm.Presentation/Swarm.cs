@@ -137,7 +137,7 @@ public class Swarm : Game
 
         _service.ApplyInput(state.DirX, state.DirY, (state.DirX == 0f && state.DirY == 0f) ? 0f : _moveSpeed);
 
-        if (state.Fire) _service.Fire();
+        _service.Fire(state.FirePressed, state.FireHeld);
 
         if (state.Reload) _service.Reload();
 

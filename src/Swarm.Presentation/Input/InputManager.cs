@@ -17,8 +17,10 @@ public sealed class InputManager
         float dy = (kb.IsKeyDown(Keys.Down) || kb.IsKeyDown(Keys.S) ? 1f : 0f)
                  - (kb.IsKeyDown(Keys.Up) || kb.IsKeyDown(Keys.W) ? 1f : 0f);
 
-        bool fire = (kb.IsKeyDown(Keys.Space) && !_prevKb.IsKeyDown(Keys.Space))
+        bool firePressed = (kb.IsKeyDown(Keys.Space) && !_prevKb.IsKeyDown(Keys.Space))
                  || (mouse.LeftButton == ButtonState.Pressed && _prevMouse.LeftButton == ButtonState.Released);
+
+        bool fireHeld = kb.IsKeyDown(Keys.Space) || mouse.LeftButton == ButtonState.Pressed;
 
         bool reload = kb.IsKeyDown(Keys.E) && ! _prevKb.IsKeyDown(Keys.E);
 
@@ -27,7 +29,7 @@ public sealed class InputManager
         bool save = kb.IsKeyDown(Keys.F5) && !_prevKb.IsKeyDown(Keys.F5);
         bool load = kb.IsKeyDown(Keys.F9) && !_prevKb.IsKeyDown(Keys.F9);
 
-        var state = new InputState(dx, dy, mouse.X, mouse.Y, fire, reload, pause, save, load);
+        var state = new InputState(dx, dy, mouse.X, mouse.Y, firePressed, fireHeld, reload, pause, save, load);
 
         _prevKb = kb;
         _prevMouse = mouse;
