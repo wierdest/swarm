@@ -57,8 +57,14 @@ public sealed class GameSession(
     public void ApplyInput(Direction dir, float speed) =>
         Player.ApplyInput(dir, speed);
 
-    public void Fire()
+    public void Fire(bool isPressed, bool isHeld)
     {
+        var weapon = Player.ActiveWeapon;
+
+        if (weapon.IsAutomatic() && !isHeld) return;
+
+        if (!weapon.IsAutomatic() && !isPressed) return;
+
         if (Player.TryFire(out var projectiles))
             _projectiles.AddRange(projectiles);
     }
