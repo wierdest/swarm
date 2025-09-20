@@ -10,12 +10,15 @@ public class PlayerWeapon(
     IFirePattern pattern,
     Cooldown cooldown,
     ProjectileOwnerTypes ownerType,
-    int maxAmmo
+    int maxAmmo,
+    WeaponTypes weaponType
 ) : Weapon(pattern, cooldown, ownerType)
 {
     public string Name { get; } = name;
     public int MaxAmmo { get; } = maxAmmo;
     public int CurrentAmmo { get; private set; } = maxAmmo;
+    public WeaponTypes Type { get; } = weaponType;
+    public bool IsAutomatic() => Type.Equals(WeaponTypes.Automatic);
 
     public override bool TryFire(Vector2 origin, Direction facing, out IEnumerable<Projectile> projectiles)
     {
