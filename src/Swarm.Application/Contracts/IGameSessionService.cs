@@ -8,7 +8,7 @@ public interface IGameSessionService
     void StartNewSession(GameConfig config);
     void ApplyInput(float dirX, float dirY, float speed);
     void Stop();
-    void Fire();
+    void Fire(bool isPressed, bool isHeld);
     void Reload();
     void RotateTowards(float targetX, float targetY);
     void Pause();
