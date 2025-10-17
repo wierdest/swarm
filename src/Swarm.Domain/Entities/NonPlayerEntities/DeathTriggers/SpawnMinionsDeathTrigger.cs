@@ -3,7 +3,7 @@ using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities.Enemies.DeathTriggers;
+namespace Swarm.Domain.Entities.NonPlayerEntities.DeathTriggers;
 
 public sealed class SpawnMinionsDeathTrigger(
     int minionCount,

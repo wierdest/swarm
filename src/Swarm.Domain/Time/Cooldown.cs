@@ -20,7 +20,7 @@ public readonly record struct Cooldown
     
     public bool IsReady => RemainingSeconds <= 0f;
 
-    public static readonly Cooldown AlwaysReady = new(0f, 0f);
+    public static readonly Cooldown AlwaysReady = new(0.1f, 0f);
 
     public Cooldown Start() => new(PeriodSeconds, PeriodSeconds);
 

@@ -4,19 +4,18 @@ using Swarm.Domain.Events;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
-using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities.Enemies;
+namespace Swarm.Domain.Entities.NonPlayerEntities;
 
 public class BossEnemy(
     EntityId id,
     Vector2 startPosition,
     Radius radius,
     HitPoints initialHitPoints,
-    IEnemyBehaviour behaviour,
+    INonPlayerEntityBehaviour behaviour,
     Weapon weapon,
-    IDeathTrigger deathTrigger  
-) : IEnemy
+    IDeathTrigger deathTrigger
+) : INonPlayerEntity
 {
     public EntityId Id { get; } = id;
     public HitPoints HP { get; private set; } = initialHitPoints;
@@ -25,7 +24,7 @@ public class BossEnemy(
     private Vector2 _lastPosition = startPosition;
     public Radius Radius { get; } = radius;
     public Direction Rotation { get; private set; } = Direction.From(1, 0);
-    private readonly IEnemyBehaviour _behaviour = behaviour;
+    private readonly INonPlayerEntityBehaviour _behaviour = behaviour;
     private readonly IDeathTrigger _deathTrigger = deathTrigger;
     public Weapon ActiveWeapon { get; private set; } = weapon;
 
@@ -51,23 +50,25 @@ public class BossEnemy(
         HP = HP.Take(damage);
     }
 
-    public void Tick(DeltaTime dt, Vector2 playerPosition, Bounds stage, IReadOnlyList<IEnemy> enemies, int selfIndex)
+    public void Tick(NonPlayerEntityContext context)
     {
         if (IsDead)
         {
-            Console.WriteLine("SPAWN ENEMIESSS! 4");
-
             foreach (var evt in _deathTrigger.OnDeath(Position))
             {
                 RaiseEvent(evt);
             }
         }
 
-        var movement = _behaviour.DecideMovement(Position, playerPosition, dt);
+        var movement = _behaviour.DecideMovement(context);
 
         if (!movement.HasValue) return;
 
-        var newPos = MovementIntegrator.Advance(Position, movement.Value.direction, movement.Value.speed, dt, stage);
+        var newPos = MovementIntegrator.Advance(Position, movement.Value.direction, movement.Value.speed, context.DeltaTime, context.Stage);
+
+        var enemies = context.Enemies;
+
+        var selfIndex = context.SelfIndex;
 
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -89,21 +90,29 @@ public class BossEnemy(
             }
         }
 
+        _lastPosition = Position;
+        Position = newPos;
+
+        LookTowardsPlayer(context.PlayerPosition);
+        Fire(context);
+    }
+    
+    private void LookTowardsPlayer(Vector2 playerPosition)
+    {
         var toPlayer = playerPosition - Position;
         if (!toPlayer.IsZero())
         {
             Rotation = Direction.From(toPlayer.X, toPlayer.Y);
         }
+    }
 
-        _lastPosition = Position;
-        Position = newPos;
-        
-        ActiveWeapon.Tick(dt);
+    private void Fire(NonPlayerEntityContext context)
+    {
+        ActiveWeapon.Tick(context.DeltaTime);
 
-        if (_behaviour.DecideAction(Position, playerPosition, dt) &&
+        if (_behaviour.DecideAction(context) &&
             ActiveWeapon.TryFire(Position, Rotation, out var projectiles))
         {
-
             RaiseEvent(new EnemyFiredEvent(Id, projectiles));
         }
     }

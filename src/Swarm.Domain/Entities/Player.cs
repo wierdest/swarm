@@ -17,13 +17,14 @@ public sealed class Player(
 {
     public EntityId Id { get; } = id;
     public Vector2 Position { get; private set; } = startPos;
-    private Vector2 _lastPosition = startPos;  
+    private Vector2 _lastPosition = startPos;
     public Radius Radius { get; } = radius;
     public PlayerWeapon ActiveWeapon { get; private set; } = weapon;
     public Direction Direction { get; private set; } = Direction.From(1, 0);
     public Direction Rotation { get; private set; } = Direction.From(1, 0);
     public float Speed { get; private set; } = 0f;
-    public HitPoints HP { get; private set; } = new(100);
+    public HitPoints HP { get; private set; } = new(10);
+    private readonly int _maxAmmo = initialAmmo;
     public int Ammo { get; private set; } = initialAmmo;
     public bool IsDead => HP.IsZero;
 
@@ -35,7 +36,7 @@ public sealed class Player(
 
     public void AddAmmo(int amount)
     {
-        if (amount > 0)
+        if (amount > 0 && Ammo < _maxAmmo)
             Ammo += amount;
     }
 
@@ -76,7 +77,7 @@ public sealed class Player(
 
     public void Heal(Damage damage)
     {
-        if (HP >= 100) return;
+        if (HP >= 10) return;
         HP = HP.Heal(damage);
     }
 
@@ -85,4 +86,5 @@ public sealed class Player(
         Position = position;
         _lastPosition = position;
     }
+
 }

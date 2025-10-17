@@ -4,15 +4,15 @@ using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities.Enemies;
+namespace Swarm.Domain.Entities.NonPlayerEntities;
 
 public sealed class BasicEnemy(
     EntityId id,
     Vector2 startPosition,
     Radius radius,
     HitPoints initialHitPoints,
-    IEnemyBehaviour behaviour
-) : IEnemy
+    INonPlayerEntityBehaviour behaviour
+) : INonPlayerEntity
 {
     public EntityId Id { get; } = id;
 
@@ -25,6 +25,8 @@ public sealed class BasicEnemy(
     private Vector2 _lastPosition = startPosition;
 
     public Radius Radius { get; } = radius;
+
+    private readonly INonPlayerEntityBehaviour _behaviour = behaviour;
 
     public Direction Rotation { get; private set; } = Direction.From(1, 0);
 
@@ -42,13 +44,18 @@ public sealed class BasicEnemy(
         HP = HP.Take(damage);
     }
 
-    public void Tick(DeltaTime dt, Vector2 playerPosition, Bounds stage, IReadOnlyList<IEnemy> enemies, int selfIndex)
+    public void Tick(NonPlayerEntityContext context)
     {
-        var movement = behaviour.DecideMovement(Position, playerPosition, dt);
+
+        var movement = _behaviour.DecideMovement(context);
 
         if (!movement.HasValue) return;
 
-        var newPos = MovementIntegrator.Advance(Position, movement.Value.direction, movement.Value.speed, dt, stage);
+        var newPos = MovementIntegrator.Advance(Position, movement.Value.direction, movement.Value.speed, context.DeltaTime, context.Stage);
+
+        var enemies = context.Enemies;
+
+        var selfIndex = context.SelfIndex;
 
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -73,7 +80,7 @@ public sealed class BasicEnemy(
             }
         }
 
-        Rotation = Rotation.Rotated(MathF.PI * dt.Seconds);
+        Rotation = Rotation.Rotated(MathF.PI * context.DeltaTime);
 
         _lastPosition = Position;
 

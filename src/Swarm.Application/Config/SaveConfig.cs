@@ -2,4 +2,4 @@
 
 namespace Swarm.Application.Config;
 
-public sealed record class SaveConfig(string BasePath) : ISaveConfig;
+public sealed record class SaveConfig(string BasePath, string EncryptionKey) : ISaveConfig;

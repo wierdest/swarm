@@ -7,5 +7,6 @@ public sealed record class SpawnerConfig(
     float Y,
     string BehaviourType,
     float CooldownSeconds,
-    string SpawnObjectType
+    string SpawnObjectType,
+    int BatchSize
 );  

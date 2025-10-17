@@ -1,4 +1,5 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.Events;
 using Swarm.Domain.GameObjects;
@@ -13,7 +14,8 @@ public sealed class GameSession(
     Bounds stage,
     Player player,
     List<Wall> walls,
-    RoundTimer timer
+    RoundTimer timer,
+    Score targetScore
 )
 {
     public EntityId Id { get; } = id;
@@ -21,10 +23,13 @@ public sealed class GameSession(
     public Player Player { get; } = player;
     private readonly List<Projectile> _projectiles = [];
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
-    private readonly List<IEnemy> _enemies = [];
-    public IReadOnlyList<IEnemy> Enemies => _enemies;
+    private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
+    public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
+    public int EnemyCount => _nonPlayerEntities.Count(e => e is BasicEnemy or BossEnemy);
     private Score _score = new();
-    public Score Score => _score;
+    public Score Score => _score;   
+    public Score TargetScore => targetScore;
+    public bool HasReachedTargetScore() => _score == TargetScore;
     public List<Wall> Walls { get; } = walls;
     private bool _isLevelCompleted = false;
     public bool IsLevelCompleted => _isLevelCompleted;
@@ -33,17 +38,19 @@ public sealed class GameSession(
     private bool _isTimeUp = false;
     public bool IsTimeUp => _isTimeUp;
     public String TimeString => _timer.ToString();
-
     private bool _isPaused;
     public bool IsPaused => _isPaused;
     public void Pause() => _isPaused = true;
     public void Resume() => _isPaused = false;
-
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
     private void RaiseEvent(IDomainEvent evt) => _domainEvents.Add(evt);
     public void ClearDomainEvents() => _domainEvents.Clear();
-    
+    public bool IsOverrun => NonPlayerEntities.Count > TargetScore;
+    private bool _isInterrupted = false;
+    public bool IsInterrupted => _isInterrupted;
+    public void Interrupt() => _isInterrupted = true;
+    public Vector2 AimPosition = new();
     public void CompleteLevel()
     {
         if (_isLevelCompleted)
@@ -79,17 +86,37 @@ public sealed class GameSession(
         Player.AddAmmo(value);
     }
 
-    public void RotatePlayerTowards(Vector2 target) =>
+    public void RotatePlayerTowards(Vector2 target)
+    {
+        AimPosition = target;
         Player.RotateTowards(target);
+    }
+
+    public void RotateTowardsRadians(float aimAngleRadians, float aimMagnitude)
+    {
+        var dir = new Vector2(
+            (float)Math.Cos(aimAngleRadians),
+            (float)Math.Sin(aimAngleRadians)
+        );
+
+        // This will eventually come from a conffig
+        const float aimRadius = 200f;
+        var center = Player.Position + new Vector2(Player.Radius.Value, Player.Radius.Value);
+
+        // Compute aim target around player
+        AimPosition = center + dir * (aimRadius * aimMagnitude);
+
+        RotatePlayerTowards(AimPosition);
+    }
 
 
     public void Tick(DeltaTime dt)
     {
-        if (_isPaused) return;
+        if (_isPaused || _isTimeUp || _isLevelCompleted) return;
 
         UpdateTimer(dt);
         UpdatePlayer(dt);
-        UpdateEnemies(dt);
+        UpdateNonPlayerEntities(dt);
         UpdateProjectiles(dt);
     }
 
@@ -129,35 +156,28 @@ public sealed class GameSession(
         }
     }
 
-    private void UpdateEnemies(DeltaTime dt)
+    private void UpdateNonPlayerEntities(DeltaTime dt)
     {
-        for (int i = 0; i < _enemies.Count; i++)
+        for (int i = 0; i < _nonPlayerEntities.Count; i++)
         {
-            var enemy = _enemies[i];
-            // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
-            enemy.Tick(dt, Player.Position, Stage, _enemies, i);
+            var enemy = _nonPlayerEntities[i];
 
+            var context = new NonPlayerEntityContext(
+                enemyPosition: enemy.Position,
+                playerPosition: Player.Position,
+                projectiles: _projectiles, // pass projectiles because of owner types
+                deltaTime: dt,
+                selfIndex: i, // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
+                enemies: _nonPlayerEntities,
+                stage: Stage,
+                hitPoints: enemy.HP
+            );
 
-            if (enemy.DomainEvents is not null)
-            {
-                foreach (var evt in enemy.DomainEvents)
-                {
-                    switch (evt)
-                    {
-                        case EnemyFiredEvent fired:
-                            // here you translate intent -> add projectile(s) from the active weapon
-                            _projectiles.AddRange(fired.Projectiles);
-                            break;
+            enemy.Tick(context);
 
-                        case EnemySpawnEvent spawned:
-                            RaiseEvent(spawned);
-                            break;
-                    }
-                }
-                enemy.ClearDomainEvents();
-            }
+            UpdateEnemyEvents(enemy);
 
-             if (enemy.IsDead)
+            if (enemy.IsDead)
                 continue;
 
 
@@ -171,10 +191,32 @@ public sealed class GameSession(
 
             if (Player.CollidesWith(enemy))
                 Player.TakeDamage(new Damage(1));
-            
+
         }
 
-        _enemies.RemoveAll(e => e.IsDead);
+        _nonPlayerEntities.RemoveAll(e => e.IsDead);
+    }
+
+    private void UpdateEnemyEvents(INonPlayerEntity enemy)
+    {
+        if (enemy.DomainEvents is null) return;
+
+        foreach (var evt in enemy.DomainEvents)
+        {
+            switch (evt)
+            {
+                case EnemyFiredEvent fired:
+                    // here you translate intent -> add projectile(s) from the active weapon
+                    _projectiles.AddRange(fired.Projectiles);
+                    break;
+
+                case EnemySpawnEvent spawned:
+                    RaiseEvent(spawned);
+                    break;
+            }
+        }
+        enemy.ClearDomainEvents();
+            
     }
 
     private void UpdateProjectiles(DeltaTime dt)
@@ -203,7 +245,7 @@ public sealed class GameSession(
 
         if (projectile.Owner == ProjectileOwnerTypes.Player)
         {
-            foreach (var enemy in _enemies)
+            foreach (var enemy in _nonPlayerEntities)
             {
                 if (enemy.IsDead)
                     continue;
@@ -212,7 +254,14 @@ public sealed class GameSession(
                 {
                     enemy.TakeDamage(projectile.Damage);
                     if (enemy.IsDead)
+                    {
                         _score += 1;
+                        if (HasReachedTargetScore())
+                        {
+                            RaiseEvent(new ReachedTargetScoreEvent(Id));
+                        }
+                    }
+              
                     return true;
                 }
             }
@@ -229,9 +278,11 @@ public sealed class GameSession(
         return false;
     }
     
-    public void AddEnemy(IEnemy enemy)
+    public void AddEnemy(INonPlayerEntity enemy)
     {
+        if (NonPlayerEntities.Count >= 666) return;
+
         if (enemy != null)
-            _enemies.Add(enemy);
+            _nonPlayerEntities.Add(enemy);
     }
 }

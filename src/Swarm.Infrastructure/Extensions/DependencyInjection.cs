@@ -6,9 +6,9 @@ namespace Swarm.Infrastructure.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddGameSnapshotJsonSaving(this IServiceCollection services)
+    public static IServiceCollection AddGamePersistence(this IServiceCollection services)
     {
-        services.AddScoped<IGameSnapshotRepository, JsonGameSnapshotRepository>();
+        services.AddScoped<ISaveGameRepository, EncryptedJsonSaveGameRepository>();
         return services;
     }
 } 
