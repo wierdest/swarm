@@ -2,5 +2,6 @@
 
 public interface ISaveConfig
 {
-    string BasePath { get;  }
+    string BasePath { get; }
+    string EncryptionKey { get; }
 }

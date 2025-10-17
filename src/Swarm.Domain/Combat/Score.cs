@@ -21,4 +21,8 @@ public readonly record struct Score
     public static Score operator +(Score score, int amount) => score.Add(amount);
 
     public override string ToString() => Value.ToString();
+
+    public static explicit operator Score(int value) => new(value);
+    
+    public static implicit operator int(Score d) => d.Value;
 }

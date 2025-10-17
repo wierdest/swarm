@@ -8,7 +8,6 @@ using Microsoft.Xna.Framework.Input;
 using Swarm.Application.Config;
 using Swarm.Application.Contracts;
 using Swarm.Application.Primitives;
-using Swarm.Domain.GameObjects.Spawners;
 using Swarm.Presentation.Input;
 using Swarm.Presentation.Renderers;
 
@@ -21,63 +20,135 @@ public class Swarm : Game
     private readonly IGameSessionService _service;
     private readonly ILogger<Swarm> _logger;
     private readonly Dictionary<int, Texture2D> _circleCache = new();
-    private readonly float _moveSpeed = 220f;
+    private readonly float _moveSpeed = 360f;
     private HudRenderer _hud = null!;
     private SpriteFont _font = null!;
     private readonly InputManager _input;
+    private GameConfig? gameConfig;
+    private RenderTarget2D _renderTarget = null!;
+    private Rectangle _drawDestination;
+    private readonly float WIDTH = 960f;
+    private readonly float HEIGHT = 540f;
+    private readonly int BORDER = 40;
+    private readonly SaveName SAVE = new("Progression");
+    private bool _iShowingSaveGames = false;
+    private SaveGameRenderer _saveGameRenderer = null!;
+
+    private CrosshairRenderer _crosshairRenderer = null!;
+    private bool _prevViewStatsKey = false;
 
     public Swarm(IGameSessionService service, ILogger<Swarm> logger)
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
-        IsMouseVisible = true;
-        _graphics.PreferredBackBufferWidth = 960;
-        _graphics.PreferredBackBufferHeight = 540;
+        IsMouseVisible = false;
+        _graphics.PreferredBackBufferWidth = (int)WIDTH;
+        _graphics.PreferredBackBufferHeight = (int)HEIGHT;
         _service = service;
         _logger = logger;
         _input = new InputManager();
+        _graphics.IsFullScreen = true;
+        _graphics.ApplyChanges();
+
+    }
+    
+    private void RecalculateDestination()
+    {
+        var screenW = GraphicsDevice.PresentationParameters.BackBufferWidth;
+        var screenH = GraphicsDevice.PresentationParameters.BackBufferHeight;
+
+        // float scaleX = screenW / WIDTH;
+        // float scaleY = screenH / HEIGHT;
+        // float scale = MathF.Min(scaleX, scaleY);
+
+        // int drawW = (int)(WIDTH * scale);
+        // int drawH = (int)(HEIGHT * scale);
+
+        int drawW = (int)WIDTH;
+        int drawH = (int)HEIGHT;
+
+        int drawX = (screenW - drawW) / 2;
+        int drawY = (screenH - drawH) / 2;
+
+        _drawDestination = new Rectangle(drawX, drawY, drawW, drawH);
     }
 
     protected override void Initialize()
     {
-        var gameConfig = new GameConfig(
+        Window.ClientSizeChanged += (_, __) => RecalculateDestination();
+
+        var outer = new Rectangle(0, 0, (int)WIDTH, (int)HEIGHT);
+        var inner = GetInnerGameRect(outer, BORDER);
+
+        gameConfig = new GameConfig(
             StageConfig: new StageConfig(
-                Left: 0,
-                Top: 0,
-                Right: _graphics.PreferredBackBufferWidth,
-                Bottom: _graphics.PreferredBackBufferHeight
+                Left: inner.Left,
+                Top: inner.Top,
+                Right: inner.Right,
+                Bottom: inner.Bottom
             ),
             LevelConfig: new LevelConfig(
                 Weapon: new WeaponConfig(
-                    Name: "oitão",
+                    Name: "",
                     Damage: 1,
                     ProjectileSpeed: 840f,
-                    ProjectileRadius: 4f,
-                    RatePerSecond: 6f,
-                    ProjectileLifetimeSeconds: 1.2f,
-                    MaxAmmo: 6
+                    ProjectileRadius: 16f,
+                    RatePerSecond: 60f,
+                    ProjectileLifetimeSeconds: 10f,
+                    MaxAmmo: 1000
                 ),
-                PlayerAreaConfig: new AreaConfig(X: 50, Y: 50, Radius: 40),
-                TargetAreaConfig: new AreaConfig(X: 900, Y: 500, Radius: 40),
+                PlayerAreaConfig: new AreaConfig(X: inner.Left + BORDER, Y: inner.Top + BORDER, Radius: 40),
+                TargetAreaConfig: new AreaConfig(X: inner.Right - BORDER, Y: inner.Bottom -BORDER, Radius: 40),
                 Walls:
                 [
-                    new(X: 200, Y: 100, Radius: 30),
-                    new(X: 400, Y: 200, Radius: 30)
-                ],
+                    new(X: 480, Y: 270, Radius:80),
+
+                ],  
                 Spawners:
                 [
                     new(
-                        X: 400,
-                        Y: 300, CooldownSeconds: 0.8f,
+                        X: 480,
+                        Y: 180,
+                        CooldownSeconds: 0.2f,
                         BehaviourType: "",
-                        SpawnObjectType: "BasicEnemy"
+                        SpawnObjectType: "BasicEnemy",
+                        BatchSize: 10
+                    ),
+
+                    new(
+                        X: 480,
+                        Y: 360,
+                        CooldownSeconds: 0.2f,
+                        BehaviourType: "",
+                        SpawnObjectType: "BasicEnemy",
+                        BatchSize: 10
+                    ),
+
+                    new(
+                        X: 398,
+                        Y: 280,
+                        CooldownSeconds: 0.2f,
+                        BehaviourType: "",
+                        SpawnObjectType: "BasicEnemy",
+                        BatchSize: 10
+                    ),
+
+                     new(
+                        X: 560,
+                        Y: 280,
+                        CooldownSeconds: 0.2f,
+                        BehaviourType: "",
+                        SpawnObjectType: "BasicEnemy",
+                        BatchSize: 10
                     ),
 
                     new(
                         X: 600,
-                        Y: 300, CooldownSeconds: 10.0f,
+                        Y: 300,
+                        CooldownSeconds: 12f,
                         BehaviourType: "",
-                        SpawnObjectType: "BossEnemy"
+                        SpawnObjectType: "BossEnemy",
+                        BatchSize: 1
                     )
                 ],
                 BossConfig: new BossConfig(
@@ -88,39 +159,63 @@ public class Swarm : Game
                         new PointConfig(700, 100),
                         new PointConfig(700, 400)
                     },
-                    Speed: 60f,
-                    ShootRange: 250f,
-                    Cooldown: 2.0f
+                    Speed: 100f,
+                    ShootRange: 600f,
+                    Cooldown: 1f,
+                    Damage: 10,
+                    ProjectileSpeed: 900f,
+                    ProjectileRadius: 6f,
+                    ProjectileRatePerSecond: 4f,
+                    ProjectileLifetimeSeconds: 2f
+
                 )
             ),
             PlayerRadius: 12,
-            RoundLength: 99
+            RoundLength: 45,
+            TargetScore: 250
         );
 
-        _service.StartNewSession(gameConfig);
+        
+        _service.StartNewSession(gameConfig).GetAwaiter().GetResult();
+
+        _spriteBatch = new SpriteBatch(GraphicsDevice);
 
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
 
         _font = Content.Load<SpriteFont>("DefaultFont");
 
         _hud = new HudRenderer(_spriteBatch, _font, GraphicsDevice);
 
+        _saveGameRenderer = new SaveGameRenderer(_spriteBatch, _font);
+
+        _crosshairRenderer = new CrosshairRenderer(_spriteBatch, GraphicsDevice);
+
+        _renderTarget = new RenderTarget2D(GraphicsDevice, (int) WIDTH, (int) HEIGHT);
+
+        RecalculateDestination();
+
         base.LoadContent();
     }
 
+    private bool IsSessionReady() => _service != null && _service.HasSession;
+    
     protected override void Update(GameTime gameTime)
     {
-        var state = _input.Update(); 
+        if (_service is null) return;
+
+        if (!IsSessionReady())
+            return;
 
         var kb = Keyboard.GetState();
         if (kb.IsKeyDown(Keys.Escape)) Exit();
 
         var snap = _service.GetSnapshot();
+
+        var state = _input.Update();
 
         if (state.Pause)
         {
@@ -128,12 +223,35 @@ public class Swarm : Game
                 _service.Resume();
             else
                 _service.Pause();
-            
+
             snap = _service.GetSnapshot();
         }
 
-        if (snap.IsPaused)
+        if (snap.IsPaused || snap.IsTimeUp || snap.IsCompleted || snap.IsInterrupted)
+        {
+            if (state.Restart) _service.Restart(gameConfig!);
+
+            if (state.ViewStats && !_prevViewStatsKey)
+            {
+                _iShowingSaveGames = !_iShowingSaveGames;
+            }
+            _prevViewStatsKey = state.ViewStats;
+
+            if (_iShowingSaveGames)
+            {
+                if (state.Left)
+                {
+                    _saveGameRenderer.PrevPage();
+
+                }
+                else if (state.Right)
+                {
+                    _saveGameRenderer.NextPage(_service.GetSaveGames());
+                }
+            }
+
             return;
+        }
 
         _service.ApplyInput(state.DirX, state.DirY, (state.DirX == 0f && state.DirY == 0f) ? 0f : _moveSpeed);
 
@@ -141,39 +259,34 @@ public class Swarm : Game
 
         if (state.Reload) _service.Reload();
 
-        _service.RotateTowards(state.MouseX, state.MouseY);
+        _service.RotateTowards(state.MouseX, state.MouseY, state.AimRadians, state.AimMagnitude);
 
         var dt = MathF.Min((float)gameTime.ElapsedGameTime.TotalSeconds, 0.05f);
-        
+
         if (dt > 0f) _service.Tick(dt);
 
-        if (state.Save) _ = SaveGameAsync(new SaveName("QuickSave"));
-        if (state.Load) _ = LoadGameAsync(new SaveName("QuickSave"));
+        // if (state.Save) _ = SaveGameAsync(new SaveName("QuickSave"));
+        // if (state.Load) _ = LoadGameAsync(new SaveName("QuickSave"));
 
         base.Update(gameTime);
     }
 
-    private async Task SaveGameAsync(SaveName saveName)
+    private async Task SaveGameAsync()
     {
-        await _service.SaveAsync(saveName);
-        _logger.LogInformation("Game saved to {SaveName}", saveName);
+        await _service.SaveAsync(SAVE);
+        _logger.LogInformation("Game saved to {SaveName}",  SAVE.Value);
     }
-    
-    private async Task LoadGameAsync(SaveName saveName)
-    {
-        var loadedSnapshot = await _service.LoadAsync(saveName);
-        if (loadedSnapshot != null)
-        {
-            _logger.LogInformation("Game loaded from {SaveName}", saveName);
-        }
-        else
-        {
-            _logger.LogInformation("No save found with name {SaveName}", saveName);
-        }
-    }
+
 
     protected override void Draw(GameTime gameTime)
     {
+        if (!IsSessionReady()) 
+        {
+            GraphicsDevice.Clear(Color.Black);
+            return;
+        }
+
+        GraphicsDevice.SetRenderTarget(_renderTarget);
         GraphicsDevice.Clear(Color.Black);
         var snap = _service.GetSnapshot();
 
@@ -198,7 +311,7 @@ public class Swarm : Game
             (int)(pa.Y - pa.Radius),
             (int)(pa.Radius * 2),
             (int)(pa.Radius * 2)),
-            Color.Green * 0.5f
+            Color.Blue
         );
 
         var ta = snap.TargetArea;
@@ -207,10 +320,10 @@ public class Swarm : Game
             (int)(ta.Y - ta.Radius),
             (int)(ta.Radius * 2),
             (int)(ta.Radius * 2)),
-            Color.OrangeRed * 0.5f
+            snap.TargetAreaIsOpenToPlayer ? Color.SeaGreen : Color.OrangeRed
         );
 
-        DrawPlayer(new Vector2(snap.Player.X, snap.Player.Y), (int)snap.Player.Radius, snap.Player.RotationAngle, Color.DeepSkyBlue);
+        DrawPlayer(new Vector2(snap.Player.X, snap.Player.Y), (int)snap.Player.Radius, snap.Player.RotationAngle, Color.IndianRed);
 
         foreach (var p in snap.Projectiles)
             DrawCircle(new Vector2(p.X, p.Y), (int)p.Radius, Color.OrangeRed);
@@ -218,11 +331,65 @@ public class Swarm : Game
         foreach (var e in snap.Enemies)
             DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, e.IsBoss ? Color.Purple : Color.Yellow);
 
+        if (snap.IsPaused || snap.IsInterrupted || snap.IsTimeUp || snap.IsCompleted)
+        {
+            string mainText = "";
+            string subText = "PRESS R TO RERUN";
+            string subSubText = "PRESS V TO VIEW SAVE GAMES";
+
+            if (snap.IsPaused) mainText = "PAUSED";
+            else if (snap.IsInterrupted) mainText = "GAME OVER";
+            else if (snap.IsTimeUp) mainText = "TIME UP";
+
+            if (!string.IsNullOrEmpty(mainText))
+            {
+                Vector2 size = _font.MeasureString(mainText);
+                Vector2 pos = new Vector2(
+                    (WIDTH - size.X) / 2f,
+                    (HEIGHT - size.Y) / 2f
+                );
+                _spriteBatch.DrawString(_font, mainText, pos, Color.White);
+            }
+
+            Vector2 mainSize = string.IsNullOrEmpty(mainText) ? Vector2.Zero : _font.MeasureString(mainText);
+
+            Vector2 subSize = _font.MeasureString(subText);
+            Vector2 subPos = new Vector2(
+                (WIDTH - subSize.X) / 2f,
+                (HEIGHT - mainSize.Y) / 2f + mainSize.Y + 10
+            );
+            _spriteBatch.DrawString(_font, subText, subPos, Color.White);
+
+            Vector2 subSubSize = _font.MeasureString(subSubText);
+            Vector2 subSubPos = new(
+                (WIDTH - subSubSize.X) / 2f,
+                subPos.Y + subSubSize.Y + 10
+            );
+            _spriteBatch.DrawString(_font, subSubText, subSubPos, Color.White);
+
+            if (_iShowingSaveGames)
+            {
+                var saves = _service.GetSaveGames();
+                _saveGameRenderer.Draw(saves);
+            }
+
+        }
+
+
+        _spriteBatch.End();
+
+        GraphicsDevice.SetRenderTarget(null);
+
+        GraphicsDevice.Clear(Color.Black);
+
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp); // PointClamp to avoid blur
+        _spriteBatch.Draw(_renderTarget, _drawDestination, Color.White);
+
+        DrawBorder(_spriteBatch, _drawDestination, BORDER, Color.Black );
+
         _hud.Draw(snap.Hud);
 
-        if (snap.IsPaused)
-            _spriteBatch.DrawString(_font, "PAUSED", new Vector2(400, 250), Color.White);
-
+        _crosshairRenderer.Draw(snap.AimPositionX, snap.AimPositionY);
         _spriteBatch.End();
 
         base.Draw(gameTime);
@@ -270,6 +437,37 @@ public class Swarm : Game
             layerDepth: 0f
         );
     }
+
+    private void DrawBorder(SpriteBatch spriteBatch, Rectangle rect, int baseThickness, Color color)
+    {
+        // Scale thickness proportional to how much the render target was scaled
+        float scale = rect.Width / WIDTH; // since WIDTH = 960, this gives your draw scale
+        int thickness = Math.Max(1, (int)(baseThickness * scale));
+
+        // Top
+        spriteBatch.Draw(Pixel, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+        // Bottom
+        spriteBatch.Draw(Pixel, new Rectangle(rect.X, rect.Y + rect.Height - thickness, rect.Width, thickness), color);
+        // Left
+        spriteBatch.Draw(Pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+        // Right
+        spriteBatch.Draw(Pixel, new Rectangle(rect.X + rect.Width - thickness, rect.Y, thickness, rect.Height), color);
+    }
+
+    private Rectangle GetInnerGameRect(Rectangle outer, int baseThickness)
+    {
+        float scale = outer.Width / WIDTH; // proportional to scaling
+        int thickness = (int)(baseThickness * scale);
+
+        return new Rectangle(
+            outer.X + thickness,
+            outer.Y + thickness,
+            outer.Width - thickness * 2,
+            outer.Height - thickness * 2
+        );
+    }
+
+
 
     private static Texture2D? _pixel;
     private Texture2D Pixel

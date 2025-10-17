@@ -5,16 +5,18 @@ namespace Swarm.Application.Contracts;
 
 public interface IGameSessionService
 {
-    void StartNewSession(GameConfig config);
+    Task StartNewSession(GameConfig config);
+    bool HasSession { get; }
     void ApplyInput(float dirX, float dirY, float speed);
-    void Stop();
     void Fire(bool isPressed, bool isHeld);
     void Reload();
-    void RotateTowards(float targetX, float targetY);
+    void RotateTowards(float mouseX, float mouseY, float? thumbstickRadians, float thumbstickMagnitude);
     void Pause();
     void Resume();
+    Task Restart(GameConfig config);
     void Tick(float deltaSeconds);
     GameSnapshot GetSnapshot();
     Task SaveAsync(SaveName saveName, CancellationToken cancellationToken = default);
-    Task<GameSnapshot?> LoadAsync(SaveName saveName, CancellationToken cancellationToken = default);
+    Task LoadAllSavesAsync(SaveName saveName, CancellationToken cancellationToken = default);
+    IReadOnlyList<SaveGame> GetSaveGames();
 }

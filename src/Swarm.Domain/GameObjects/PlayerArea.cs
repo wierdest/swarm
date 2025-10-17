@@ -13,7 +13,8 @@ public sealed class PlayerArea(
 {
     public Vector2 Position { get; } = position;
     public Radius Radius { get; } = radius;
-
+    private int _playerRespawns = 0;
+    public int PlayerRespawns => _playerRespawns;
     private readonly Damage _standardHealAmount = new(1);
 
     public override void Tick(DeltaTime dt)
@@ -23,13 +24,16 @@ public sealed class PlayerArea(
         if (player.IsDead)
         {
             player.Respawn(Position);
+            _playerRespawns++;
         }
 
         if (IsInside(player.Position))
         {
             player.Heal(_standardHealAmount);
-        }
+            player.AddAmmo(1);
 
+        }
+        
         foreach (var projectile in _session.Projectiles)
         {
             if (IsInside(projectile.Position))
@@ -38,7 +42,7 @@ public sealed class PlayerArea(
             }
         }
 
-        foreach (var enemy in _session.Enemies)
+        foreach (var enemy in _session.NonPlayerEntities)
         {
             if (IsInside(enemy.Position))
                 enemy.RevertLastMovement();

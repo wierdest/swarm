@@ -1,7 +1,7 @@
 ﻿using Swarm.Application.Contracts;
 using Swarm.Application.DTOs;
 using Swarm.Domain.Entities;
-using Swarm.Domain.Entities.Enemies;
+using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.GameObjects;
 
 namespace Swarm.Application.Services;
@@ -20,53 +20,18 @@ static class DomainMappers
         var projectiles = new List<ProjectileDTO>(s.Projectiles.Count);
         foreach (var proj in s.Projectiles)
             projectiles.Add(new ProjectileDTO(proj.Position.X, proj.Position.Y, proj.Radius));
-        
-        var enemies = new List<EnemyDTO>(s.Enemies.Count);
-        foreach (var e in s.Enemies)
+
+        var enemies = new List<EnemyDTO>(s.NonPlayerEntities.Count);
+        foreach (var e in s.NonPlayerEntities)
         {
             var enemyRotation = MathF.Atan2(e.Rotation.Y, e.Rotation.X);
             enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius, enemyRotation, e is BossEnemy));
         }
 
-        // This is just a prototype
-        var levelStateString = s.IsLevelCompleted ?
-        "A descrição do level muda quando chega na TargetArea" :
-        "Esse é o level inicial de um protótipo.";
-
-        levelStateString = s.IsTimeUp ? "TIME IS UP!!!" : levelStateString;
-
-        var weaponString = "";
-        if (p.ActiveWeapon is not null)
-        {
-            var w = p.ActiveWeapon;
-
-            if (w.CurrentAmmo == 0)
-            {
-                if (p.Ammo == 0)
-                {
-                    weaponString = $"{w.Name} [Find some ammo!]";
-                }
-                else
-                {
-                    weaponString = $"{w.Name} [Press E to reload] | Bullets: {p.Ammo}";
-                }
-            }
-            else
-            {
-                weaponString = $"{w.Name} {w.CurrentAmmo}/{w.MaxAmmo} | Bulllets: {p.Ammo}";
-            }
-        }
-
-        var hud = new HudDTO(
-            s.Score.Value,
-            p.HP,
-            s.TimeString,
-            enemies.Count,
-            levelStateString,
-            weaponString
-            );
+        var hud = ToHud(s, pA, t);
 
         var walls = new List<DrawableDTO>(s.Walls.Count);
+        
         foreach (var w in s.Walls)
         {
             walls.Add(new DrawableDTO(w.Position.X, w.Position.Y, w.Radius));
@@ -77,16 +42,73 @@ static class DomainMappers
         var targetArea = new DrawableDTO(t.Position.X, t.Position.Y, t.Radius);
 
         return new GameSnapshot(
-            stage,
-            player,
-            hud,
-            projectiles,
-            enemies,
-            walls,
-            playerArea,
-            targetArea,
-            s.IsPaused
+                stage,
+                player,
+                hud,
+                projectiles,
+                enemies,
+                walls,
+                playerArea,
+                targetArea,
+                s.IsPaused,
+                s.IsTimeUp,
+                s.IsLevelCompleted,
+                s.IsInterrupted,
+                t.IsOpenToPlayer,
+                s.AimPosition.X,
+                s.AimPosition.Y
+            );
+    }
+
+    private static Hud ToHud(GameSession s, PlayerArea pA, TargetArea t)
+    {
+        var p = s.Player;
+
+        // Level status string
+        var levelStateString =
+            s.IsLevelCompleted
+                ? "SUCCESS!"
+                : t.IsOpenToPlayer
+                    ? "Reach the green area!"
+                    : $"Kill {s.TargetScore} enemies!";
+
+        // Weapon info string
+        var weaponString = "";
+        if (p.ActiveWeapon is not null)
+        {
+            var w = p.ActiveWeapon;
+            if (w.CurrentAmmo == 0)
+            {
+                if (p.Ammo == 0)
+                    weaponString = $"{w.Name} [Find some ammo!]";
+                else
+                    weaponString = $"{w.Name} [Press E to reload] | Fuel: {p.Ammo}";
+            }
+            else
+            {
+                weaponString = $"{w.Name} {w.CurrentAmmo}/{w.MaxAmmo} | Fuel: {p.Ammo}";
+            }
+        }
+
+        return new Hud(
+            s.Score,
+            s.TargetScore,
+            p.HP,
+            pA.PlayerRespawns,
+            s.TimeString,
+            s.EnemyCount,
+            levelStateString,
+            weaponString
         );
     }
 
+   public static SaveGame ToSaveGame(GameSession s, PlayerArea pA, TargetArea t)
+    {
+        var hud = ToHud(s, pA, t);
+        
+        return new SaveGame(
+            DateTimeOffset.Now,
+            hud
+        );
+    }
 }
