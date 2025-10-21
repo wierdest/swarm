@@ -19,8 +19,6 @@ public sealed class FixedPositionEnemySpawnerBehaviour(
         {
             _timeSinceLastSpawn = 0f;
 
-
-
             return enemyFactory(position);
         }
 

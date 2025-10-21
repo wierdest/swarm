@@ -68,6 +68,30 @@ public sealed class Player(
         Position = _lastPosition;
     }
 
+    public void SlideAlongWalls(IEnumerable<ICollidable> obstacles)
+    {
+        // Compute movement delta
+        var delta = Position - _lastPosition;
+
+        foreach (var wall in obstacles)
+        {
+            var diff = Position - wall.Position;
+            var distSq = diff.LengthSquared();
+            var radiusSum = this.Radius.Value + wall.Radius.Value;
+
+            if (distSq < radiusSum * radiusSum)
+            {
+                var dist = MathF.Sqrt(distSq);
+                // Prevent divide by zero
+                var normal = dist < 1e-6f ? new Vector2(1f, 0f) : diff / dist;
+                var overlap = radiusSum - dist;
+
+                // Push player out along normal
+                Position += normal * overlap;
+            }
+        }
+    }
+
     public void TakeDamage(Damage damage)
     {
         HP = HP.Take(damage);

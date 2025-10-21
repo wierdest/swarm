@@ -95,20 +95,17 @@ public class Swarm : Game
                     ProjectileRadius: 16f,
                     RatePerSecond: 60f,
                     ProjectileLifetimeSeconds: 10f,
-                    MaxAmmo: 1000
-                ),
+                    MaxAmmo: 1000),
                 PlayerAreaConfig: new AreaConfig(X: inner.Left + BORDER, Y: inner.Top + BORDER, Radius: 40),
-                TargetAreaConfig: new AreaConfig(X: inner.Right - BORDER, Y: inner.Bottom -BORDER, Radius: 40),
+                TargetAreaConfig: new AreaConfig(X: inner.Right - BORDER, Y: inner.Bottom - BORDER, Radius: 40),
                 Walls:
                 [
                     new(X: 480, Y: 270, Radius:80),
 
-                ],  
+                ],
                 Spawners:
                 [
                     new(
-                        X: 480,
-                        Y: 180,
                         CooldownSeconds: 0.2f,
                         BehaviourType: "",
                         SpawnObjectType: "BasicEnemy",
@@ -116,8 +113,6 @@ public class Swarm : Game
                     ),
 
                     new(
-                        X: 480,
-                        Y: 360,
                         CooldownSeconds: 0.2f,
                         BehaviourType: "",
                         SpawnObjectType: "BasicEnemy",
@@ -125,8 +120,6 @@ public class Swarm : Game
                     ),
 
                     new(
-                        X: 398,
-                        Y: 280,
                         CooldownSeconds: 0.2f,
                         BehaviourType: "",
                         SpawnObjectType: "BasicEnemy",
@@ -134,8 +127,6 @@ public class Swarm : Game
                     ),
 
                      new(
-                        X: 560,
-                        Y: 280,
                         CooldownSeconds: 0.2f,
                         BehaviourType: "",
                         SpawnObjectType: "BasicEnemy",
@@ -143,8 +134,6 @@ public class Swarm : Game
                     ),
 
                     new(
-                        X: 600,
-                        Y: 300,
                         CooldownSeconds: 12f,
                         BehaviourType: "",
                         SpawnObjectType: "BossEnemy",
@@ -166,13 +155,11 @@ public class Swarm : Game
                     ProjectileSpeed: 900f,
                     ProjectileRadius: 6f,
                     ProjectileRatePerSecond: 4f,
-                    ProjectileLifetimeSeconds: 2f
-
-                )
+                    ProjectileLifetimeSeconds: 2f),
+                InitialTargetScore: 250
             ),
             PlayerRadius: 12,
-            RoundLength: 45,
-            TargetScore: 250
+            RoundLength: 45
         );
 
         
