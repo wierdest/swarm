@@ -26,11 +26,13 @@ public sealed class GameSession(
     private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
     public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
     public int EnemyCount => _nonPlayerEntities.Count(e => e is BasicEnemy or BossEnemy);
+    public bool MaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
     private Score _score = new();
     public Score Score => _score;   
     public Score TargetScore => targetScore;
     public bool HasReachedTargetScore() => _score == TargetScore;
     public List<Wall> Walls { get; } = walls;
+    public IEnumerable<Vector2> SpawnerPoints => Walls.Where(w => w.Spawners is not null).SelectMany(w => w.Spawners!);
     private bool _isLevelCompleted = false;
     public bool IsLevelCompleted => _isLevelCompleted;
     private RoundTimer _timer = timer;
@@ -147,13 +149,7 @@ public sealed class GameSession(
     {
         Player.Tick(dt, Stage);
 
-        foreach (var wall in Walls)
-        {
-            if (Player.CollidesWith(wall))
-            {
-                Player.RevertLastMovement();
-            }
-        }
+       Player.SlideAlongWalls(Walls);
     }
 
     private void UpdateNonPlayerEntities(DeltaTime dt)
@@ -278,7 +274,7 @@ public sealed class GameSession(
         return false;
     }
     
-    public void AddEnemy(INonPlayerEntity enemy)
+    public void AddNonPlayerEntity(INonPlayerEntity enemy)
     {
         if (NonPlayerEntities.Count >= 666) return;
 

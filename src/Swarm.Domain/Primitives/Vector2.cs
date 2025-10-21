@@ -19,6 +19,17 @@ public readonly record struct Vector2(float X, float Y)
         return new Vector2(X * inv, Y * inv);
     }
 
+    public static Vector2 Lerp(Vector2 a, Vector2 b, float t)
+    {
+        t = Math.Clamp(t, 0f, 1f);
+        return new Vector2(
+            a.X + (b.X - a.X) * t,
+            a.Y + (b.Y - a.Y) * t
+        );
+    }
+
+    
+
     public static Vector2 operator +(Vector2 a, Vector2 b) => new(a.X + b.X, a.Y + b.Y);
     public static Vector2 operator -(Vector2 a, Vector2 b) => new(a.X - b.X, a.Y - b.Y);
     public static Vector2 operator *(Vector2 v, float s) => new(v.X * s, v.Y * s);
