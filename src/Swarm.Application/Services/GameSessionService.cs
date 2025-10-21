@@ -21,6 +21,7 @@ using Swarm.Domain.Entities.NonPlayerEntities.Behaviours;
 using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.Entities.NonPlayerEntities.Behaviours.Strategies;
 using Swarm.Domain.Entities.NonPlayerEntities.DeathTriggers;
+using Swarm.Domain.Factories.Strategies;
 
 namespace Swarm.Application.Services;
 
@@ -32,12 +33,18 @@ public sealed class GameSessionService(
     private readonly ILogger<GameSessionService> _logger = logger ?? new NullLogger<GameSessionService>();
     private readonly ISaveGameRepository _repository = repository;
     private GameSession? _session;
-    private readonly List<EnemySpawner> _spawners = new();
+    private readonly List<NonPlayerEntitySpawner> _spawners = new();
     private PlayerArea? _playerArea;
-    private TargetArea? _targetArea;
+    private TargetArea? _targetArea; 
     private readonly object _savesLock = new();
     private List<SaveGame> _allSaves = [];
     private Vector2 _crosshairs = new();
+
+    private readonly static int FINAL_TARGET_SCORE = 800;
+    private readonly static int TARGET_SCORE_INCREMENT = 125;
+
+    private bool _hasReachedAlpha = false;
+
 
     // thread safe, because saving may be done in multithreading later on???
     private IReadOnlyList<SaveGame> AllSaves
@@ -113,6 +120,7 @@ public sealed class GameSessionService(
 
     public async Task StartNewSession(GameConfig config)
     {
+        // TODO Domain mapper deals with this:
         var level = config.LevelConfig;
 
         var stageConfig = config.StageConfig;
@@ -154,23 +162,45 @@ public sealed class GameSessionService(
             playerRadius,
             playerWeapon,
             weaponConfig.MaxAmmo * 4
+        );
 
-            );
-
-        var wallsDefs = level.Walls
-            .Select(a => (new Vector2(a.X, a.Y), new Radius(a.Radius)));
-
-        var walls = WallFactory.CreateWalls(wallsDefs).ToList();
-
-        var timer = new RoundTimer(config.RoundLength);
-
+        // Loads narrative! 
         await LoadAllSavesAsync(new SaveName("Progression"));
 
         int targetScoreValue = LatestCachedSave?.Hud.TargetScore is int prevTarget
             ? GetLevelTestTargetScore(prevTarget)
-            : config.TargetScore;
+            : level.InitialTargetScore;
 
         var targetScore = new Score(targetScoreValue);
+
+        var phaseALevel = targetScore.Value.Equals(FINAL_TARGET_SCORE);
+
+        _logger.LogInformation("Phase A Level? {}", phaseALevel.ToString());
+
+        if (!_hasReachedAlpha && phaseALevel)
+        {
+            targetScore = new Score(level.InitialTargetScore);
+            _hasReachedAlpha = true;
+        }
+
+        var walls = WallFactory.CreateVoronoiWalls(
+            start: playerStart,
+            end: new Vector2(level.TargetAreaConfig.X, level.TargetAreaConfig.Y),
+            levelBounds: stage,
+            wallRadius: 40f,
+            seedCount: phaseALevel ? 7 : 3
+
+        ).ToList();
+
+        var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
+        foreach (var wall in walls)
+        {
+            wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, stage);
+        }
+
+        
+        var timer = new RoundTimer(config.RoundLength);
+
 
         _session = new GameSession(EntityId.New(), stage, player, walls, timer, targetScore);
 
@@ -183,9 +213,9 @@ public sealed class GameSessionService(
 
     private static int GetLevelTestTargetScore(int prevTarget)
     {
-        var next = prevTarget + 125;
-        var limit = 800;
-        return next > limit ? limit : next;
+        var next = prevTarget + TARGET_SCORE_INCREMENT;
+
+        return next > FINAL_TARGET_SCORE ? FINAL_TARGET_SCORE : next;
     }
 
     private void StartAreas(LevelConfig level)
@@ -226,10 +256,22 @@ public sealed class GameSessionService(
 
         _spawners.Clear();
 
+        var spawnerPositions = _session.SpawnerPoints.ToList();
+        var random = new Random();
+
         foreach (var spawnerConfig in level.Spawners)
         {
-            // TODO refine SpawnerConfig to fully control Spawner Behaviour
-            var spawnPos = new Vector2(spawnerConfig.X, spawnerConfig.Y);
+
+            if (spawnerPositions.Count == 0)
+                throw new DomainException("No available spawner positions left!");
+
+            // Pick a random position
+            var index = random.Next(spawnerPositions.Count);
+            var spawnPos = spawnerPositions[index];
+
+            // Remove it from the available pool
+            spawnerPositions.RemoveAt(index);
+
             var spawnObjectType = SpawnObjectTypesExtensions.Parse(spawnerConfig.SpawnObjectType);
 
             // TODO behaviour factory
@@ -272,7 +314,7 @@ public sealed class GameSessionService(
                                     )
                                 );
 
-            var spawner = new EnemySpawner(
+            var spawner = new NonPlayerEntitySpawner(
                 _session,
                 new FixedPositionEnemySpawnerBehaviour(
                     position: spawnPos,
@@ -401,8 +443,7 @@ public sealed class GameSessionService(
         if (_targetArea is null) return;
 
         _targetArea.OpenToPlayer();
-        _ = SaveAsync(new SaveName("Progression"));
-        _logger.LogInformation("Game saved after reaching target score for session {SessionId}.", evt.SessionId);
+       
     }
 
     private void OnEnemySpawn(EnemySpawnEvent evt)
@@ -427,7 +468,7 @@ public sealed class GameSessionService(
                 )
             );
 
-            _session.AddEnemy(newEnemy);
+            _session.AddNonPlayerEntity(newEnemy);
         }
 
         // _logger.LogInformation("{Count} enemies spawned from events!", evt.SpawnPositions.Count);
@@ -436,6 +477,8 @@ public sealed class GameSessionService(
     private void OnLevelCompleted(LevelCompletedEvent evt)
     {
         _logger.LogInformation("Level completed for session {SessionId}", evt.SessionId);
+         _ = SaveAsync(new SaveName("Progression"));
+        _logger.LogInformation("Game saved after reaching target score for session {SessionId}.", evt.SessionId);
 
     }
 
