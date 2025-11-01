@@ -1,4 +1,6 @@
-﻿namespace Swarm.Application.Contracts;
+﻿using System.Diagnostics;
+
+namespace Swarm.Application.Contracts;
 
 public record class Hud(
     int Score,
@@ -8,7 +10,8 @@ public record class Hud(
     string Timer,
     int NumberOfEnemiesAlive,
     string LevelString,
-    string WeaponString
+    string WeaponString,
+    string BombString
 )
 {
     public string ToDisplayString()
