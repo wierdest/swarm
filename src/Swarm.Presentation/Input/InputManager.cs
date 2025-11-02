@@ -40,6 +40,10 @@ public sealed class InputManager
             mouse.LeftButton == ButtonState.Pressed ||
             pad.Triggers.Right > 0.3f;
 
+        bool dropBomb =
+              JustPressed(Keys.Q, kb, _prevKb) ||
+              JustPressed(Buttons.A, pad, _prevPad);
+
         bool reload =
               JustPressed(Keys.E, kb, _prevKb) ||
               JustPressed(Buttons.X, pad, _prevPad);
@@ -92,6 +96,7 @@ public sealed class InputManager
             _aimMagnitude,
             firePressed,
             fireHeld,
+            dropBomb,
             reload,
             pause,
             false,

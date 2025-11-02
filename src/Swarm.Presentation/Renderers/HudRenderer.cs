@@ -15,6 +15,9 @@ public class HudRenderer(
 
     private readonly SpriteFont _font = font;
 
+    private readonly static string _pauseHint = "Press P to PAUSE";
+    private readonly static string _exitHint = "Press ESC to EXIT";
+
     private readonly GraphicsDevice _graphicsDevice = graphicsDevice;
 
     public void Draw(Hud hud)
@@ -28,19 +31,23 @@ public class HudRenderer(
         var rightPos = new Vector2(_graphicsDevice.Viewport.Width - rightTextSize.X - 10, 10);
         _spriteBatch.DrawString(_font, levelText, rightPos, Color.White);
 
-        string pauseHint = "Press P to PAUSE";
-        string exitHint = "Press ESC to EXIT";
 
-        Vector2 pauseSize = _font.MeasureString(pauseHint);
-        Vector2 exitSize = _font.MeasureString(exitHint);
+        var bombText = hud.BombString;
+        var bombTextSize = _font.MeasureString(bombText);
+        float screenCenterX = _graphicsDevice.Viewport.Width / 2f;
+        float bottomY = _graphicsDevice.Viewport.Height - bombTextSize.Y - 10;
+        Vector2 bombPos = new(screenCenterX - bombTextSize.X / 2f, bottomY);
+        _spriteBatch.DrawString(_font, bombText, bombPos, Color.White);
 
-        Vector2 pausePos = new Vector2(10, _graphicsDevice.Viewport.Height - pauseSize.Y - 10);
-
-        Vector2 exitPos = new Vector2(_graphicsDevice.Viewport.Width - exitSize.X - 10,
-                                    _graphicsDevice.Viewport.Height - exitSize.Y - 10);
-
-        _spriteBatch.DrawString(_font, pauseHint, pausePos, Color.White);
-        _spriteBatch.DrawString(_font, exitHint, exitPos, Color.White);
+        Vector2 pauseSize = _font.MeasureString(_pauseHint);
+        Vector2 pausePos = new(10, _graphicsDevice.Viewport.Height - pauseSize.Y - 10);
+        _spriteBatch.DrawString(_font, _pauseHint, pausePos, Color.White);
+        
+        Vector2 exitSize = _font.MeasureString(_exitHint);
+        Vector2 exitPos = new(
+            _graphicsDevice.Viewport.Width - exitSize.X - 10,
+            _graphicsDevice.Viewport.Height - exitSize.Y - 10);
+        _spriteBatch.DrawString(_font, _exitHint, exitPos, Color.White);
 
     }
     
