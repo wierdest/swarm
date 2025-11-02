@@ -244,6 +244,8 @@ public class Swarm : Game
 
         _service.Fire(state.FirePressed, state.FireHeld);
 
+        if (state.DropBomb) _service.DropBomb();
+
         if (state.Reload) _service.Reload();
 
         _service.RotateTowards(state.MouseX, state.MouseY, state.AimRadians, state.AimMagnitude);
