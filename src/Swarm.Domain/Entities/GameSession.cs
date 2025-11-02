@@ -37,6 +37,7 @@ public sealed class GameSession(
     public Score ScoreBonus => (Score)(HasReachedTargetScore() ? _score - targetScore : 0);
     public bool HasReachedTargetScore() => _score >= TargetScore;
     private readonly List<Bomb> _bombs = bombs;
+    public IReadOnlyList<Bomb> Bombs => _bombs;
     public Score BombCount => new(_bombs.Count);
     public void AddBomb(Bomb bomb) => _bombs.Add(bomb);
 
@@ -141,7 +142,11 @@ public sealed class GameSession(
             var bomb = _bombs[^1];
             bomb.Tick(dt);
 
-            _isWaitingForBombCooldown = bomb.IsReady;
+            if (bomb.IsReady)
+            {
+                _isWaitingForBombCooldown = false;
+                _bombs.Remove(bomb);
+            }
         }
         else
         {
