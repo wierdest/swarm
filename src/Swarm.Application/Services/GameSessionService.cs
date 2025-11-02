@@ -22,6 +22,9 @@ using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.Entities.NonPlayerEntities.Behaviours.Strategies;
 using Swarm.Domain.Entities.NonPlayerEntities.DeathTriggers;
 using Swarm.Domain.Factories.Strategies;
+using Swarm.Application.DTOs;
+using System.Linq;
+using Swarm.Domain.Factories.Evaluators;
 
 namespace Swarm.Application.Services;
 
@@ -118,6 +121,8 @@ public sealed class GameSessionService(
         _session.RotatePlayerTowards(_crosshairs);
     }
 
+    public void DropBomb() => _session?.DropBomb();
+
     public async Task StartNewSession(GameConfig config)
     {
         // TODO Domain mapper deals with this:
@@ -168,9 +173,10 @@ public sealed class GameSessionService(
         await LoadAllSavesAsync(new SaveName("Progression"));
 
         int targetScoreValue = LatestCachedSave?.Hud.TargetScore is int prevTarget
-            ? GetLevelTestTargetScore(prevTarget)
+            ? GetLevelTargetScore(prevTarget)
             : level.InitialTargetScore;
 
+        
         var targetScore = new Score(targetScoreValue);
 
         var phaseALevel = targetScore.Value.Equals(FINAL_TARGET_SCORE);
@@ -189,7 +195,7 @@ public sealed class GameSessionService(
             levelBounds: stage,
             wallRadius: 40f,
             seedCount: phaseALevel ? 7 : 3
-
+ 
         ).ToList();
 
         var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
@@ -197,12 +203,15 @@ public sealed class GameSessionService(
         {
             wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, stage);
         }
-
-        
         var timer = new RoundTimer(config.RoundLength);
 
+        var bombs = LatestCachedSave?.Bombs
+            .Select(b => new Bomb(b.Identifier, new Cooldown(b.CooldownSeconds)))
+            .ToList()
+            ?? [];
 
-        _session = new GameSession(EntityId.New(), stage, player, walls, timer, targetScore);
+        
+        _session = new GameSession(EntityId.New(), stage, player, walls, timer, targetScore, bombs);
 
         StartSpawners(level);
         StartAreas(level);
@@ -211,12 +220,13 @@ public sealed class GameSessionService(
 
     }
 
-    private static int GetLevelTestTargetScore(int prevTarget)
+    private static int GetLevelTargetScore(int prevTarget)
     {
         var next = prevTarget + TARGET_SCORE_INCREMENT;
 
         return next > FINAL_TARGET_SCORE ? FINAL_TARGET_SCORE : next;
     }
+
 
     private void StartAreas(LevelConfig level)
     {
@@ -392,6 +402,8 @@ public sealed class GameSessionService(
 
         foreach (var spawner in _spawners)
         {
+            if (_session.IsWaitingForBombCooldown) continue;
+            
             spawner.Tick(dt);
         }
 
@@ -484,7 +496,7 @@ public sealed class GameSessionService(
 
     private void OnTimeIsUp(TimeIsUpEvent evt)
     {
-
+        _ = SaveAsync(new SaveName("Progression"));        
         _logger.LogInformation("Time is up for session {SessionId}", evt.SessionId);
     }
 

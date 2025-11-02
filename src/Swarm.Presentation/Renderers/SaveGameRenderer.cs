@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Swarm.Application;
+using Swarm.Application.Contracts;
 
 namespace Swarm.Presentation.Renderers;
 

@@ -15,7 +15,9 @@ public sealed class GameSession(
     Player player,
     List<Wall> walls,
     RoundTimer timer,
-    Score targetScore
+    Score targetScore,
+    // TODO start from 
+    List<Bomb> bombs
 )
 {
     public EntityId Id { get; } = id;
@@ -25,12 +27,31 @@ public sealed class GameSession(
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
     private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
     public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
-    public int EnemyCount => _nonPlayerEntities.Count(e => e is BasicEnemy or BossEnemy);
+    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is BasicEnemy or BossEnemy));
+    public Score EnemyPopulation => new(EnemyCount + _score);
+    public Score BossEnemyCount => new(_nonPlayerEntities.Count(e => e is BossEnemy));
     public bool MaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
     private Score _score = new();
-    public Score Score => _score;   
+    public Score Score => _score;
     public Score TargetScore => targetScore;
-    public bool HasReachedTargetScore() => _score == TargetScore;
+    public Score ScoreBonus => (Score)(HasReachedTargetScore() ? _score - targetScore : 0);
+    public bool HasReachedTargetScore() => _score >= TargetScore;
+    private readonly List<Bomb> _bombs = bombs;
+    public IReadOnlyList<Bomb> Bombs => _bombs;
+    public Score BombCount => new(_bombs.Count);
+    public void AddBomb(Bomb bomb) => _bombs.Add(bomb);
+
+    private bool _isWaitingForBombCooldown = false;
+    public bool IsWaitingForBombCooldown => _isWaitingForBombCooldown;
+    public void DropBomb()
+    {
+        _nonPlayerEntities.ForEach(e => e.Die());
+        ((ILivingEntity)Player).Die();
+        _bombs.Last().Start();
+        _isWaitingForBombCooldown = true;
+    }
+
+
     public List<Wall> Walls { get; } = walls;
     public IEnumerable<Vector2> SpawnerPoints => Walls.Where(w => w.Spawners is not null).SelectMany(w => w.Spawners!);
     private bool _isLevelCompleted = false;
@@ -116,7 +137,22 @@ public sealed class GameSession(
     {
         if (_isPaused || _isTimeUp || _isLevelCompleted) return;
 
-        UpdateTimer(dt);
+        if (_isWaitingForBombCooldown)
+        {
+            var bomb = _bombs[^1];
+            bomb.Tick(dt);
+
+            if (bomb.IsReady)
+            {
+                _isWaitingForBombCooldown = false;
+                _bombs.Remove(bomb);
+            }
+        }
+        else
+        {
+            UpdateTimer(dt);
+        }
+        
         UpdatePlayer(dt);
         UpdateNonPlayerEntities(dt);
         UpdateProjectiles(dt);

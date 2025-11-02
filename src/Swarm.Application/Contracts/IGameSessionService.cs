@@ -9,6 +9,7 @@ public interface IGameSessionService
     bool HasSession { get; }
     void ApplyInput(float dirX, float dirY, float speed);
     void Fire(bool isPressed, bool isHeld);
+    void DropBomb();
     void Reload();
     void RotateTowards(float mouseX, float mouseY, float? thumbstickRadians, float thumbstickMagnitude);
     void Pause();

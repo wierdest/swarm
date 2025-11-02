@@ -1,7 +1,7 @@
 ﻿using Swarm.Domain.GameObjects;
 using Swarm.Domain.Primitives;
 
-namespace Swarm.Domain.Factories.Algorithms;
+namespace Swarm.Domain.Factories.Generators;
 
 public static class VoronoiWallGenerator
 {
