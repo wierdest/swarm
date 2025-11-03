@@ -27,9 +27,9 @@ public sealed class GameSession(
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
     private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
     public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
-    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is BasicEnemy or BossEnemy));
+    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is Minion or Boss));
     public Score EnemyPopulation => new(EnemyCount + _score);
-    public Score BossEnemyCount => new(_nonPlayerEntities.Count(e => e is BossEnemy));
+    public Score BossEnemyCount => new(_nonPlayerEntities.Count(e => e is Boss));
     public bool MaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
     private Score _score = new();
     public Score Score => _score;
@@ -195,12 +195,12 @@ public sealed class GameSession(
             var enemy = _nonPlayerEntities[i];
 
             var context = new NonPlayerEntityContext(
-                enemyPosition: enemy.Position,
+                position: enemy.Position,
                 playerPosition: Player.Position,
                 projectiles: _projectiles, // pass projectiles because of owner types
                 deltaTime: dt,
                 selfIndex: i, // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
-                enemies: _nonPlayerEntities,
+                others: _nonPlayerEntities,
                 stage: Stage,
                 hitPoints: enemy.HP
             );

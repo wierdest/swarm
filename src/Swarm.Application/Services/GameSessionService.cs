@@ -333,19 +333,19 @@ public sealed class GameSessionService(
                     {
                         return spawnObjectType switch
                         {
-                            SpawnObjectTypes.BasicEnemy => new BasicEnemy(
+                            SpawnObjectTypes.BasicEnemy => new Minion(
                                 id: EntityId.New(),
                                 startPosition: pos,
                                 radius: new Radius(10f),
-                                initialHitPoints: new HitPoints(1),
+                                hp: new HitPoints(1),
                                 behaviour: chaseBehaviour
                             ),
 
-                            SpawnObjectTypes.BossEnemy => new BossEnemy(
+                            SpawnObjectTypes.BossEnemy => new Boss(
                                 id: EntityId.New(),
                                 startPosition: pos,
                                 radius: new Radius(12f),
-                                initialHitPoints: new HitPoints(10),
+                                hp: new HitPoints(10),
                                 behaviour: chaseShootBehaviour,
                                 weapon: weapon,
                                 deathTrigger: new SpawnMinionsDeathTrigger(4, new Radius(10f))
@@ -464,11 +464,11 @@ public sealed class GameSessionService(
 
         for (int i = 0; i < evt.SpawnPositions.Count; i++)
         {
-            var newEnemy = new BasicEnemy(
+            var newEnemy = new Minion(
                 id: EntityId.New(),
                 startPosition: evt.SpawnPositions[i],
                 radius: new Radius(10f),
-                initialHitPoints: new HitPoints(1),
+                hp: new HitPoints(1),
                 behaviour: new ChaseBehaviour(
                     speed: 120f,
                     actionStrategy: null,
