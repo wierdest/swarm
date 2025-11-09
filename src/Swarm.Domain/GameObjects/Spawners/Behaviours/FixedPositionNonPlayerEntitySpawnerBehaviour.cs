@@ -3,10 +3,10 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.GameObjects.Spawners.Behaviours;
 
-public sealed class FixedPositionEnemySpawnerBehaviour(
+public sealed class FixedPositionNonPlayerEntitySpawnerBehaviour(
     Vector2 position,
     float cooldownSeconds,
-    Func<Vector2, INonPlayerEntity> enemyFactory
+    Func<Vector2, INonPlayerEntity> entityFactory
 ) : ISpawnerBehaviour<INonPlayerEntity>
 {
     private float _timeSinceLastSpawn = 0f;
@@ -19,7 +19,7 @@ public sealed class FixedPositionEnemySpawnerBehaviour(
         {
             _timeSinceLastSpawn = 0f;
 
-            return enemyFactory(position);
+            return entityFactory(position);
         }
 
         return null;

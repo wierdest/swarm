@@ -5,5 +5,5 @@ namespace Swarm.Domain.Interfaces;
 
 public interface IRunawayStrategy
 {
-    Direction? DecideRunaway(NonPlayerEntityContext context);
+    Direction? DecideRunaway(NonPlayerEntityContext<INonPlayerEntity> context);
 }

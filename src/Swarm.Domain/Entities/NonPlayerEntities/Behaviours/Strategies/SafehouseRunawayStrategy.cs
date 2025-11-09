@@ -10,7 +10,7 @@ public class SafehouseRunawayStrategy(
     float avoidPlayerWeight
 ) : IRunawayStrategy
 {
-    public Direction? DecideRunaway(NonPlayerEntityContext context)
+    public Direction? DecideRunaway(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         if (context.HP >= hitPointsThreshold) return null;
 

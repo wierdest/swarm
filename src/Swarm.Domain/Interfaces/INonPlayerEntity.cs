@@ -6,7 +6,7 @@ namespace Swarm.Domain.Interfaces;
 public interface INonPlayerEntity : ILivingEntity
 {
     Direction Rotation { get; }
-    void Tick(NonPlayerEntityContext context);
+    void Tick(NonPlayerEntityContext<INonPlayerEntity> context);
     void RevertLastMovement();
     IReadOnlyList<IDomainEvent>? DomainEvents { get; }
     void ClearDomainEvents();

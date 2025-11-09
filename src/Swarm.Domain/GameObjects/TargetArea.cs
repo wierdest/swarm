@@ -49,7 +49,7 @@ public sealed class TargetArea(
 
             if (IsInside(enemy.Position))
             {
-                if (enemy is BossEnemy)
+                if (enemy is Shooter)
                 {
                     enemy.Heal(_standardHealAmount);
                     continue;

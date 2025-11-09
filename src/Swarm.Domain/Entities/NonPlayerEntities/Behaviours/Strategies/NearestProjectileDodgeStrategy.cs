@@ -9,7 +9,7 @@ public sealed class NearestProjectileDodgeStrategy(
     float maxDodgeMultiplier = 1.5f
     ) : IDodgeStrategy
 {
-    public Direction? DecideDodge(NonPlayerEntityContext context)
+    public Direction? DecideDodge(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         if (context.Projectiles.Count == 0)
         {
