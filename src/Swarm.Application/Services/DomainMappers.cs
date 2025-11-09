@@ -27,7 +27,7 @@ static class DomainMappers
         foreach (var e in s.NonPlayerEntities)
         {
             var enemyRotation = MathF.Atan2(e.Rotation.Y, e.Rotation.X);
-            enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius, enemyRotation, e is Boss));
+            enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius, enemyRotation, e is Shooter));
         }
 
         var hud = ToHud(s, pA, t);
