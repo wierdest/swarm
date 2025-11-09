@@ -18,13 +18,13 @@ public abstract class NonPlayerEntityBehaviourBase(
     protected readonly IRunawayStrategy? RunawayStrategy = runawayStrategy;
     protected Cooldown Cooldown = initialCooldown ?? Cooldown.AlwaysReady;
 
-    public virtual bool DecideAction(NonPlayerEntityContext context)
+    public virtual bool DecideAction(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         if (ActionStrategy is null) return false;
         return ActionStrategy.ShouldAct(context, ref Cooldown);
     }
 
-    public (Direction direction, float speed)? DecideMovement(NonPlayerEntityContext context)
+    public (Direction direction, float speed)? DecideMovement(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         var dodge = DodgeStrategy.DecideDodge(context);
         if (dodge is not null)
@@ -42,5 +42,5 @@ public abstract class NonPlayerEntityBehaviourBase(
 
     protected virtual float RunawayMultiplier() => 1.0f;
 
-    protected abstract (Direction direction, float speed)? DecidePrimaryMovement(NonPlayerEntityContext context);
+    protected abstract (Direction direction, float speed)? DecidePrimaryMovement(NonPlayerEntityContext<INonPlayerEntity> context);
 }

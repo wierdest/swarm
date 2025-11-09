@@ -3,7 +3,7 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Interfaces;
 
-public interface IDodgeStrategy
+public interface ITargetStrategy
 {
-    Direction? DecideDodge(NonPlayerEntityContext<INonPlayerEntity> context);
+    Vector2 GetTarget(NonPlayerEntityContext<INonPlayerEntity> context);
 }

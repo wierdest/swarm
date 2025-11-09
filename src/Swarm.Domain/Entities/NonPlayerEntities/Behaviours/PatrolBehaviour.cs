@@ -8,14 +8,15 @@ public sealed class PatrolBehaviour(
     IReadOnlyList<Vector2> waypoints,
     float speed,
     IActionStrategy actionStrategy,
-    Cooldown shootCooldown,
+    Cooldown actionCooldown,
     IDodgeStrategy dodgeStrategy,
     IRunawayStrategy? runawayStrategy
-) : NonPlayerEntityBehaviourBase(speed, actionStrategy, dodgeStrategy, runawayStrategy, shootCooldown)
+) : NonPlayerEntityBehaviourBase(speed, actionStrategy, dodgeStrategy, runawayStrategy, actionCooldown)
 {
     private int _currentIndex;
 
-    protected override (Direction direction, float speed)? DecidePrimaryMovement(NonPlayerEntityContext context)
+    protected override (Direction direction, float speed)? DecidePrimaryMovement(
+        NonPlayerEntityContext<INonPlayerEntity> context)
     {
         if (waypoints.Count == 0) return null;
 

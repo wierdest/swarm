@@ -7,7 +7,7 @@ public sealed class RangeShootStrategy(
     float shootRange
 ) : IActionStrategy
 {
-    public bool ShouldAct(NonPlayerEntityContext context, ref Cooldown cooldown)
+    public bool ShouldAct(NonPlayerEntityContext<INonPlayerEntity> context, ref Cooldown cooldown)
     {
         cooldown = cooldown.Tick(context.DeltaTime);
         cooldown = cooldown.ConsumeIfReady(out var ready);

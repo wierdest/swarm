@@ -38,7 +38,7 @@ public abstract class NonPlayerEntityBase(
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
 
-    public virtual void Tick(NonPlayerEntityContext context)
+    public virtual void Tick(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         if (IsDead)
         {
@@ -59,20 +59,20 @@ public abstract class NonPlayerEntityBase(
         UpdateRotation(context);
     }
 
-    protected virtual void UpdateRotation(NonPlayerEntityContext context)
+    protected virtual void UpdateRotation(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         Rotation = Rotation.Rotated(MathF.PI * context.DeltaTime);
     }
 
-    protected virtual void AvoidOverlap(NonPlayerEntityContext context, ref Vector2 newPos)
+    protected virtual void AvoidOverlap(NonPlayerEntityContext<INonPlayerEntity> context, ref Vector2 newPos)
     {
-        var enemies = context.Others;
+        var others = context.Others;
         var selfIndex = context.SelfIndex;
 
-        for (int i = 0; i < enemies.Count; i++)
+        for (int i = 0; i < others.Count; i++)
         {
             if (i == selfIndex) continue;
-            var other = enemies[i];
+            var other = others[i];
             if (other.IsDead) continue;
 
             float minDist = Radius.Value + other.Radius.Value;
@@ -91,5 +91,5 @@ public abstract class NonPlayerEntityBase(
 
     public void RevertLastMovement() => Position = LastPosition;
 
-    protected virtual void OnDeath(NonPlayerEntityContext context) { }
+    protected virtual void OnDeath(NonPlayerEntityContext<INonPlayerEntity> context) { }
 }

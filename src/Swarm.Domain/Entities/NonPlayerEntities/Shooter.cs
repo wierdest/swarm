@@ -6,7 +6,7 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Entities.NonPlayerEntities;
 
-public sealed class Boss(
+public sealed class Shooter(
     EntityId id,
     Vector2 startPosition,
     Radius radius,
@@ -19,20 +19,20 @@ public sealed class Boss(
     private readonly IDeathTrigger _deathTrigger = deathTrigger;
     private readonly Weapon _weapon = weapon;
 
-    protected override void UpdateRotation(NonPlayerEntityContext context)
+    protected override void UpdateRotation(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         var toPlayer = context.PlayerPosition - Position;
         if (!toPlayer.IsZero())
             Rotation = Direction.From(toPlayer.X, toPlayer.Y);
     }
 
-    protected override void OnDeath(NonPlayerEntityContext context)
+    protected override void OnDeath(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         foreach (var evt in _deathTrigger.OnDeath(Position))
             DomainEventList.Add(evt);
     }
 
-    public override void Tick(NonPlayerEntityContext context)
+    public override void Tick(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         base.Tick(context);
         if (IsDead) return;

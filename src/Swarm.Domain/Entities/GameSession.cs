@@ -27,9 +27,9 @@ public sealed class GameSession(
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
     private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
     public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
-    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is Minion or Boss));
+    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is Zombie or Shooter));
     public Score EnemyPopulation => new(EnemyCount + _score);
-    public Score BossEnemyCount => new(_nonPlayerEntities.Count(e => e is Boss));
+    public Score BossEnemyCount => new(_nonPlayerEntities.Count(e => e is Shooter));
     public bool MaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
     private Score _score = new();
     public Score Score => _score;
@@ -192,36 +192,35 @@ public sealed class GameSession(
     {
         for (int i = 0; i < _nonPlayerEntities.Count; i++)
         {
-            var enemy = _nonPlayerEntities[i];
+            var nonPlayerEntity = _nonPlayerEntities[i];
 
-            var context = new NonPlayerEntityContext(
-                position: enemy.Position,
-                playerPosition: Player.Position,
+            var context = new NonPlayerEntityContext<INonPlayerEntity>(
+                position: nonPlayerEntity.Position,
+                playerPosition: Player.Position, // TODO delegate this decision to???
                 projectiles: _projectiles, // pass projectiles because of owner types
                 deltaTime: dt,
                 selfIndex: i, // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
                 others: _nonPlayerEntities,
                 stage: Stage,
-                hitPoints: enemy.HP
+                hitPoints: nonPlayerEntity.HP
             );
 
-            enemy.Tick(context);
+            nonPlayerEntity.Tick(context);
 
-            UpdateEnemyEvents(enemy);
+            UpdateNonPlayerEntities(nonPlayerEntity);
 
-            if (enemy.IsDead)
+            if (nonPlayerEntity.IsDead)
                 continue;
-
 
             foreach (var wall in Walls)
             {
-                if (enemy.CollidesWith(wall))
+                if (nonPlayerEntity.CollidesWith(wall))
                 {
-                    enemy.RevertLastMovement();
+                    nonPlayerEntity.RevertLastMovement();
                 }
             }
 
-            if (Player.CollidesWith(enemy))
+            if (Player.CollidesWith(nonPlayerEntity))
                 Player.TakeDamage(new Damage(1));
 
         }
@@ -229,7 +228,7 @@ public sealed class GameSession(
         _nonPlayerEntities.RemoveAll(e => e.IsDead);
     }
 
-    private void UpdateEnemyEvents(INonPlayerEntity enemy)
+    private void UpdateNonPlayerEntities(INonPlayerEntity enemy)
     {
         if (enemy.DomainEvents is null) return;
 
@@ -242,7 +241,7 @@ public sealed class GameSession(
                     _projectiles.AddRange(fired.Projectiles);
                     break;
 
-                case EnemySpawnEvent spawned:
+                case RadicalSpawnEvent spawned:
                     RaiseEvent(spawned);
                     break;
             }
