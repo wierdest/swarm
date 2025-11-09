@@ -271,7 +271,6 @@ public sealed class GameSessionService(
 
         foreach (var spawnerConfig in level.Spawners)
         {
-
             if (spawnerPositions.Count == 0)
                 throw new DomainException("No available spawner positions left!");
 
@@ -291,7 +290,7 @@ public sealed class GameSessionService(
                                     actionStrategy: new RangeShootStrategy(
                                         shootRange: level.BossConfig.ShootRange
                                     ),
-                                    shootCooldown: new Cooldown(level.BossConfig.Cooldown),
+                                    actionCooldown: new Cooldown(level.BossConfig.Cooldown),
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
                                         dodgeDistanceThreshold: 150f,
                                         maxDodgeMultiplier: 1.5f
@@ -301,6 +300,7 @@ public sealed class GameSessionService(
 
             var chaseBehaviour = new ChaseBehaviour(
                                     speed: 200f,
+                                    targetStrategy: new PlayerTargetStrategy(),
                                     actionStrategy: null,
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
                                         dodgeDistanceThreshold: 150f
@@ -310,6 +310,7 @@ public sealed class GameSessionService(
 
             var chaseShootBehaviour = new ChaseBehaviour(
                                     speed: 200f,
+                                    targetStrategy: new PlayerTargetStrategy(),
                                     actionStrategy: new RangeShootStrategy(
                                         shootRange: level.BossConfig.ShootRange
                                     ),
@@ -326,14 +327,14 @@ public sealed class GameSessionService(
 
             var spawner = new NonPlayerEntitySpawner(
                 _session,
-                new FixedPositionEnemySpawnerBehaviour(
+                new FixedPositionNonPlayerEntitySpawnerBehaviour(
                     position: spawnPos,
                     cooldownSeconds: spawnerConfig.CooldownSeconds,
-                    enemyFactory: pos =>
+                    entityFactory: pos =>
                     {
                         return spawnObjectType switch
                         {
-                            SpawnObjectTypes.BasicEnemy => new Minion(
+                            SpawnObjectTypes.Zombie => new Zombie(
                                 id: EntityId.New(),
                                 startPosition: pos,
                                 radius: new Radius(10f),
@@ -341,14 +342,14 @@ public sealed class GameSessionService(
                                 behaviour: chaseBehaviour
                             ),
 
-                            SpawnObjectTypes.BossEnemy => new Boss(
+                            SpawnObjectTypes.Shooter => new Shooter(
                                 id: EntityId.New(),
                                 startPosition: pos,
                                 radius: new Radius(12f),
                                 hp: new HitPoints(10),
                                 behaviour: chaseShootBehaviour,
                                 weapon: weapon,
-                                deathTrigger: new SpawnMinionsDeathTrigger(4, new Radius(10f))
+                                deathTrigger: new SpawnRadicalsDeathTrigger(4, new Radius(10f))
                             ),
                             _ => throw new DomainException($"Invalid spawn object type: {spawnObjectType}")
                         };
@@ -438,7 +439,7 @@ public sealed class GameSessionService(
             case TimeUpdatedEvent e:
                 OnTimeUpdated(e);
                 break;
-            case EnemySpawnEvent e:
+            case RadicalSpawnEvent e:
                 OnEnemySpawn(e);
                 break;
             case ReachedTargetScoreEvent e:
@@ -458,19 +459,20 @@ public sealed class GameSessionService(
        
     }
 
-    private void OnEnemySpawn(EnemySpawnEvent evt)
+    private void OnEnemySpawn(RadicalSpawnEvent evt)
     {
         if (_session is null) return;
 
         for (int i = 0; i < evt.SpawnPositions.Count; i++)
         {
-            var newEnemy = new Minion(
+            var newEnemy = new Zombie(
                 id: EntityId.New(),
                 startPosition: evt.SpawnPositions[i],
                 radius: new Radius(10f),
                 hp: new HitPoints(1),
                 behaviour: new ChaseBehaviour(
                     speed: 120f,
+                    targetStrategy: new PlayerTargetStrategy(),
                     actionStrategy: null,
                     dodgeStrategy: new NearestProjectileDodgeStrategy(
                         dodgeDistanceThreshold: 250f,
