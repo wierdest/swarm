@@ -108,35 +108,35 @@ public class Swarm : Game
                     new(
                         CooldownSeconds: 0.2f,
                         BehaviourType: "",
-                        SpawnObjectType: "BasicEnemy",
+                        SpawnObjectType: "Zombie",
                         BatchSize: 10
                     ),
 
                     new(
                         CooldownSeconds: 0.2f,
                         BehaviourType: "",
-                        SpawnObjectType: "BasicEnemy",
+                        SpawnObjectType: "Zombie",
                         BatchSize: 10
                     ),
 
                     new(
                         CooldownSeconds: 0.2f,
                         BehaviourType: "",
-                        SpawnObjectType: "BasicEnemy",
+                        SpawnObjectType: "Zombie",
                         BatchSize: 10
                     ),
 
                      new(
                         CooldownSeconds: 0.2f,
                         BehaviourType: "",
-                        SpawnObjectType: "BasicEnemy",
+                        SpawnObjectType: "Zombie",
                         BatchSize: 10
                     ),
 
                     new(
                         CooldownSeconds: 12f,
                         BehaviourType: "",
-                        SpawnObjectType: "BossEnemy",
+                        SpawnObjectType: "Shooter",
                         BatchSize: 1
                     )
                 ],
