@@ -298,7 +298,7 @@ public sealed class GameSessionService(
                                     runawayStrategy: null
                                 );
 
-            var chaseBehaviour = new ChaseBehaviour(
+            var chaseBehaviour = new SeekBehaviour(
                                     speed: 200f,
                                     targetStrategy: new PlayerTargetStrategy(),
                                     actionStrategy: null,
@@ -308,7 +308,7 @@ public sealed class GameSessionService(
                                     runawayStrategy: null
                                 );
 
-            var chaseShootBehaviour = new ChaseBehaviour(
+            var chaseShootBehaviour = new SeekBehaviour(
                                     speed: 200f,
                                     targetStrategy: new PlayerTargetStrategy(),
                                     actionStrategy: new RangeShootStrategy(
@@ -470,7 +470,7 @@ public sealed class GameSessionService(
                 startPosition: evt.SpawnPositions[i],
                 radius: new Radius(10f),
                 hp: new HitPoints(1),
-                behaviour: new ChaseBehaviour(
+                behaviour: new SeekBehaviour(
                     speed: 120f,
                     targetStrategy: new PlayerTargetStrategy(),
                     actionStrategy: null,

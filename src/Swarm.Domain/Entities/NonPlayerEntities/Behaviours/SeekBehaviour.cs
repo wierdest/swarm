@@ -3,11 +3,11 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Entities.NonPlayerEntities.Behaviours;
 
-public sealed class ChaseBehaviour(
+public sealed class SeekBehaviour(
     float speed,
     ITargetStrategy targetStrategy,
     IActionStrategy? actionStrategy,
-    IDodgeStrategy dodgeStrategy, 
+    IDodgeStrategy dodgeStrategy,
     IRunawayStrategy? runawayStrategy
 ) : NonPlayerEntityBehaviourBase(speed, actionStrategy, dodgeStrategy, runawayStrategy)
 {
