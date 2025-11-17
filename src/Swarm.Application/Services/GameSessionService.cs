@@ -292,8 +292,9 @@ public sealed class GameSessionService(
                                     ),
                                     actionCooldown: new Cooldown(level.BossConfig.Cooldown),
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f,
-                                        maxDodgeMultiplier: 1.5f
+                                        owner: ProjectileOwnerTypes.Player,
+                                        threshold: 150f,
+                                        multiplier: 1.5f
                                     ),
                                     runawayStrategy: null
                                 );
@@ -303,7 +304,8 @@ public sealed class GameSessionService(
                                     targetStrategy: new PlayerTargetStrategy(),
                                     actionStrategy: null,
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f
+                                        owner: ProjectileOwnerTypes.Player,
+                                        threshold: 150f
                                     ),
                                     runawayStrategy: null
                                 );
@@ -315,7 +317,8 @@ public sealed class GameSessionService(
                                         shootRange: level.BossConfig.ShootRange
                                     ),
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f
+                                        owner: ProjectileOwnerTypes.Player,
+                                        threshold: 150f
                                     ),
                                     runawayStrategy: new SafehouseRunawayStrategy(
                                         hitPointsThreshold: 9,
@@ -475,8 +478,9 @@ public sealed class GameSessionService(
                     targetStrategy: new PlayerTargetStrategy(),
                     actionStrategy: null,
                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                        dodgeDistanceThreshold: 250f,
-                        maxDodgeMultiplier: 3.0f
+                        owner: ProjectileOwnerTypes.Player,
+                        threshold: 250f,
+                        multiplier: 3.0f
                     ),
                     runawayStrategy: null
                 )

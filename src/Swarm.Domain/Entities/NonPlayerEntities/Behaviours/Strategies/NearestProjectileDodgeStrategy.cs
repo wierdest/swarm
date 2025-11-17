@@ -5,49 +5,25 @@ using Swarm.Domain.Primitives;
 namespace Swarm.Domain.Entities.NonPlayerEntities.Behaviours.Strategies;
 
 public sealed class NearestProjectileDodgeStrategy(
-    float dodgeDistanceThreshold,
-    float maxDodgeMultiplier = 1.5f
-    ) : IDodgeStrategy
+    ProjectileOwnerTypes owner,
+    float threshold,
+    float multiplier = 1.5f
+) : IDodgeStrategy
 {
+    private readonly float _thresholdSq = threshold * threshold;
     public Direction? DecideDodge(NonPlayerEntityContext<INonPlayerEntity> context)
     {
-        if (context.Projectiles.Count == 0)
-        {
-            return null;
-        }
+        var nearest = context.FindNearestProjectile(owner, threshold);
+        if (nearest is null) return null;
+        
+        var delta = nearest.Position - context.Position;
 
-        float thresholdSq = dodgeDistanceThreshold * dodgeDistanceThreshold;
-
-        Vector2? nearestProjectile = null;
-        float nearestDistSq = float.MaxValue;
-
-
-        foreach (var proj in context.Projectiles)
-        {
-            if (proj.Owner != ProjectileOwnerTypes.Player)
-                continue;
-
-            var delta = proj.Position - context.Position;
-            float distSq = delta.LengthSquared();
-
-            if (distSq < nearestDistSq && distSq < thresholdSq)
-            {
-                nearestDistSq = distSq;
-                nearestProjectile = proj.Position;
-            }
-        }
-
-        if (nearestProjectile is null)
-        {
-            return null;
-        }
+        var dodgeVector = new Vector2(-delta.Y, delta.X);
 
         // perpendicular to projectile direction
-        var toProjectile = nearestProjectile.Value - context.Position;
-        var dodgeVector = new Vector2(-toProjectile.Y, toProjectile.X);
-
-        float distanceFactor = 1f - (nearestDistSq / thresholdSq);  
-        float dodgeStrength = 1f + distanceFactor * (maxDodgeMultiplier - 1f);
+        float distSq = delta.LengthSquared();
+        float distanceFactor = 1f - (distSq / _thresholdSq);
+        float dodgeStrength = 1f + distanceFactor * (multiplier - 1f);
 
         dodgeVector *= dodgeStrength;
 
