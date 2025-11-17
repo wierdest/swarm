@@ -172,7 +172,7 @@ public sealed class GameSessionService(
         // Loads narrative! 
         await LoadAllSavesAsync(new SaveName("Progression"));
 
-        int targetScoreValue = LatestCachedSave?.Hud.TargetScore is int prevTarget
+        int targetScoreValue = LatestCachedSave?.Hud.TargetKills is int prevTarget
             ? GetLevelTargetScore(prevTarget)
             : level.InitialTargetScore;
 

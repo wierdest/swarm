@@ -11,8 +11,8 @@ public class BombQuantityEvaluator(
 {
     public int Evaluate()
     {
-        var scoreBonus = session.ScoreBonus;
-        var targetScore = session.TargetScore;
+        var scoreBonus = session.KillBonus;
+        var targetScore = session.TargetKills;
         // TODO use these values
         var enemyCount = session.EnemyCount;
         var enemyPopulation = session.EnemyPopulation;

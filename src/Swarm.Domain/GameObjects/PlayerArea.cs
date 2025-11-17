@@ -1,5 +1,6 @@
 ﻿using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
+using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
@@ -42,10 +43,17 @@ public sealed class PlayerArea(
             }
         }
 
-        foreach (var enemy in _session.NonPlayerEntities)
+        foreach (var entity in _session.NonPlayerEntities)
         {
-            if (IsInside(enemy.Position))
-                enemy.RevertLastMovement();
+            if (IsInside(entity.Position))
+            {
+                if (entity is Healthy)
+                {
+                    _session.SaveHealthy(entity);
+                    continue;
+                }
+                entity.RevertLastMovement();
+            }
         }
     }
     private bool IsInside(Vector2 point)

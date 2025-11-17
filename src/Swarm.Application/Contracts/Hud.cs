@@ -4,7 +4,7 @@ namespace Swarm.Application.Contracts;
 
 public record class Hud(
     int Score,
-    int TargetScore,
+    int TargetKills,
     int HP,
     int NumberOfPlayerRespawns,
     string Timer,
@@ -16,13 +16,13 @@ public record class Hud(
 {
     public string ToDisplayString()
     {
-        var scoreText = $"Kill Count: {Score} / {TargetScore}";
+        var killsText = $"Kill Count: {Score} / {TargetKills}";
         var hpText = $"HP: {HP}";
         var playerDeathsText = $"Deaths: {NumberOfPlayerRespawns}";
         var enemiesText = $"Enemies: {NumberOfEnemiesAlive}";
         var weaponText = WeaponString;
         var timerText = $"Timer: {Timer}";
 
-        return $"{hpText} {playerDeathsText} {weaponText} {scoreText} {enemiesText} {timerText}";
+        return $"{hpText} {playerDeathsText} {weaponText} {killsText} {enemiesText} {timerText}";
     }
 }

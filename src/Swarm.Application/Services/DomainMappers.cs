@@ -72,7 +72,7 @@ static class DomainMappers
                 ? "SUCCESS!"
                 : t.IsOpenToPlayer
                     ? "Reach the green area!"
-                    : $"Kill {s.TargetScore} enemies!";
+                    : $"Kill {s.TargetKills} enemies!";
 
         // Weapon info string
         var weaponString = "";
@@ -95,8 +95,8 @@ static class DomainMappers
         var bombString = "[Press Q to drop bomb] | Bombs: " + s.BombCount;
 
         return new Hud(
-            s.Score,
-            s.TargetScore,
+            s.Kill,
+            s.TargetKills,
             p.HP,
             pA.PlayerRespawns,
             s.TimeString,
