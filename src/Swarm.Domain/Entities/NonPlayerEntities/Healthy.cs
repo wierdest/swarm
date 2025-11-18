@@ -21,17 +21,16 @@ public class Healthy(
             DomainEventList.Add(evt);
     }
 
-    public override void Tick(NonPlayerEntityContext<INonPlayerEntity> context)
+    protected override void ResolveCollisionWith(INonPlayerEntity other, ref Vector2 newPos, float minDist, float distSq, Vector2 delta)
     {
-        base.Tick(context);
-        if (IsDead) return;
-
-        // decide if will check the proximity with any Radicals, 
-        // in which case it would die and trigger the spawning of
-        // another Radical.
-        // this is called 'conversion'.
-
-
+        if (other is Zombie)
+        {
+            Die();
+            return;
+        }
+        base.ResolveCollisionWith(other, ref newPos, minDist, distSq, delta);
     }
+
+
     
 }

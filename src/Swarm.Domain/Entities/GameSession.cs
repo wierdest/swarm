@@ -199,8 +199,7 @@ public sealed class GameSession(
     private void UpdatePlayer(DeltaTime dt)
     {
         Player.Tick(dt, Stage);
-
-       Player.SlideAlongWalls(Walls);
+        Player.SlideAlongWalls(Walls);
     }
 
     private void UpdateNonPlayerEntities(DeltaTime dt)
