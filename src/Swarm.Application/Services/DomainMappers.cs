@@ -74,7 +74,8 @@ static class DomainMappers
                     ? "Reach the green area!"
                     : $"Kill {s.TargetKills} enemies!";
 
-        // Weapon info string
+        // Weapon info strin
+        // TODO this should come from the player
         var weaponString = "";
         if (p.ActiveWeapon is not null)
         {
@@ -100,10 +101,13 @@ static class DomainMappers
             p.HP,
             pA.PlayerRespawns,
             s.TimeString,
-            s.EnemyCount,
+            s.ZombieCount,
             levelStateString,
             weaponString,
-            bombString
+            bombString,
+            s.HealthyCount,
+            s.Casualties,
+            s.Salvations
         );
     }
 

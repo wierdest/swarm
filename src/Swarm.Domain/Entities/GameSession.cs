@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Swarm.Domain.Combat;
+﻿using Swarm.Domain.Combat;
 using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.Events;
@@ -28,9 +27,10 @@ public sealed class GameSession(
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
     private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
     public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
-    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is Zombie or Shooter));
-    public Score EnemyPopulation => new(EnemyCount + _kills);
-    public Score BossEnemyCount => new(_nonPlayerEntities.Count(e => e is Shooter));
+    public Score ZombieCount => new(_nonPlayerEntities.Count(e => e is Zombie or Shooter));
+    public Score ZombiePopulation => new(ZombieCount + _kills);
+    public Score ShooterCount => new(_nonPlayerEntities.Count(e => e is Shooter));
+    public Score HealthyCount => new(_nonPlayerEntities.Count(e => e is Healthy));
     public bool MaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
     private readonly Score _kills = new();
     public Score Kill => _kills;
@@ -49,7 +49,6 @@ public sealed class GameSession(
         _nonPlayerEntities.Remove(healthy);
         _salvations.Add(1);
     }
-
 
     private readonly List<Bomb> _bombs = bombs;
     public IReadOnlyList<Bomb> Bombs => _bombs;
