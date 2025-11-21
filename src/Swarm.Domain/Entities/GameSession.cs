@@ -15,7 +15,7 @@ public sealed class GameSession(
     Player player,
     List<Wall> walls,
     RoundTimer timer,
-    Score targetScore,
+    Score targetKill,
     // TODO start from 
     List<Bomb> bombs
 )
@@ -27,15 +27,29 @@ public sealed class GameSession(
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
     private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
     public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
-    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is Zombie or Shooter));
-    public Score EnemyPopulation => new(EnemyCount + _score);
-    public Score BossEnemyCount => new(_nonPlayerEntities.Count(e => e is Shooter));
+    public Score ZombieCount => new(_nonPlayerEntities.Count(e => e is Zombie or Shooter));
+    public Score ZombiePopulation => new(ZombieCount + _kills);
+    public Score ShooterCount => new(_nonPlayerEntities.Count(e => e is Shooter));
+    public Score HealthyCount => new(_nonPlayerEntities.Count(e => e is Healthy));
     public bool MaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
-    private Score _score = new();
-    public Score Score => _score;
-    public Score TargetScore => targetScore;
-    public Score ScoreBonus => (Score)(HasReachedTargetScore() ? _score - targetScore : 0);
-    public bool HasReachedTargetScore() => _score >= TargetScore;
+    private readonly Score _kills = new();
+    public Score Kill => _kills;
+    public Score TargetKills => targetKill;
+    public Score KillBonus => (Score)(HasReachedTargetKills() ? _kills - targetKill : 0);
+    public bool HasReachedTargetKills() => _kills >= TargetKills;
+
+    private readonly Score _casualties = new();
+    public Score Casualties => _casualties;
+
+    private readonly Score _salvations = new();
+    public Score Salvations => _salvations;
+
+    public void SaveHealthy(INonPlayerEntity healthy)
+    {
+        _nonPlayerEntities.Remove(healthy);
+        _salvations.Add(1);
+    }
+
     private readonly List<Bomb> _bombs = bombs;
     public IReadOnlyList<Bomb> Bombs => _bombs;
     public Score BombCount => new(_bombs.Count);
@@ -69,7 +83,7 @@ public sealed class GameSession(
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
     private void RaiseEvent(IDomainEvent evt) => _domainEvents.Add(evt);
     public void ClearDomainEvents() => _domainEvents.Clear();
-    public bool IsOverrun => NonPlayerEntities.Count > TargetScore;
+    public bool IsOverrun => NonPlayerEntities.Count > TargetKills;
     private bool _isInterrupted = false;
     public bool IsInterrupted => _isInterrupted;
     public void Interrupt() => _isInterrupted = true;
@@ -184,8 +198,7 @@ public sealed class GameSession(
     private void UpdatePlayer(DeltaTime dt)
     {
         Player.Tick(dt, Stage);
-
-       Player.SlideAlongWalls(Walls);
+        Player.SlideAlongWalls(Walls);
     }
 
     private void UpdateNonPlayerEntities(DeltaTime dt)
@@ -207,7 +220,7 @@ public sealed class GameSession(
 
             nonPlayerEntity.Tick(context);
 
-            UpdateNonPlayerEntities(nonPlayerEntity);
+            HandleNonPlayerEntitiesEvents(nonPlayerEntity);
 
             if (nonPlayerEntity.IsDead)
                 continue;
@@ -228,11 +241,11 @@ public sealed class GameSession(
         _nonPlayerEntities.RemoveAll(e => e.IsDead);
     }
 
-    private void UpdateNonPlayerEntities(INonPlayerEntity enemy)
+    private void HandleNonPlayerEntitiesEvents(INonPlayerEntity entity)
     {
-        if (enemy.DomainEvents is null) return;
+        if (entity.DomainEvents is null) return;
 
-        foreach (var evt in enemy.DomainEvents)
+        foreach (var evt in entity.DomainEvents)
         {
             switch (evt)
             {
@@ -246,7 +259,7 @@ public sealed class GameSession(
                     break;
             }
         }
-        enemy.ClearDomainEvents();
+        entity.ClearDomainEvents();
             
     }
 
@@ -276,18 +289,24 @@ public sealed class GameSession(
 
         if (projectile.Owner == ProjectileOwnerTypes.Player)
         {
-            foreach (var enemy in _nonPlayerEntities)
+            foreach (var entity in _nonPlayerEntities)
             {
-                if (enemy.IsDead)
+                if (entity.IsDead)
                     continue;
 
-                if (projectile.CollidesWith(enemy))
+                if (projectile.CollidesWith(entity))
                 {
-                    enemy.TakeDamage(projectile.Damage);
-                    if (enemy.IsDead)
+                    entity.TakeDamage(projectile.Damage);
+                    if (entity.IsDead)
                     {
-                        _score += 1;
-                        if (HasReachedTargetScore())
+                        if (entity is Healthy)
+                        {
+                            _casualties.Add(1);
+                            return true;
+                        }
+
+                        _kills.Add(1);
+                        if (HasReachedTargetKills())
                         {
                             RaiseEvent(new ReachedTargetScoreEvent(Id));
                         }

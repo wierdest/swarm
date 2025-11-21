@@ -2,6 +2,7 @@
 using Swarm.Domain.Time;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Combat;
+using Swarm.Domain.Entities.Projectiles;
 
 namespace Swarm.Domain.Entities.NonPlayerEntities;
 
@@ -18,7 +19,30 @@ public sealed class NonPlayerEntityContext<T>(
 {
     public Vector2 Position { get; private set; } = position;
     public Vector2 PlayerPosition { get; private set; } = playerPosition;
-    public IReadOnlyList<Projectile> Projectiles { get; private set; } = projectiles ?? [];
+    private IReadOnlyList<Projectile> _projectiles = projectiles ?? [];
+    public Projectile? FindNearestProjectile(ProjectileOwnerTypes owner, float threshold)
+    {
+        Projectile? nearest = null;
+        float thresholdSq = threshold * threshold;
+        float bestDistSq = float.MaxValue;
+
+        foreach (var p in _projectiles)
+        {
+            if (owner != ProjectileOwnerTypes.None && p.Owner != owner)
+                continue;
+
+            var delta = p.Position - Position;
+            float distSq = delta.LengthSquared();
+
+            if (distSq < thresholdSq && distSq < bestDistSq)
+            {
+                nearest = p;
+                bestDistSq = distSq;
+            }
+        }
+
+        return nearest;
+    }
     public IReadOnlyList<INonPlayerEntity> Others { get; private set; } = others;
     public DeltaTime DeltaTime { get; private set; } = deltaTime;
     public Bounds Stage { get; private set; } = stage;
@@ -49,4 +73,5 @@ public sealed class NonPlayerEntityContext<T>(
 
         return nearest;
     }
+
 }

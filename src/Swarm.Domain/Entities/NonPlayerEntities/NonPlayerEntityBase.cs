@@ -34,6 +34,9 @@ public abstract class NonPlayerEntityBase(
         HP = HP.Take(damage);
     }
 
+    public virtual void Die() => ((ILivingEntity)this).Die();
+
+
     public virtual void ClearDomainEvents() => DomainEventList.Clear();
 
     public bool CollidesWith(ICollidable other) => CollisionExtensions.Intersects(this, other);
@@ -81,12 +84,17 @@ public abstract class NonPlayerEntityBase(
 
             if (distSq < minDist * minDist)
             {
-                float dist = MathF.Sqrt(distSq);
-                var pushDir = dist > 1e-8f ? delta / dist : Rotation.Vector;
-                float overlap = minDist - dist;
-                newPos += pushDir * overlap;
+                ResolveCollisionWith(other, ref newPos, minDist, distSq, delta);
             }
         }
+    }
+
+    protected virtual void ResolveCollisionWith(INonPlayerEntity other, ref Vector2 newPos, float minDist, float distSq, Vector2 delta)
+    {
+        float dist = MathF.Sqrt(distSq);
+        var pushDir = dist > 1e-8f ? delta / dist : Rotation.Vector;
+        float overlap = minDist - dist;
+        newPos += pushDir * overlap;
     }
 
     public void RevertLastMovement() => Position = LastPosition;

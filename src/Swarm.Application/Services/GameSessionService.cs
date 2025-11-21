@@ -172,7 +172,7 @@ public sealed class GameSessionService(
         // Loads narrative! 
         await LoadAllSavesAsync(new SaveName("Progression"));
 
-        int targetScoreValue = LatestCachedSave?.Hud.TargetScore is int prevTarget
+        int targetScoreValue = LatestCachedSave?.Hud.TargetKills is int prevTarget
             ? GetLevelTargetScore(prevTarget)
             : level.InitialTargetScore;
 
@@ -292,30 +292,33 @@ public sealed class GameSessionService(
                                     ),
                                     actionCooldown: new Cooldown(level.BossConfig.Cooldown),
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f,
-                                        maxDodgeMultiplier: 1.5f
+                                        owner: ProjectileOwnerTypes.Player,
+                                        threshold: 150f,
+                                        multiplier: 1.5f
                                     ),
                                     runawayStrategy: null
                                 );
 
-            var chaseBehaviour = new ChaseBehaviour(
+            var chaseBehaviour = new SeekBehaviour(
                                     speed: 200f,
                                     targetStrategy: new PlayerTargetStrategy(),
                                     actionStrategy: null,
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f
+                                        owner: ProjectileOwnerTypes.Player,
+                                        threshold: 150f
                                     ),
                                     runawayStrategy: null
                                 );
 
-            var chaseShootBehaviour = new ChaseBehaviour(
+            var chaseShootBehaviour = new SeekBehaviour(
                                     speed: 200f,
                                     targetStrategy: new PlayerTargetStrategy(),
                                     actionStrategy: new RangeShootStrategy(
                                         shootRange: level.BossConfig.ShootRange
                                     ),
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f
+                                        owner: ProjectileOwnerTypes.Player,
+                                        threshold: 150f
                                     ),
                                     runawayStrategy: new SafehouseRunawayStrategy(
                                         hitPointsThreshold: 9,
@@ -470,13 +473,14 @@ public sealed class GameSessionService(
                 startPosition: evt.SpawnPositions[i],
                 radius: new Radius(10f),
                 hp: new HitPoints(1),
-                behaviour: new ChaseBehaviour(
+                behaviour: new SeekBehaviour(
                     speed: 120f,
                     targetStrategy: new PlayerTargetStrategy(),
                     actionStrategy: null,
                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                        dodgeDistanceThreshold: 250f,
-                        maxDodgeMultiplier: 3.0f
+                        owner: ProjectileOwnerTypes.Player,
+                        threshold: 250f,
+                        multiplier: 3.0f
                     ),
                     runawayStrategy: null
                 )
