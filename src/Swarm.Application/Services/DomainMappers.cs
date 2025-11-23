@@ -62,49 +62,25 @@ static class DomainMappers
             );
     }
 
-    private static Hud ToHud(GameSession s, PlayerArea pA, TargetArea t)
+    private static HudData ToHud(GameSession s, PlayerArea pA, TargetArea t)
     {
         var p = s.Player;
+        var w = p.ActiveWeapon;
 
-        // Level status string
-        var levelStateString =
-            s.IsLevelCompleted
-                ? "SUCCESS!"
-                : t.IsOpenToPlayer
-                    ? "Reach the green area!"
-                    : $"Kill {s.TargetKills} enemies!";
-
-        // Weapon info strin
-        // TODO this should come from the player
-        var weaponString = "";
-        if (p.ActiveWeapon is not null)
-        {
-            var w = p.ActiveWeapon;
-            if (w.CurrentAmmo == 0)
-            {
-                if (p.Ammo == 0)
-                    weaponString = $"{w.Name} [Find some ammo!]";
-                else
-                    weaponString = $"{w.Name} [Press E to reload] | Fuel: {p.Ammo}";
-            }
-            else
-            {
-                weaponString = $"{w.Name} {w.CurrentAmmo}/{w.MaxAmmo} | Fuel: {p.Ammo}";
-            }
-        }
-
-        var bombString = "[Press Q to drop bomb] | Bombs: " + s.BombCount;
-
-        return new Hud(
+        return new HudData(
             s.Kill,
             s.TargetKills,
             p.HP,
             pA.PlayerRespawns,
             s.TimeString,
             s.ZombieCount,
-            levelStateString,
-            weaponString,
-            bombString,
+            s.IsLevelCompleted,
+            s.HasReachedTargetKills(),
+            w.Name,
+            p.Ammo,
+            w.CurrentAmmo,
+            w.MaxAmmo,
+            s.BombCount,
             s.HealthyCount,
             s.Casualties,
             s.Salvations

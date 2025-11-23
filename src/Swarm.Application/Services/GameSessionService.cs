@@ -22,9 +22,6 @@ using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.Entities.NonPlayerEntities.Behaviours.Strategies;
 using Swarm.Domain.Entities.NonPlayerEntities.DeathTriggers;
 using Swarm.Domain.Factories.Strategies;
-using Swarm.Application.DTOs;
-using System.Linq;
-using Swarm.Domain.Factories.Evaluators;
 
 namespace Swarm.Application.Services;
 
@@ -172,7 +169,7 @@ public sealed class GameSessionService(
         // Loads narrative! 
         await LoadAllSavesAsync(new SaveName("Progression"));
 
-        int targetScoreValue = LatestCachedSave?.Hud.TargetKills is int prevTarget
+        int targetScoreValue = LatestCachedSave?.HudData.TargetKills is int prevTarget
             ? GetLevelTargetScore(prevTarget)
             : level.InitialTargetScore;
 

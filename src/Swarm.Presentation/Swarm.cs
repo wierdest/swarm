@@ -10,6 +10,7 @@ using Swarm.Application.Contracts;
 using Swarm.Application.Primitives;
 using Swarm.Presentation.Input;
 using Swarm.Presentation.Renderers;
+using Swarm.Presentation.Renderers.Hud;
 
 namespace Swarm.Presentation;
 
@@ -363,8 +364,6 @@ public class Swarm : Game
             }
 
         }
-
-
         _spriteBatch.End();
 
         GraphicsDevice.SetRenderTarget(null);
@@ -376,7 +375,7 @@ public class Swarm : Game
 
         DrawBorder(_spriteBatch, _drawDestination, BORDER, Color.Black );
 
-        _hud.Draw(snap.Hud);
+        _hud.Draw(snap.HudData);
 
         _crosshairRenderer.Draw(snap.AimPositionX, snap.AimPositionY);
         _spriteBatch.End();

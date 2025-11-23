@@ -6,7 +6,7 @@ namespace Swarm.Application.Contracts;
 public record class GameSnapshot(
     BoundsDTO Stage,
     PlayerDTO Player,
-    Hud Hud,
+    HudData HudData,
     IReadOnlyList<ProjectileDTO> Projectiles,
     IReadOnlyList<EnemyDTO> Enemies,
     IReadOnlyCollection<DrawableDTO> Walls,
@@ -28,7 +28,7 @@ public record class GameSnapshot(
         sb.AppendLine("=== Game Snapshot ===");
         sb.AppendLine($"Stage: {Stage}");
         sb.AppendLine($"Player: {Player}");
-        sb.AppendLine($"HUD: {Hud}");
+        sb.AppendLine($"HudData: {HudData}");
 
         if (Projectiles.Count > 0)
             sb.AppendLine($"Projectiles: {Projectiles.Count}");
