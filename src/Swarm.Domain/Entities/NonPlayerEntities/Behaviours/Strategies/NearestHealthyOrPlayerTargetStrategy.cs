@@ -3,20 +3,20 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Entities.NonPlayerEntities.Behaviours.Strategies;
 
-public sealed class NearestPersonOrPlayerTargetStrategy(
+public sealed class NearestHealthyOrPlayerTargetStrategy(
     float threshold
 ) : ITargetStrategy
 {
     public Vector2 GetTarget(NonPlayerEntityContext<INonPlayerEntity> context)
     {
-        var nearestPerson = context.NearestPerson;
+        var nearest = context.NearestHealthy;
 
-        if (nearestPerson is not null)
+        if (nearest is not null)
         {
-            var distance = Vector2.Distance(context.Position, nearestPerson.Position);
+            var distance = Vector2.Distance(context.Position, nearest.Position);
 
             if (distance > threshold)
-                return nearestPerson.Position - context.Position;
+                return nearest.Position - context.Position;
         }
 
         return context.PlayerPosition - context.Position;

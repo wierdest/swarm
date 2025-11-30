@@ -16,7 +16,6 @@ public sealed class GameSession(
     List<Wall> walls,
     RoundTimer timer,
     Score targetKill,
-    // TODO start from 
     List<Bomb> bombs
 )
 {
@@ -27,27 +26,29 @@ public sealed class GameSession(
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
     private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
     public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
-    public Score ZombieCount => new(_nonPlayerEntities.Count(e => e is Zombie or Shooter));
-    public Score ZombiePopulation => new(ZombieCount + _kills);
+    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is Zombie or Shooter));
+    public Score EnemyOverallPopulation => new(EnemyCount + Kills);
     public Score ShooterCount => new(_nonPlayerEntities.Count(e => e is Shooter));
-    public Score HealthyCount => new(_nonPlayerEntities.Count(e => e is Healthy));
-    public bool MaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
-    private readonly Score _kills = new();
-    public Score Kill => _kills;
+    public Score HealthyCount => new(_nonPlayerEntities.Count(e => e is Healthy healthy && !healthy.IsInfected));
+    public Score InfectedCount => new(_nonPlayerEntities.Count(e => e is Healthy healthy && healthy.IsInfected));
+    public bool ReachedMaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
+    public Score Kills { get; private set; } = new(0);
+    private void AddKill() => Kills = Kills.Add(1);
     public Score TargetKills => targetKill;
-    public Score KillBonus => (Score)(HasReachedTargetKills() ? _kills - targetKill : 0);
-    public bool HasReachedTargetKills() => _kills >= TargetKills;
+    public Score KillBonus => (Score)(HasReachedTargetKills() ? Kills - targetKill : 0);
+    public bool HasReachedTargetKills() => Kills >= TargetKills;
+    public Score Casualties { get; private set; } = new(0);
+    private void AddCasualty() => Casualties = Casualties.Add(1);
+    public Score Salvations { get; private set; } = new(0);
+    private void AddSalvation() => Salvations = Salvations.Add(1);
+    public Score Infected { get; private set; } = new(0);
+    private void AddInfected() => Infected = Infected.Add(1);
 
-    private readonly Score _casualties = new();
-    public Score Casualties => _casualties;
-
-    private readonly Score _salvations = new();
-    public Score Salvations => _salvations;
 
     public void SaveHealthy(INonPlayerEntity healthy)
     {
         _nonPlayerEntities.Remove(healthy);
-        _salvations.Add(1);
+        AddSalvation();
     }
 
     private readonly List<Bomb> _bombs = bombs;
@@ -59,12 +60,12 @@ public sealed class GameSession(
     public bool IsWaitingForBombCooldown => _isWaitingForBombCooldown;
     public void DropBomb()
     {
+        if (_bombs.Count == 0) return;
         _nonPlayerEntities.ForEach(e => e.Die());
         ((ILivingEntity)Player).Die();
-        _bombs.Last().Start();
+        _bombs[^1].Start();
         _isWaitingForBombCooldown = true;
     }
-
 
     public List<Wall> Walls { get; } = walls;
     public IEnumerable<Vector2> SpawnerPoints => Walls.Where(w => w.Spawners is not null).SelectMany(w => w.Spawners!);
@@ -75,18 +76,16 @@ public sealed class GameSession(
     private bool _isTimeUp = false;
     public bool IsTimeUp => _isTimeUp;
     public String TimeString => _timer.ToString();
-    private bool _isPaused;
-    public bool IsPaused => _isPaused;
-    public void Pause() => _isPaused = true;
-    public void Resume() => _isPaused = false;
+    public bool IsPaused { get; private set; }
+    public void Pause() => IsPaused = true;
+    public void Resume() => IsPaused = false;
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
     private void RaiseEvent(IDomainEvent evt) => _domainEvents.Add(evt);
     public void ClearDomainEvents() => _domainEvents.Clear();
     public bool IsOverrun => NonPlayerEntities.Count > TargetKills;
-    private bool _isInterrupted = false;
-    public bool IsInterrupted => _isInterrupted;
-    public void Interrupt() => _isInterrupted = true;
+    public bool IsInterrupted { get; private set; }
+    public void Interrupt() => IsInterrupted = true;
     public Vector2 AimPosition = new();
     public void CompleteLevel()
     {
@@ -98,8 +97,7 @@ public sealed class GameSession(
         RaiseEvent(new LevelCompletedEvent(Id));
     }
 
-    public void ApplyInput(Direction dir, float speed) =>
-        Player.ApplyInput(dir, speed);
+    public void ApplyInput(Direction dir, float speed) => Player.ApplyInput(dir, speed);
 
     public void Fire(bool isPressed, bool isHeld)
     {
@@ -113,15 +111,10 @@ public sealed class GameSession(
             _projectiles.AddRange(projectiles);
     }
 
-    public void Reload()
-    {
-        Player.ReloadWeapon();
-    }
+    public void Reload() => Player.ReloadWeapon();
 
-    public void AddAmmo(int value)
-    {
-        Player.AddAmmo(value);
-    }
+    public void AddAmmo(int value) => Player.AddAmmo(value);
+    
 
     public void RotatePlayerTowards(Vector2 target)
     {
@@ -146,10 +139,9 @@ public sealed class GameSession(
         RotatePlayerTowards(AimPosition);
     }
 
-
     public void Tick(DeltaTime dt)
     {
-        if (_isPaused || _isTimeUp || _isLevelCompleted) return;
+        if (IsPaused || _isTimeUp || _isLevelCompleted) return;
 
         if (_isWaitingForBombCooldown)
         {
@@ -234,7 +226,10 @@ public sealed class GameSession(
             }
 
             if (Player.CollidesWith(nonPlayerEntity))
+            {
+                if (nonPlayerEntity is Healthy) continue;
                 Player.TakeDamage(new Damage(1));
+            }
 
         }
 
@@ -256,6 +251,11 @@ public sealed class GameSession(
 
                 case RadicalSpawnEvent spawned:
                     RaiseEvent(spawned);
+                    break;
+                
+                case HealthyInfectedEvent infected:
+                    AddInfected();
+                    RaiseEvent(infected);
                     break;
             }
         }
@@ -299,13 +299,13 @@ public sealed class GameSession(
                     entity.TakeDamage(projectile.Damage);
                     if (entity.IsDead)
                     {
-                        if (entity is Healthy)
+                        if (entity is Healthy healthy && !healthy.IsInfected)
                         {
-                            _casualties.Add(1);
+                            AddCasualty();
                             return true;
                         }
 
-                        _kills.Add(1);
+                        AddKill();
                         if (HasReachedTargetKills())
                         {
                             RaiseEvent(new ReachedTargetScoreEvent(Id));

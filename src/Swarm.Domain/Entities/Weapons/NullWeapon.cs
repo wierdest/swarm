@@ -7,7 +7,7 @@ namespace Swarm.Domain.Entities.Weapons;
 
 public sealed class NullWeapon : Weapon
 {
-    public NullWeapon() : base(new NoFirePattern(), Cooldown.AlwaysReady, ProjectileOwnerTypes.None) { }
+    public NullWeapon() : base(new NoFirePattern(), Cooldown.AlwaysReady, ProjectileOwnerTypes.All) { }
 
     public override bool TryFire(Vector2 origin, Direction facing, out IEnumerable<Projectile> projectiles)
     {

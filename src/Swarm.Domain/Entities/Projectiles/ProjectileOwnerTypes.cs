@@ -4,5 +4,5 @@ public enum ProjectileOwnerTypes
 {
     Player,
     Enemy,
-    None
+    All
 }

@@ -1,9 +1,8 @@
-﻿
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Swarm.Application.Contracts;
 
-namespace Swarm.Presentation.Renderers;
+namespace Swarm.Presentation.Renderers.Hud;
 
 public class HudRenderer(
     SpriteBatch spriteBatch,
@@ -12,27 +11,24 @@ public class HudRenderer(
 )
 {
     private readonly SpriteBatch _spriteBatch = spriteBatch;
-
     private readonly SpriteFont _font = font;
-
     private readonly static string _pauseHint = "Press P to PAUSE";
     private readonly static string _exitHint = "Press ESC to EXIT";
-
     private readonly GraphicsDevice _graphicsDevice = graphicsDevice;
 
-    public void Draw(Hud hud)
+    public void Draw(HudData hudData)
     {
-        var leftText = hud.ToDisplayString();
+        var leftText = HudTextBuilder.BuildTopLine(hudData);
         var leftPos = new Vector2(10, 10);
         _spriteBatch.DrawString(_font, leftText, leftPos, Color.White);
 
-        var levelText = hud.LevelString;
+        var levelText = HudTextBuilder.BuildMissionText(hudData);
         var rightTextSize = _font.MeasureString(levelText);
         var rightPos = new Vector2(_graphicsDevice.Viewport.Width - rightTextSize.X - 10, 10);
         _spriteBatch.DrawString(_font, levelText, rightPos, Color.White);
 
 
-        var bombText = hud.BombString;
+        var bombText = HudTextBuilder.BuildBombText(hudData.BombCount);
         var bombTextSize = _font.MeasureString(bombText);
         float screenCenterX = _graphicsDevice.Viewport.Width / 2f;
         float bottomY = _graphicsDevice.Viewport.Height - bombTextSize.Y - 10;

@@ -50,7 +50,7 @@ public sealed class PlayerArea(
                 if (entity is Healthy)
                 {
                     _session.SaveHealthy(entity);
-                    continue;
+                    return;
                 }
                 entity.RevertLastMovement();
             }

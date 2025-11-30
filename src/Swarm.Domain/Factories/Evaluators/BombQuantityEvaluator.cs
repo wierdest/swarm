@@ -14,8 +14,8 @@ public class BombQuantityEvaluator(
         var scoreBonus = session.KillBonus;
         var targetScore = session.TargetKills;
         // TODO use these values
-        var enemyCount = session.ZombieCount;
-        var enemyPopulation = session.ZombiePopulation;
+        var enemyCount = session.EnemyCount;
+        var enemyPopulation = session.EnemyOverallPopulation;
         var bossEnemyCount = session.ShooterCount;
         var playerRespawns = playerArea.PlayerRespawns;
         var bombCount = 0;
