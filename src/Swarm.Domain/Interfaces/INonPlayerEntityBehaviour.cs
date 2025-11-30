@@ -5,7 +5,7 @@ namespace Swarm.Domain.Interfaces;
 
 public interface INonPlayerEntityBehaviour
 {
-    (Direction direction, float speed)? DecideMovement(NonPlayerEntityContext context);
+    (Direction direction, float speed)? DecideMovement(NonPlayerEntityContext<INonPlayerEntity> context);
 
-    bool DecideAction(NonPlayerEntityContext context);
+    bool DecideAction(NonPlayerEntityContext<INonPlayerEntity> context);
 }

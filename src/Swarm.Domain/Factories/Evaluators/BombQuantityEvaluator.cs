@@ -11,12 +11,12 @@ public class BombQuantityEvaluator(
 {
     public int Evaluate()
     {
-        var scoreBonus = session.ScoreBonus;
-        var targetScore = session.TargetScore;
+        var scoreBonus = session.KillBonus;
+        var targetScore = session.TargetKills;
         // TODO use these values
         var enemyCount = session.EnemyCount;
-        var enemyPopulation = session.EnemyPopulation;
-        var bossEnemyCount = session.BossEnemyCount;
+        var enemyPopulation = session.EnemyOverallPopulation;
+        var bossEnemyCount = session.ShooterCount;
         var playerRespawns = playerArea.PlayerRespawns;
         var bombCount = 0;
 
