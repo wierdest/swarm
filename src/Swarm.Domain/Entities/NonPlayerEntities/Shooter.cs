@@ -29,7 +29,7 @@ public sealed class Shooter(
     protected override void OnDeath(NonPlayerEntityContext<INonPlayerEntity> context)
     {
         foreach (var evt in _deathTrigger.OnDeath(Position))
-            DomainEventList.Add(evt);
+            RaiseEvent(evt);
     }
 
     public override void Tick(NonPlayerEntityContext<INonPlayerEntity> context)
@@ -42,7 +42,7 @@ public sealed class Shooter(
         if (Behaviour.DecideAction(context) &&
             _weapon.TryFire(Position, Rotation, out var projectiles))
         {
-            DomainEventList.Add(new EnemyFiredEvent(Id, projectiles));
+            RaiseEvent(new EnemyFiredEvent(Id, projectiles));
         }
     }
 }

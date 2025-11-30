@@ -8,7 +8,7 @@ public record class GameSnapshot(
     PlayerDTO Player,
     HudData HudData,
     IReadOnlyList<ProjectileDTO> Projectiles,
-    IReadOnlyList<EnemyDTO> Enemies,
+    IReadOnlyList<NonPlayerEntityDTO> Enemies,
     IReadOnlyCollection<DrawableDTO> Walls,
     DrawableDTO PlayerArea,
     DrawableDTO TargetArea,

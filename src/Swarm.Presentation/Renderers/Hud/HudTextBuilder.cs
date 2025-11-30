@@ -10,13 +10,11 @@ public static class HudTextBuilder
     private static readonly string _bombsHint = "[Press Q to drop bomb] | Bombs:";
     private static readonly string _successHint = "SUCCESS!";
     private static readonly string _levelMissionHint = "Reach the green area!";
-
     private static string KillMissionHint(int amount) => $"Kill {amount} enemies!";
     private static string SaveMissionHint(int amount) => $"Save {amount} people!";
 
     public static string BuildHpText(int hp) => $"HP: {hp}";
     public static string BuildDeathsText(int respawns) => $"D: {respawns}";
-
     public static string BuildWeaponText(string weaponName, int currentAmmo, int maxAmmo, int ammoStock)
     {
         if (currentAmmo == 0)
@@ -29,7 +27,6 @@ public static class HudTextBuilder
 
         return $"{weaponName} {currentAmmo}/{maxAmmo} | S: {ammoStock}";
     }
-
     public static string BuildKillsText(int kills, int targetKills) => $"K: {kills}/{targetKills}";
     public static string BuildEnemiesText(int enemiesAlive) => $"E: {enemiesAlive}";
     public static string BuildBombText(int amount) => $"{_bombsHint} {amount}";
@@ -37,6 +34,8 @@ public static class HudTextBuilder
     public static string BuildCasualtiesText(int casualties) => $"C: {casualties}";
     public static string BuildHealthySavedText(int saved) => $"S: {saved}";
     public static string BuildTimerText(string timer) => $"T: {timer}";
+    public static string BuildInfectedText(int inffected) => $"I: {inffected}";
+
 
     public static string BuildTopLine(HudData hud)
     {
@@ -49,6 +48,7 @@ public static class HudTextBuilder
             BuildHealthyAliveText(hud.NumberOfHealthyAlive),
             BuildCasualtiesText(hud.Casualties),
             BuildHealthySavedText(hud.NumberOfHealthySaved),
+            BuildInfectedText(hud.Infected),
             BuildTimerText(hud.Timer)
         );
     }

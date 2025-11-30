@@ -47,6 +47,7 @@ public sealed class GameSessionService(
 
 
     // thread safe, because saving may be done in multithreading later on???
+    // TODO SaveGameService?
     private IReadOnlyList<SaveGame> AllSaves
     {
         get
@@ -210,8 +211,8 @@ public sealed class GameSessionService(
         
         _session = new GameSession(EntityId.New(), stage, player, walls, timer, targetScore, bombs);
 
-        StartSpawners(level);
         StartAreas(level);
+        StartSpawners(level);
 
         _logger.LogInformation("New session started with target score: {TargetScore}", targetScore.Value);
 
@@ -262,7 +263,9 @@ public sealed class GameSessionService(
         var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
 
         _spawners.Clear();
-
+        // SpawnerPoints are decided by the Wall building process
+        // We should make sure that we have enough room to fit the level.Spawners
+        // TODO: this, urgent
         var spawnerPositions = _session.SpawnerPoints.ToList();
         var random = new Random();
 
@@ -295,10 +298,25 @@ public sealed class GameSessionService(
                                     ),
                                     runawayStrategy: null
                                 );
-
-            var chaseBehaviour = new SeekBehaviour(
+                                
+            var healthySeekBehaviour = new SeekBehaviour(
                                     speed: 200f,
-                                    targetStrategy: new PlayerTargetStrategy(),
+                                    targetStrategy: new SafehouseTargetStrategy(
+                                        safehouse: _playerArea!.Position
+                                    ),
+                                    actionStrategy: null,
+                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
+                                        owner: ProjectileOwnerTypes.All,
+                                        threshold: 150f
+                                    ),
+                                    runawayStrategy: null
+            );
+
+            var zombieSeekBehaviour = new SeekBehaviour(
+                                    speed: 200f,
+                                    targetStrategy: new NearestHealthyOrPlayerTargetStrategy(
+                                        threshold: 150f
+                                    ),
                                     actionStrategy: null,
                                     dodgeStrategy: new NearestProjectileDodgeStrategy(
                                         owner: ProjectileOwnerTypes.Player,
@@ -307,7 +325,7 @@ public sealed class GameSessionService(
                                     runawayStrategy: null
                                 );
 
-            var chaseShootBehaviour = new SeekBehaviour(
+            var seekAndShootBehaviour = new SeekBehaviour(
                                     speed: 200f,
                                     targetStrategy: new PlayerTargetStrategy(),
                                     actionStrategy: new RangeShootStrategy(
@@ -317,10 +335,10 @@ public sealed class GameSessionService(
                                         owner: ProjectileOwnerTypes.Player,
                                         threshold: 150f
                                     ),
-                                    runawayStrategy: new SafehouseRunawayStrategy(
-                                        hitPointsThreshold: 9,
-                                        safeHouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
-                                        safeHouseWeight: 0.5f,
+                                    runawayStrategy: new PlayerToSafehouseRunawayStrategy(
+                                        threshold: 9,
+                                        safehouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
+                                        safehouseWeight: 0.5f,
                                         avoidPlayerWeight: 0.5f
                                     )
                                 );
@@ -334,20 +352,29 @@ public sealed class GameSessionService(
                     {
                         return spawnObjectType switch
                         {
+                            SpawnObjectTypes.Healthy => new Healthy(
+                                id: EntityId.New(),
+                                startPosition: pos,
+                                radius: new(10f),
+                                hp: new(1),
+                                behaviours: [healthySeekBehaviour, zombieSeekBehaviour],
+                                deathTrigger: new SpawnRadicalsDeathTrigger(1, new Radius(10f))
+                            ),
+
                             SpawnObjectTypes.Zombie => new Zombie(
                                 id: EntityId.New(),
                                 startPosition: pos,
-                                radius: new Radius(10f),
-                                hp: new HitPoints(1),
-                                behaviour: chaseBehaviour
+                                radius: new(10f),
+                                hp: new(1),
+                                behaviour: zombieSeekBehaviour
                             ),
 
                             SpawnObjectTypes.Shooter => new Shooter(
                                 id: EntityId.New(),
                                 startPosition: pos,
-                                radius: new Radius(12f),
-                                hp: new HitPoints(10),
-                                behaviour: chaseShootBehaviour,
+                                radius: new(12f),
+                                hp: new(10),
+                                behaviour: seekAndShootBehaviour,
                                 weapon: weapon,
                                 deathTrigger: new SpawnRadicalsDeathTrigger(4, new Radius(10f))
                             ),
@@ -428,27 +455,40 @@ public sealed class GameSessionService(
 
     private void HandleDomainEvent(IDomainEvent evt)
     {
+        // TODO: event contract so presentation can subscribe to it
         switch (evt)
         {
             case LevelCompletedEvent e:
-                OnLevelCompleted(e);
+                OnLevelCompletedEvent(e);
                 break;
             case TimeIsUpEvent e:
-                OnTimeIsUp(e);
+                OnTimeIsUpEvent(e);
                 break;
             case TimeUpdatedEvent e:
-                OnTimeUpdated(e);
+                OnTimeUpdatedEvent(e);
                 break;
             case RadicalSpawnEvent e:
-                OnEnemySpawn(e);
+                OnRadicalSpawnEvent(e);
                 break;
             case ReachedTargetScoreEvent e:
                 OnReachedTargetScoreEvent(e);
                 break;
+            case HealthyInfectedEvent e:
+                OnHealthyInfectedEvent(e);
+                break;
+            
             default:
                 _logger.LogWarning("Unhandled domain event type: {EventType}", evt.GetType().Name);
                 break;
         }
+    }
+
+    private void OnHealthyInfectedEvent(HealthyInfectedEvent evt)
+    {
+        if (_session is null) return;
+
+        _logger.LogInformation("Healthy {Id} was infected by a zombie!", evt.Id);
+
     }
 
     private void OnReachedTargetScoreEvent(ReachedTargetScoreEvent evt)
@@ -459,7 +499,7 @@ public sealed class GameSessionService(
        
     }
 
-    private void OnEnemySpawn(RadicalSpawnEvent evt)
+    private void OnRadicalSpawnEvent(RadicalSpawnEvent evt)
     {
         if (_session is null) return;
 
@@ -489,7 +529,7 @@ public sealed class GameSessionService(
         // _logger.LogInformation("{Count} enemies spawned from events!", evt.SpawnPositions.Count);
     }
 
-    private void OnLevelCompleted(LevelCompletedEvent evt)
+    private void OnLevelCompletedEvent(LevelCompletedEvent evt)
     {
         _logger.LogInformation("Level completed for session {SessionId}", evt.SessionId);
          _ = SaveAsync(new SaveName("Progression"));
@@ -497,13 +537,13 @@ public sealed class GameSessionService(
 
     }
 
-    private void OnTimeIsUp(TimeIsUpEvent evt)
+    private void OnTimeIsUpEvent(TimeIsUpEvent evt)
     {
         _ = SaveAsync(new SaveName("Progression"));        
         _logger.LogInformation("Time is up for session {SessionId}", evt.SessionId);
     }
 
-    private void OnTimeUpdated(TimeUpdatedEvent evt)
+    private void OnTimeUpdatedEvent(TimeUpdatedEvent evt)
     {
         // _logger.LogInformation("Session {SessionId} timer: {Seconds} remaining", evt.SessionId, evt.Timer.SecondsRemaining);    
     }

@@ -19,7 +19,7 @@ public sealed class NonPlayerEntityContext<T>(
 {
     public Vector2 Position { get; private set; } = position;
     public Vector2 PlayerPosition { get; private set; } = playerPosition;
-    private IReadOnlyList<Projectile> _projectiles = projectiles ?? [];
+    private readonly IReadOnlyList<Projectile> _projectiles = projectiles ?? [];
     public Projectile? FindNearestProjectile(ProjectileOwnerTypes owner, float threshold)
     {
         Projectile? nearest = null;
@@ -28,7 +28,7 @@ public sealed class NonPlayerEntityContext<T>(
 
         foreach (var p in _projectiles)
         {
-            if (owner != ProjectileOwnerTypes.None && p.Owner != owner)
+            if (owner != ProjectileOwnerTypes.All && p.Owner != owner)
                 continue;
 
             var delta = p.Position - Position;
@@ -49,7 +49,7 @@ public sealed class NonPlayerEntityContext<T>(
     public int SelfIndex { get; private set; } = selfIndex;
     public HitPoints HP { get; private set; } = hitPoints;
     public T Self => (T)Others[SelfIndex];
-    public INonPlayerEntity? NearestPerson => FindNearestOfType<Healthy>();
+    public INonPlayerEntity? NearestHealthy => FindNearestOfType<Healthy>();
     private INonPlayerEntity? FindNearestOfType<TType>() where TType : INonPlayerEntity
     {
         INonPlayerEntity? nearest = null;

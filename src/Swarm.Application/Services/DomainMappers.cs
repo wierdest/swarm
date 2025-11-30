@@ -23,11 +23,20 @@ static class DomainMappers
         foreach (var proj in s.Projectiles)
             projectiles.Add(new ProjectileDTO(proj.Position.X, proj.Position.Y, proj.Radius));
 
-        var enemies = new List<EnemyDTO>(s.NonPlayerEntities.Count);
+        var entities = new List<NonPlayerEntityDTO>(s.NonPlayerEntities.Count);
         foreach (var e in s.NonPlayerEntities)
         {
-            var enemyRotation = MathF.Atan2(e.Rotation.Y, e.Rotation.X);
-            enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius, enemyRotation, e is Shooter));
+            var rotation = MathF.Atan2(e.Rotation.Y, e.Rotation.X);
+
+            var type = e is Healthy healthy && healthy.IsInfected ? "Zombie" : e.GetType().Name;
+
+            entities.Add(
+                new NonPlayerEntityDTO(
+                    e.Position.X,
+                    e.Position.Y,
+                    e.Radius,
+                    rotation,
+                    type));
         }
 
         var hud = ToHud(s, pA, t);
@@ -48,7 +57,7 @@ static class DomainMappers
                 player,
                 hud,
                 projectiles,
-                enemies,
+                entities,
                 walls,
                 playerArea,
                 targetArea,
@@ -61,19 +70,18 @@ static class DomainMappers
                 s.AimPosition.Y
             );
     }
-
     private static HudData ToHud(GameSession s, PlayerArea pA, TargetArea t)
     {
         var p = s.Player;
         var w = p.ActiveWeapon;
 
         return new HudData(
-            s.Kill,
+            s.Kills,
             s.TargetKills,
             p.HP,
             pA.PlayerRespawns,
             s.TimeString,
-            s.ZombieCount,
+            s.EnemyCount + s.InfectedCount,
             s.IsLevelCompleted,
             s.HasReachedTargetKills(),
             w.Name,
@@ -81,9 +89,10 @@ static class DomainMappers
             w.CurrentAmmo,
             w.MaxAmmo,
             s.BombCount,
-            s.HealthyCount,
+            s.HealthyCount + s.Salvations,
             s.Casualties,
-            s.Salvations
+            s.Salvations,
+            s.Infected
         );
     }
 

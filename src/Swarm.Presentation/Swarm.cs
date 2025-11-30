@@ -108,35 +108,30 @@ public class Swarm : Game
                 [
                     new(
                         CooldownSeconds: 0.2f,
-                        BehaviourType: "",
                         SpawnObjectType: "Zombie",
                         BatchSize: 10
                     ),
 
                     new(
                         CooldownSeconds: 0.2f,
-                        BehaviourType: "",
                         SpawnObjectType: "Zombie",
                         BatchSize: 10
                     ),
 
                     new(
                         CooldownSeconds: 0.2f,
-                        BehaviourType: "",
                         SpawnObjectType: "Zombie",
                         BatchSize: 10
                     ),
 
                      new(
                         CooldownSeconds: 0.2f,
-                        BehaviourType: "",
-                        SpawnObjectType: "Zombie",
+                        SpawnObjectType: "Healthy",
                         BatchSize: 10
                     ),
 
                     new(
                         CooldownSeconds: 12f,
-                        BehaviourType: "",
                         SpawnObjectType: "Shooter",
                         BatchSize: 1
                     )
@@ -319,7 +314,7 @@ public class Swarm : Game
             DrawCircle(new Vector2(p.X, p.Y), (int)p.Radius, Color.OrangeRed);
 
         foreach (var e in snap.Enemies)
-            DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, e.IsBoss ? Color.Purple : Color.Yellow);
+            DrawPlayer(new Vector2(e.X, e.Y), (int)e.Radius, e.RotationAngle, GetColorForNonPlayerEntityType(e.Type));
 
         if (snap.IsPaused || snap.IsInterrupted || snap.IsTimeUp || snap.IsCompleted)
         {
@@ -370,7 +365,7 @@ public class Swarm : Game
 
         GraphicsDevice.Clear(Color.Black);
 
-        _spriteBatch.Begin(samplerState: SamplerState.PointClamp); // PointClamp to avoid blur
+        _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         _spriteBatch.Draw(_renderTarget, _drawDestination, Color.White);
 
         DrawBorder(_spriteBatch, _drawDestination, BORDER, Color.Black );
@@ -381,6 +376,16 @@ public class Swarm : Game
         _spriteBatch.End();
 
         base.Draw(gameTime);
+    }
+
+    private static Color GetColorForNonPlayerEntityType(string type)
+    {
+        return type switch
+        {
+            "Shooter" => Color.Purple,
+            "Healthy" => Color.Orange,
+            _ => Color.Yellow
+        };
     }
 
     private Texture2D GetCircle(int radius)

@@ -10,4 +10,5 @@ public interface INonPlayerEntity : ILivingEntity
     void RevertLastMovement();
     IReadOnlyList<IDomainEvent>? DomainEvents { get; }
     void ClearDomainEvents();
+    void RaiseEvent(IDomainEvent evt);
 }

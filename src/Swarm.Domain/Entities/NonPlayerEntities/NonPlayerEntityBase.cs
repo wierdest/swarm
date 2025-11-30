@@ -20,8 +20,9 @@ public abstract class NonPlayerEntityBase(
     protected Vector2 LastPosition { get; private set; } = startPosition;
     public Radius Radius { get; } = radius;
     public Direction Rotation { get; protected set; } = Direction.From(1, 0);
-    protected readonly INonPlayerEntityBehaviour Behaviour = behaviour;
-    protected readonly List<IDomainEvent> DomainEventList = new();
+    protected INonPlayerEntityBehaviour Behaviour = behaviour;
+    protected readonly List<IDomainEvent> DomainEventList = [];
+    public virtual void RaiseEvent(IDomainEvent evt) => DomainEventList.Add(evt);
     public virtual IReadOnlyList<IDomainEvent>? DomainEvents => DomainEventList;
 
      public virtual void Heal(Damage damage)
@@ -100,4 +101,10 @@ public abstract class NonPlayerEntityBase(
     public void RevertLastMovement() => Position = LastPosition;
 
     protected virtual void OnDeath(NonPlayerEntityContext<INonPlayerEntity> context) { }
+
+    protected void SwitchBehaviour(INonPlayerEntityBehaviour newBehaviour)
+    {
+        Behaviour = newBehaviour;
+    }
+
 }
