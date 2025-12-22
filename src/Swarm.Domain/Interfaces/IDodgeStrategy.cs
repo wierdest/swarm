@@ -5,5 +5,5 @@ namespace Swarm.Domain.Interfaces;
 
 public interface IDodgeStrategy
 {
-    Direction? DecideDodge(NonPlayerEntityContext context);
+    Direction? DecideDodge(NonPlayerEntityContext<INonPlayerEntity> context);
 }

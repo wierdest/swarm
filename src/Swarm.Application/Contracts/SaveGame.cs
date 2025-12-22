@@ -1,8 +1,9 @@
-﻿using Swarm.Application.Contracts;
+﻿using Swarm.Application.DTOs;
 
-namespace Swarm.Application;
+namespace Swarm.Application.Contracts;
 
 public record class SaveGame(
     DateTimeOffset SaveTime,
-    Hud Hud
+    HudData HudData,
+    IEnumerable<BombDTO> Bombs
 );

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Swarm.Application;
+using Swarm.Application.Contracts;
+using Swarm.Presentation.Renderers.Hud;
 
 namespace Swarm.Presentation.Renderers;
 
@@ -25,13 +26,13 @@ public class SaveGameRenderer
         int start = _page * PageSize;
         int end = Math.Min(saves.Count, start + PageSize);
 
-        for (int i = start; i < end; i++)
+        for (int i = start; i < end; i++) 
         {
             var save = saves[i];
             string date = save.SaveTime.ToString("dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
 
-            string text = $"{i + 1}. {date} {save.Hud.ToDisplayString()}";
-            Vector2 pos = new Vector2(50, 50 + (i - start) * 20);
+            string text = $"{i + 1}. {date} {HudTextBuilder.BuildSaveGameString(save.HudData)}";
+            Vector2 pos = new(50, 50 + (i - start) * 20);
             _spriteBatch.DrawString(_font, text, pos, Color.White);
         }
     }

@@ -10,5 +10,6 @@ public interface ILivingEntity : ICollidable
     bool IsDead { get; }
     void TakeDamage(Damage damage);
     void Heal(Damage damage);
+    void Die() => TakeDamage(new(HP));
 
 }

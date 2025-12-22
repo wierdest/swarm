@@ -3,4 +3,4 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Events;
 
-public sealed record EnemySpawnEvent(IReadOnlyList<Vector2> SpawnPositions) : IDomainEvent;
+public sealed record RadicalSpawnEvent(IReadOnlyList<Vector2> SpawnPositions) : IDomainEvent;

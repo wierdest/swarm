@@ -2,6 +2,8 @@
 using Swarm.Application.DTOs;
 using Swarm.Domain.Entities;
 using Swarm.Domain.Entities.NonPlayerEntities;
+using Swarm.Domain.Factories;
+using Swarm.Domain.Factories.Evaluators;
 using Swarm.Domain.GameObjects;
 
 namespace Swarm.Application.Services;
@@ -21,11 +23,20 @@ static class DomainMappers
         foreach (var proj in s.Projectiles)
             projectiles.Add(new ProjectileDTO(proj.Position.X, proj.Position.Y, proj.Radius));
 
-        var enemies = new List<EnemyDTO>(s.NonPlayerEntities.Count);
+        var entities = new List<NonPlayerEntityDTO>(s.NonPlayerEntities.Count);
         foreach (var e in s.NonPlayerEntities)
         {
-            var enemyRotation = MathF.Atan2(e.Rotation.Y, e.Rotation.X);
-            enemies.Add(new EnemyDTO(e.Position.X, e.Position.Y, e.Radius, enemyRotation, e is BossEnemy));
+            var rotation = MathF.Atan2(e.Rotation.Y, e.Rotation.X);
+
+            var type = e is Healthy healthy && healthy.IsInfected ? "Zombie" : e.GetType().Name;
+
+            entities.Add(
+                new NonPlayerEntityDTO(
+                    e.Position.X,
+                    e.Position.Y,
+                    e.Radius,
+                    rotation,
+                    type));
         }
 
         var hud = ToHud(s, pA, t);
@@ -46,7 +57,7 @@ static class DomainMappers
                 player,
                 hud,
                 projectiles,
-                enemies,
+                entities,
                 walls,
                 playerArea,
                 targetArea,
@@ -59,56 +70,43 @@ static class DomainMappers
                 s.AimPosition.Y
             );
     }
-
-    private static Hud ToHud(GameSession s, PlayerArea pA, TargetArea t)
+    private static HudData ToHud(GameSession s, PlayerArea pA, TargetArea t)
     {
         var p = s.Player;
+        var w = p.ActiveWeapon;
 
-        // Level status string
-        var levelStateString =
-            s.IsLevelCompleted
-                ? "SUCCESS!"
-                : t.IsOpenToPlayer
-                    ? "Reach the green area!"
-                    : $"Kill {s.TargetScore} enemies!";
-
-        // Weapon info string
-        var weaponString = "";
-        if (p.ActiveWeapon is not null)
-        {
-            var w = p.ActiveWeapon;
-            if (w.CurrentAmmo == 0)
-            {
-                if (p.Ammo == 0)
-                    weaponString = $"{w.Name} [Find some ammo!]";
-                else
-                    weaponString = $"{w.Name} [Press E to reload] | Fuel: {p.Ammo}";
-            }
-            else
-            {
-                weaponString = $"{w.Name} {w.CurrentAmmo}/{w.MaxAmmo} | Fuel: {p.Ammo}";
-            }
-        }
-
-        return new Hud(
-            s.Score,
-            s.TargetScore,
+        return new HudData(
+            s.Kills,
+            s.TargetKills,
             p.HP,
             pA.PlayerRespawns,
             s.TimeString,
-            s.EnemyCount,
-            levelStateString,
-            weaponString
+            s.EnemyCount + s.InfectedCount,
+            s.IsLevelCompleted,
+            s.HasReachedTargetKills(),
+            w.Name,
+            p.Ammo,
+            w.CurrentAmmo,
+            w.MaxAmmo,
+            s.BombCount,
+            s.HealthyCount + s.Salvations,
+            s.Casualties,
+            s.Salvations,
+            s.Infected
         );
     }
 
    public static SaveGame ToSaveGame(GameSession s, PlayerArea pA, TargetArea t)
-    {
+   {
         var hud = ToHud(s, pA, t);
-        
+
+        var bombQuantity = new BombQuantityEvaluator(s, pA).Evaluate();
+        var bombs = BombFactory.CreateBombs(bombQuantity);
+        var bombDTOs = bombs.Select(b => new BombDTO(b.Identifier, b.Cooldown.PeriodSeconds));
         return new SaveGame(
             DateTimeOffset.Now,
-            hud
+            hud,
+            bombDTOs
         );
     }
 }

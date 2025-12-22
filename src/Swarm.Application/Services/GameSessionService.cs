@@ -47,6 +47,7 @@ public sealed class GameSessionService(
 
 
     // thread safe, because saving may be done in multithreading later on???
+    // TODO SaveGameService?
     private IReadOnlyList<SaveGame> AllSaves
     {
         get
@@ -118,6 +119,8 @@ public sealed class GameSessionService(
         _session.RotatePlayerTowards(_crosshairs);
     }
 
+    public void DropBomb() => _session?.DropBomb();
+
     public async Task StartNewSession(GameConfig config)
     {
         // TODO Domain mapper deals with this:
@@ -167,10 +170,11 @@ public sealed class GameSessionService(
         // Loads narrative! 
         await LoadAllSavesAsync(new SaveName("Progression"));
 
-        int targetScoreValue = LatestCachedSave?.Hud.TargetScore is int prevTarget
-            ? GetLevelTestTargetScore(prevTarget)
+        int targetScoreValue = LatestCachedSave?.HudData.TargetKills is int prevTarget
+            ? GetLevelTargetScore(prevTarget)
             : level.InitialTargetScore;
 
+        
         var targetScore = new Score(targetScoreValue);
 
         var phaseALevel = targetScore.Value.Equals(FINAL_TARGET_SCORE);
@@ -189,7 +193,7 @@ public sealed class GameSessionService(
             levelBounds: stage,
             wallRadius: 40f,
             seedCount: phaseALevel ? 7 : 3
-
+ 
         ).ToList();
 
         var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
@@ -197,26 +201,30 @@ public sealed class GameSessionService(
         {
             wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, stage);
         }
-
-        
         var timer = new RoundTimer(config.RoundLength);
 
+        var bombs = LatestCachedSave?.Bombs
+            .Select(b => new Bomb(b.Identifier, new Cooldown(b.CooldownSeconds)))
+            .ToList()
+            ?? [];
 
-        _session = new GameSession(EntityId.New(), stage, player, walls, timer, targetScore);
+        
+        _session = new GameSession(EntityId.New(), stage, player, walls, timer, targetScore, bombs);
 
-        StartSpawners(level);
         StartAreas(level);
+        StartSpawners(level);
 
         _logger.LogInformation("New session started with target score: {TargetScore}", targetScore.Value);
 
     }
 
-    private static int GetLevelTestTargetScore(int prevTarget)
+    private static int GetLevelTargetScore(int prevTarget)
     {
         var next = prevTarget + TARGET_SCORE_INCREMENT;
 
         return next > FINAL_TARGET_SCORE ? FINAL_TARGET_SCORE : next;
     }
+
 
     private void StartAreas(LevelConfig level)
     {
@@ -255,13 +263,77 @@ public sealed class GameSessionService(
         var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
 
         _spawners.Clear();
-
+        // SpawnerPoints are decided by the Wall building process
+        // We should make sure that we have enough room to fit the level.Spawners
+        // TODO: this, urgent
         var spawnerPositions = _session.SpawnerPoints.ToList();
         var random = new Random();
 
+        var patrolBehaviour = new PatrolBehaviour(
+                                    waypoints: level.BossConfig.Waypoints.Select(p => new Vector2(p.X, p.Y)).ToList(),
+                                    speed: level.BossConfig.Speed,
+                                    actionStrategy: new RangeShootStrategy(
+                                        shootRange: level.BossConfig.ShootRange
+                                    ),
+                                    actionCooldown: new Cooldown(level.BossConfig.Cooldown),
+                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
+                                        owner: ProjectileOwnerTypes.Player,
+                                        threshold: 150f,
+                                        multiplier: 1.5f
+                                    ),
+                                    runawayStrategy: null
+                                );
+                                
+            
+            
+        var healthySeekBehaviour = new SeekBehaviour(
+                                speed: 200f,
+                                targetStrategy: new SafehouseTargetStrategy(
+                                    safehouse: _playerArea!.Position
+                                ),
+                                actionStrategy: null,
+                                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                                    owner: ProjectileOwnerTypes.All,
+                                    threshold: 150f
+                                ),
+                                runawayStrategy: null
+        );
+
+        var zombieSeekBehaviour = new SeekBehaviour(
+                                speed: 200f,
+                                targetStrategy: new NearestHealthyOrPlayerTargetStrategy(
+                                    threshold: 150f
+                                ),
+                                actionStrategy: null,
+                                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                                    owner: ProjectileOwnerTypes.Player,
+                                    threshold: 150f
+                                ),
+                                runawayStrategy: null
+                            );
+
+        
+        
+        var seekAndShootBehaviour = new SeekBehaviour(
+                                speed: 200f,
+                                targetStrategy: new PlayerTargetStrategy(),
+                                actionStrategy: new RangeShootStrategy(
+                                    shootRange: level.BossConfig.ShootRange
+                                ),
+                                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                                    owner: ProjectileOwnerTypes.Player,
+                                    threshold: 150f
+                                ),
+                                runawayStrategy: new PlayerToSafehouseRunawayStrategy(
+                                    threshold: 9,
+                                    safehouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
+                                    safehouseWeight: 0.5f,
+                                    avoidPlayerWeight: 0.5f
+                                )
+                            );
+
         foreach (var spawnerConfig in level.Spawners)
         {
-
             if (spawnerPositions.Count == 0)
                 throw new DomainException("No available spawner positions left!");
 
@@ -274,71 +346,40 @@ public sealed class GameSessionService(
 
             var spawnObjectType = SpawnObjectTypesExtensions.Parse(spawnerConfig.SpawnObjectType);
 
-            // TODO behaviour factory
-            var patrolBehaviour = new PatrolBehaviour(
-                                    waypoints: level.BossConfig.Waypoints.Select(p => new Vector2(p.X, p.Y)).ToList(),
-                                    speed: level.BossConfig.Speed,
-                                    actionStrategy: new RangeShootStrategy(
-                                        shootRange: level.BossConfig.ShootRange
-                                    ),
-                                    shootCooldown: new Cooldown(level.BossConfig.Cooldown),
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f,
-                                        maxDodgeMultiplier: 1.5f
-                                    ),
-                                    runawayStrategy: null
-                                );
-
-            var chaseBehaviour = new ChaseBehaviour(
-                                    speed: 200f,
-                                    actionStrategy: null,
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f
-                                    ),
-                                    runawayStrategy: null
-                                );
-
-            var chaseShootBehaviour = new ChaseBehaviour(
-                                    speed: 200f,
-                                    actionStrategy: new RangeShootStrategy(
-                                        shootRange: level.BossConfig.ShootRange
-                                    ),
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        dodgeDistanceThreshold: 150f
-                                    ),
-                                    runawayStrategy: new SafehouseRunawayStrategy(
-                                        hitPointsThreshold: 9,
-                                        safeHouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
-                                        safeHouseWeight: 0.5f,
-                                        avoidPlayerWeight: 0.5f
-                                    )
-                                );
-
             var spawner = new NonPlayerEntitySpawner(
                 _session,
-                new FixedPositionEnemySpawnerBehaviour(
+                new FixedPositionNonPlayerEntitySpawnerBehaviour(
                     position: spawnPos,
                     cooldownSeconds: spawnerConfig.CooldownSeconds,
-                    enemyFactory: pos =>
+                    entityFactory: pos =>
                     {
                         return spawnObjectType switch
                         {
-                            SpawnObjectTypes.BasicEnemy => new BasicEnemy(
+                            SpawnObjectTypes.Healthy => new Healthy(
                                 id: EntityId.New(),
                                 startPosition: pos,
-                                radius: new Radius(10f),
-                                initialHitPoints: new HitPoints(1),
-                                behaviour: chaseBehaviour
+                                radius: new(10f),
+                                hp: new(1),
+                                behaviours: [healthySeekBehaviour, zombieSeekBehaviour],
+                                deathTrigger: new SpawnRadicalsDeathTrigger(1, new Radius(10f))
                             ),
 
-                            SpawnObjectTypes.BossEnemy => new BossEnemy(
+                            SpawnObjectTypes.Zombie => new Zombie(
                                 id: EntityId.New(),
                                 startPosition: pos,
-                                radius: new Radius(12f),
-                                initialHitPoints: new HitPoints(10),
-                                behaviour: chaseShootBehaviour,
+                                radius: new(10f),
+                                hp: new(1),
+                                behaviour: zombieSeekBehaviour
+                            ),
+
+                            SpawnObjectTypes.Shooter => new Shooter(
+                                id: EntityId.New(),
+                                startPosition: pos,
+                                radius: new(12f),
+                                hp: new(10),
+                                behaviour: seekAndShootBehaviour,
                                 weapon: weapon,
-                                deathTrigger: new SpawnMinionsDeathTrigger(4, new Radius(10f))
+                                deathTrigger: new SpawnRadicalsDeathTrigger(4, new Radius(10f))
                             ),
                             _ => throw new DomainException($"Invalid spawn object type: {spawnObjectType}")
                         };
@@ -392,6 +433,8 @@ public sealed class GameSessionService(
 
         foreach (var spawner in _spawners)
         {
+            if (_session.IsWaitingForBombCooldown) continue;
+            
             spawner.Tick(dt);
         }
 
@@ -415,27 +458,40 @@ public sealed class GameSessionService(
 
     private void HandleDomainEvent(IDomainEvent evt)
     {
+        // TODO: event contract so presentation can subscribe to it
         switch (evt)
         {
             case LevelCompletedEvent e:
-                OnLevelCompleted(e);
+                OnLevelCompletedEvent(e);
                 break;
             case TimeIsUpEvent e:
-                OnTimeIsUp(e);
+                OnTimeIsUpEvent(e);
                 break;
             case TimeUpdatedEvent e:
-                OnTimeUpdated(e);
+                OnTimeUpdatedEvent(e);
                 break;
-            case EnemySpawnEvent e:
-                OnEnemySpawn(e);
+            case RadicalSpawnEvent e:
+                OnRadicalSpawnEvent(e);
                 break;
             case ReachedTargetScoreEvent e:
                 OnReachedTargetScoreEvent(e);
                 break;
+            case HealthyInfectedEvent e:
+                OnHealthyInfectedEvent(e);
+                break;
+            
             default:
                 _logger.LogWarning("Unhandled domain event type: {EventType}", evt.GetType().Name);
                 break;
         }
+    }
+
+    private void OnHealthyInfectedEvent(HealthyInfectedEvent evt)
+    {
+        if (_session is null) return;
+
+        _logger.LogInformation("Healthy {Id} was infected by a zombie!", evt.Id);
+
     }
 
     private void OnReachedTargetScoreEvent(ReachedTargetScoreEvent evt)
@@ -446,23 +502,25 @@ public sealed class GameSessionService(
        
     }
 
-    private void OnEnemySpawn(EnemySpawnEvent evt)
+    private void OnRadicalSpawnEvent(RadicalSpawnEvent evt)
     {
         if (_session is null) return;
 
         for (int i = 0; i < evt.SpawnPositions.Count; i++)
         {
-            var newEnemy = new BasicEnemy(
+            var newEnemy = new Zombie(
                 id: EntityId.New(),
                 startPosition: evt.SpawnPositions[i],
                 radius: new Radius(10f),
-                initialHitPoints: new HitPoints(1),
-                behaviour: new ChaseBehaviour(
+                hp: new HitPoints(1),
+                behaviour: new SeekBehaviour(
                     speed: 120f,
+                    targetStrategy: new PlayerTargetStrategy(),
                     actionStrategy: null,
                     dodgeStrategy: new NearestProjectileDodgeStrategy(
-                        dodgeDistanceThreshold: 250f,
-                        maxDodgeMultiplier: 3.0f
+                        owner: ProjectileOwnerTypes.Player,
+                        threshold: 250f,
+                        multiplier: 3.0f
                     ),
                     runawayStrategy: null
                 )
@@ -474,7 +532,7 @@ public sealed class GameSessionService(
         // _logger.LogInformation("{Count} enemies spawned from events!", evt.SpawnPositions.Count);
     }
 
-    private void OnLevelCompleted(LevelCompletedEvent evt)
+    private void OnLevelCompletedEvent(LevelCompletedEvent evt)
     {
         _logger.LogInformation("Level completed for session {SessionId}", evt.SessionId);
          _ = SaveAsync(new SaveName("Progression"));
@@ -482,13 +540,13 @@ public sealed class GameSessionService(
 
     }
 
-    private void OnTimeIsUp(TimeIsUpEvent evt)
+    private void OnTimeIsUpEvent(TimeIsUpEvent evt)
     {
-
+        _ = SaveAsync(new SaveName("Progression"));        
         _logger.LogInformation("Time is up for session {SessionId}", evt.SessionId);
     }
 
-    private void OnTimeUpdated(TimeUpdatedEvent evt)
+    private void OnTimeUpdatedEvent(TimeUpdatedEvent evt)
     {
         // _logger.LogInformation("Session {SessionId} timer: {Seconds} remaining", evt.SessionId, evt.Timer.SecondsRemaining);    
     }

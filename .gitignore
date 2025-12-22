@@ -494,3 +494,6 @@ Content/obj/
 
 # pipeline tool cache
 *.mgcb.cache
+
+# sonarqube
+.sonarqube

@@ -5,12 +5,12 @@ using Swarm.Domain.Time;
 
 namespace Swarm.Domain.Entities.NonPlayerEntities.DeathTriggers;
 
-public sealed class SpawnMinionsDeathTrigger(
-    int minionCount,
+public sealed class SpawnRadicalsDeathTrigger(
+    int count,
     Radius radius
 ) : IDeathTrigger
 {
-    private readonly int _minionCount = minionCount;
+    private readonly int _count = count;
     private readonly Radius _radius = radius;
     
     public IEnumerable<IDomainEvent> OnDeath(Vector2 position)
@@ -19,13 +19,13 @@ public sealed class SpawnMinionsDeathTrigger(
 
         var spawnPositions = new List<Vector2>();
 
-        for (int i = 0; i < _minionCount; i++)
+        for (int i = 0; i < _count; i++)
         {
-            float angle = MathF.Tau * i / _minionCount; // 360° around
+            float angle = MathF.Tau * i / _count; // 360° around
             var offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * _radius;
             spawnPositions.Add(position + offset);
         }
-        events.Add(new EnemySpawnEvent(spawnPositions));
+        events.Add(new RadicalSpawnEvent(spawnPositions));
         return events;
     }
     

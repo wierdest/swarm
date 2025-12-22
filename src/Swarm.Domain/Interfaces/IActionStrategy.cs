@@ -5,5 +5,5 @@ namespace Swarm.Domain.Interfaces;
 
 public interface IActionStrategy
 {
-    bool ShouldAct(NonPlayerEntityContext context, ref Cooldown cooldown);
+    bool ShouldAct(NonPlayerEntityContext<INonPlayerEntity> context, ref Cooldown cooldown);
 }

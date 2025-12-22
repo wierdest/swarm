@@ -8,7 +8,8 @@ public record class InputStateDTO(
     float? AimRadians,
     float AimMagnitude,
     bool FirePressed,
-    bool FireHeld,  
+    bool FireHeld,
+    bool DropBomb,
     bool Reload,
     bool Pause,
     bool Save,
@@ -30,15 +31,16 @@ public record class InputStateDTO(
         if (AimRadians.HasValue) parts.Add($"AimRadians={AimRadians.Value:F2}");
         if (AimMagnitude > 0f) parts.Add($"AimMagnitude={AimMagnitude:F2}");
         if (FirePressed) parts.Add("FirePressed");
-        if (FireHeld)    parts.Add("FireHeld");
-        if (Reload)      parts.Add("Reload");
-        if (Pause)       parts.Add("Pause");
-        if (Save)        parts.Add("Save");
-        if (Load)        parts.Add("Load");
-        if (Restart)     parts.Add("Restart");
-        if (ViewStats)   parts.Add("ViewStats");
-        if (Left)        parts.Add("Left");
-        if (Right)       parts.Add("Right");
+        if (FireHeld) parts.Add("FireHeld");
+        if (DropBomb) parts.Add("DropBomb");
+        if (Reload) parts.Add("Reload");
+        if (Pause) parts.Add("Pause");
+        if (Save) parts.Add("Save");
+        if (Load) parts.Add("Load");
+        if (Restart) parts.Add("Restart");
+        if (ViewStats) parts.Add("ViewStats");
+        if (Left) parts.Add("Left");
+        if (Right) parts.Add("Right");
 
         return string.Join(", ", parts);
     }

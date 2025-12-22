@@ -14,7 +14,7 @@ public sealed class NonPlayerEntitySpawner(
 
     public override void Tick(DeltaTime dt)
     {
-        if (_session.MaxNonPlayerEntities) return;
+        if (_session.ReachedMaxNonPlayerEntities) return;
         
         var nonPlayerEntity = behaviour.TrySpawn(dt.Seconds, _session.Stage);
 

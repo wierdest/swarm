@@ -15,7 +15,8 @@ public sealed class GameSession(
     Player player,
     List<Wall> walls,
     RoundTimer timer,
-    Score targetScore
+    Score targetKill,
+    List<Bomb> bombs
 )
 {
     public EntityId Id { get; } = id;
@@ -25,12 +26,46 @@ public sealed class GameSession(
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
     private readonly List<INonPlayerEntity> _nonPlayerEntities = [];
     public IReadOnlyList<INonPlayerEntity> NonPlayerEntities => _nonPlayerEntities;
-    public int EnemyCount => _nonPlayerEntities.Count(e => e is BasicEnemy or BossEnemy);
-    public bool MaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
-    private Score _score = new();
-    public Score Score => _score;   
-    public Score TargetScore => targetScore;
-    public bool HasReachedTargetScore() => _score == TargetScore;
+    public Score EnemyCount => new(_nonPlayerEntities.Count(e => e is Zombie or Shooter));
+    public Score EnemyOverallPopulation => new(EnemyCount + Kills);
+    public Score ShooterCount => new(_nonPlayerEntities.Count(e => e is Shooter));
+    public Score HealthyCount => new(_nonPlayerEntities.Count(e => e is Healthy healthy && !healthy.IsInfected));
+    public Score InfectedCount => new(_nonPlayerEntities.Count(e => e is Healthy healthy && healthy.IsInfected));
+    public bool ReachedMaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
+    public Score Kills { get; private set; } = new(0);
+    private void AddKill() => Kills = Kills.Add(1);
+    public Score TargetKills => targetKill;
+    public Score KillBonus => (Score)(HasReachedTargetKills() ? Kills - targetKill : 0);
+    public bool HasReachedTargetKills() => Kills >= TargetKills;
+    public Score Casualties { get; private set; } = new(0);
+    private void AddCasualty() => Casualties = Casualties.Add(1);
+    public Score Salvations { get; private set; } = new(0);
+    private void AddSalvation() => Salvations = Salvations.Add(1);
+    public Score Infected { get; private set; } = new(0);
+    private void AddInfected() => Infected = Infected.Add(1);
+
+    public void SaveHealthy(INonPlayerEntity healthy)
+    {
+        _nonPlayerEntities.Remove(healthy);
+        AddSalvation();
+    }
+
+    private readonly List<Bomb> _bombs = bombs;
+    public IReadOnlyList<Bomb> Bombs => _bombs;
+    public Score BombCount => new(_bombs.Count);
+    public void AddBomb(Bomb bomb) => _bombs.Add(bomb);
+
+    private bool _isWaitingForBombCooldown = false;
+    public bool IsWaitingForBombCooldown => _isWaitingForBombCooldown;
+    public void DropBomb()
+    {
+        if (_bombs.Count == 0) return;
+        _nonPlayerEntities.ForEach(e => e.Die());
+        ((ILivingEntity)Player).Die();
+        _bombs[^1].Start();
+        _isWaitingForBombCooldown = true;
+    }
+
     public List<Wall> Walls { get; } = walls;
     public IEnumerable<Vector2> SpawnerPoints => Walls.Where(w => w.Spawners is not null).SelectMany(w => w.Spawners!);
     private bool _isLevelCompleted = false;
@@ -40,18 +75,16 @@ public sealed class GameSession(
     private bool _isTimeUp = false;
     public bool IsTimeUp => _isTimeUp;
     public String TimeString => _timer.ToString();
-    private bool _isPaused;
-    public bool IsPaused => _isPaused;
-    public void Pause() => _isPaused = true;
-    public void Resume() => _isPaused = false;
+    public bool IsPaused { get; private set; }
+    public void Pause() => IsPaused = true;
+    public void Resume() => IsPaused = false;
     private readonly List<IDomainEvent> _domainEvents = [];
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
     private void RaiseEvent(IDomainEvent evt) => _domainEvents.Add(evt);
     public void ClearDomainEvents() => _domainEvents.Clear();
-    public bool IsOverrun => NonPlayerEntities.Count > TargetScore;
-    private bool _isInterrupted = false;
-    public bool IsInterrupted => _isInterrupted;
-    public void Interrupt() => _isInterrupted = true;
+    public bool IsOverrun => NonPlayerEntities.Count > TargetKills;
+    public bool IsInterrupted { get; private set; }
+    public void Interrupt() => IsInterrupted = true;
     public Vector2 AimPosition = new();
     public void CompleteLevel()
     {
@@ -63,8 +96,7 @@ public sealed class GameSession(
         RaiseEvent(new LevelCompletedEvent(Id));
     }
 
-    public void ApplyInput(Direction dir, float speed) =>
-        Player.ApplyInput(dir, speed);
+    public void ApplyInput(Direction dir, float speed) => Player.ApplyInput(dir, speed);
 
     public void Fire(bool isPressed, bool isHeld)
     {
@@ -78,15 +110,10 @@ public sealed class GameSession(
             _projectiles.AddRange(projectiles);
     }
 
-    public void Reload()
-    {
-        Player.ReloadWeapon();
-    }
+    public void Reload() => Player.ReloadWeapon();
 
-    public void AddAmmo(int value)
-    {
-        Player.AddAmmo(value);
-    }
+    public void AddAmmo(int value) => Player.AddAmmo(value);
+    
 
     public void RotatePlayerTowards(Vector2 target)
     {
@@ -111,12 +138,26 @@ public sealed class GameSession(
         RotatePlayerTowards(AimPosition);
     }
 
-
     public void Tick(DeltaTime dt)
     {
-        if (_isPaused || _isTimeUp || _isLevelCompleted) return;
+        if (IsPaused || _isTimeUp || _isLevelCompleted) return;
 
-        UpdateTimer(dt);
+        if (_isWaitingForBombCooldown)
+        {
+            var bomb = _bombs[^1];
+            bomb.Tick(dt);
+
+            if (bomb.IsReady)
+            {
+                _isWaitingForBombCooldown = false;
+                _bombs.Remove(bomb);
+            }
+        }
+        else
+        {
+            UpdateTimer(dt);
+        }
+        
         UpdatePlayer(dt);
         UpdateNonPlayerEntities(dt);
         UpdateProjectiles(dt);
@@ -148,56 +189,57 @@ public sealed class GameSession(
     private void UpdatePlayer(DeltaTime dt)
     {
         Player.Tick(dt, Stage);
-
-       Player.SlideAlongWalls(Walls);
+        Player.SlideAlongWalls(Walls);
     }
 
     private void UpdateNonPlayerEntities(DeltaTime dt)
     {
         for (int i = 0; i < _nonPlayerEntities.Count; i++)
         {
-            var enemy = _nonPlayerEntities[i];
+            var nonPlayerEntity = _nonPlayerEntities[i];
 
-            var context = new NonPlayerEntityContext(
-                enemyPosition: enemy.Position,
-                playerPosition: Player.Position,
+            var context = new NonPlayerEntityContext<INonPlayerEntity>(
+                position: nonPlayerEntity.Position,
+                playerPosition: Player.Position, // TODO delegate this decision to???
                 projectiles: _projectiles, // pass projectiles because of owner types
                 deltaTime: dt,
                 selfIndex: i, // id comparison is slow, index comparison is fast, iterating plainlist also cache-ffriendly
-                enemies: _nonPlayerEntities,
+                others: _nonPlayerEntities,
                 stage: Stage,
-                hitPoints: enemy.HP
+                hitPoints: nonPlayerEntity.HP
             );
 
-            enemy.Tick(context);
+            nonPlayerEntity.Tick(context);
 
-            UpdateEnemyEvents(enemy);
+            HandleNonPlayerEntitiesEvents(nonPlayerEntity);
 
-            if (enemy.IsDead)
+            if (nonPlayerEntity.IsDead)
                 continue;
-
 
             foreach (var wall in Walls)
             {
-                if (enemy.CollidesWith(wall))
+                if (nonPlayerEntity.CollidesWith(wall))
                 {
-                    enemy.RevertLastMovement();
+                    nonPlayerEntity.RevertLastMovement();
                 }
             }
 
-            if (Player.CollidesWith(enemy))
+            if (Player.CollidesWith(nonPlayerEntity))
+            {
+                if (nonPlayerEntity is Healthy) continue;
                 Player.TakeDamage(new Damage(1));
+            }
 
         }
 
         _nonPlayerEntities.RemoveAll(e => e.IsDead);
     }
 
-    private void UpdateEnemyEvents(INonPlayerEntity enemy)
+    private void HandleNonPlayerEntitiesEvents(INonPlayerEntity entity)
     {
-        if (enemy.DomainEvents is null) return;
+        if (entity.DomainEvents is null) return;
 
-        foreach (var evt in enemy.DomainEvents)
+        foreach (var evt in entity.DomainEvents)
         {
             switch (evt)
             {
@@ -206,12 +248,17 @@ public sealed class GameSession(
                     _projectiles.AddRange(fired.Projectiles);
                     break;
 
-                case EnemySpawnEvent spawned:
+                case RadicalSpawnEvent spawned:
                     RaiseEvent(spawned);
+                    break;
+                
+                case HealthyInfectedEvent infected:
+                    AddInfected();
+                    RaiseEvent(infected);
                     break;
             }
         }
-        enemy.ClearDomainEvents();
+        entity.ClearDomainEvents();
             
     }
 
@@ -241,18 +288,24 @@ public sealed class GameSession(
 
         if (projectile.Owner == ProjectileOwnerTypes.Player)
         {
-            foreach (var enemy in _nonPlayerEntities)
+            foreach (var entity in _nonPlayerEntities)
             {
-                if (enemy.IsDead)
+                if (entity.IsDead)
                     continue;
 
-                if (projectile.CollidesWith(enemy))
+                if (projectile.CollidesWith(entity))
                 {
-                    enemy.TakeDamage(projectile.Damage);
-                    if (enemy.IsDead)
+                    entity.TakeDamage(projectile.Damage);
+                    if (entity.IsDead)
                     {
-                        _score += 1;
-                        if (HasReachedTargetScore())
+                        if (entity is Healthy healthy && !healthy.IsInfected)
+                        {
+                            AddCasualty();
+                            return true;
+                        }
+
+                        AddKill();
+                        if (HasReachedTargetKills())
                         {
                             RaiseEvent(new ReachedTargetScoreEvent(Id));
                         }

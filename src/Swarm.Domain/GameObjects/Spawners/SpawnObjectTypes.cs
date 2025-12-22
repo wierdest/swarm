@@ -2,6 +2,8 @@
 
 public enum SpawnObjectTypes
 {
-    BasicEnemy = 0,
-    BossEnemy = 1
+    Healthy = 0,
+    Shooter = 1,
+    Zombie = 2,
+
 }
