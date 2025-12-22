@@ -1,4 +1,4 @@
-﻿using Swarm.Domain.Entities;
+﻿using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
 

@@ -1,12 +1,11 @@
 ﻿using Swarm.Domain.Combat;
 using Swarm.Domain.Common;
-using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Physics;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 
-namespace Swarm.Domain.Entities;
+namespace Swarm.Domain.Entities.Projectiles;
 
 public sealed class Projectile(
     EntityId id,
