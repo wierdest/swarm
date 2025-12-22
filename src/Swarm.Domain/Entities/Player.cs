@@ -1,4 +1,5 @@
 ﻿using Swarm.Domain.Combat;
+using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.Entities.Weapons;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Physics;

@@ -269,22 +269,7 @@ public sealed class GameSessionService(
         var spawnerPositions = _session.SpawnerPoints.ToList();
         var random = new Random();
 
-        foreach (var spawnerConfig in level.Spawners)
-        {
-            if (spawnerPositions.Count == 0)
-                throw new DomainException("No available spawner positions left!");
-
-            // Pick a random position
-            var index = random.Next(spawnerPositions.Count);
-            var spawnPos = spawnerPositions[index];
-
-            // Remove it from the available pool
-            spawnerPositions.RemoveAt(index);
-
-            var spawnObjectType = SpawnObjectTypesExtensions.Parse(spawnerConfig.SpawnObjectType);
-
-            // TODO behaviour factory
-            var patrolBehaviour = new PatrolBehaviour(
+        var patrolBehaviour = new PatrolBehaviour(
                                     waypoints: level.BossConfig.Waypoints.Select(p => new Vector2(p.X, p.Y)).ToList(),
                                     speed: level.BossConfig.Speed,
                                     actionStrategy: new RangeShootStrategy(
@@ -299,49 +284,67 @@ public sealed class GameSessionService(
                                     runawayStrategy: null
                                 );
                                 
-            var healthySeekBehaviour = new SeekBehaviour(
-                                    speed: 200f,
-                                    targetStrategy: new SafehouseTargetStrategy(
-                                        safehouse: _playerArea!.Position
-                                    ),
-                                    actionStrategy: null,
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        owner: ProjectileOwnerTypes.All,
-                                        threshold: 150f
-                                    ),
-                                    runawayStrategy: null
-            );
+            
+            
+        var healthySeekBehaviour = new SeekBehaviour(
+                                speed: 200f,
+                                targetStrategy: new SafehouseTargetStrategy(
+                                    safehouse: _playerArea!.Position
+                                ),
+                                actionStrategy: null,
+                                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                                    owner: ProjectileOwnerTypes.All,
+                                    threshold: 150f
+                                ),
+                                runawayStrategy: null
+        );
 
-            var zombieSeekBehaviour = new SeekBehaviour(
-                                    speed: 200f,
-                                    targetStrategy: new NearestHealthyOrPlayerTargetStrategy(
-                                        threshold: 150f
-                                    ),
-                                    actionStrategy: null,
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        owner: ProjectileOwnerTypes.Player,
-                                        threshold: 150f
-                                    ),
-                                    runawayStrategy: null
-                                );
+        var zombieSeekBehaviour = new SeekBehaviour(
+                                speed: 200f,
+                                targetStrategy: new NearestHealthyOrPlayerTargetStrategy(
+                                    threshold: 150f
+                                ),
+                                actionStrategy: null,
+                                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                                    owner: ProjectileOwnerTypes.Player,
+                                    threshold: 150f
+                                ),
+                                runawayStrategy: null
+                            );
 
-            var seekAndShootBehaviour = new SeekBehaviour(
-                                    speed: 200f,
-                                    targetStrategy: new PlayerTargetStrategy(),
-                                    actionStrategy: new RangeShootStrategy(
-                                        shootRange: level.BossConfig.ShootRange
-                                    ),
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        owner: ProjectileOwnerTypes.Player,
-                                        threshold: 150f
-                                    ),
-                                    runawayStrategy: new PlayerToSafehouseRunawayStrategy(
-                                        threshold: 9,
-                                        safehouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
-                                        safehouseWeight: 0.5f,
-                                        avoidPlayerWeight: 0.5f
-                                    )
-                                );
+        
+        
+        var seekAndShootBehaviour = new SeekBehaviour(
+                                speed: 200f,
+                                targetStrategy: new PlayerTargetStrategy(),
+                                actionStrategy: new RangeShootStrategy(
+                                    shootRange: level.BossConfig.ShootRange
+                                ),
+                                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                                    owner: ProjectileOwnerTypes.Player,
+                                    threshold: 150f
+                                ),
+                                runawayStrategy: new PlayerToSafehouseRunawayStrategy(
+                                    threshold: 9,
+                                    safehouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
+                                    safehouseWeight: 0.5f,
+                                    avoidPlayerWeight: 0.5f
+                                )
+                            );
+
+        foreach (var spawnerConfig in level.Spawners)
+        {
+            if (spawnerPositions.Count == 0)
+                throw new DomainException("No available spawner positions left!");
+
+            // Pick a random position
+            var index = random.Next(spawnerPositions.Count);
+            var spawnPos = spawnerPositions[index];
+
+            // Remove it from the available pool
+            spawnerPositions.RemoveAt(index);
+
+            var spawnObjectType = SpawnObjectTypesExtensions.Parse(spawnerConfig.SpawnObjectType);
 
             var spawner = new NonPlayerEntitySpawner(
                 _session,
