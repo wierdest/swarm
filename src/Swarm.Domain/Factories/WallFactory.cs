@@ -11,9 +11,10 @@ public static class WallFactory
         Vector2 start,
         Vector2 end,
         Bounds levelBounds,
-        float wallRadius = 20f,
-        int seedCount = 3, // lower values + open space
-        float wallDensity = 0.3f,
+        float wallRadius,
+        int seedCount, // lower values + open space
+        float wallDensity,
+        float cellSize,
         int? seed = null // TODO we need to store this value to be able to replicate them, store nice layouts
     )
     {
@@ -22,6 +23,7 @@ public static class WallFactory
             targetPos: end,
             levelBounds: levelBounds,
             seedCount: seedCount,
+            cellSize: cellSize,
             wallRadius: wallRadius,
             wallDensity: wallDensity,
             seed: seed

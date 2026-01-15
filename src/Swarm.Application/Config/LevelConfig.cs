@@ -1,11 +1,12 @@
 ﻿namespace Swarm.Application.Config;
 
 public sealed record class LevelConfig(
-    WeaponConfig Weapon,
+    WeaponConfig? Weapon,
+    int? PlayerInitialAmmoModifier,
     AreaConfig PlayerAreaConfig,
     AreaConfig TargetAreaConfig,
-    IReadOnlyList<AreaConfig> Walls,
-    IReadOnlyList<SpawnerConfig> Spawners,
-    BossConfig BossConfig,
-    int InitialTargetScore
+    IReadOnlyList<WallConfig>? Walls,
+    WallGeneratorConfig? WallGeneratorConfig,
+    BossConfig? BossConfig,
+    GoalConfig? GoalConfig
 );

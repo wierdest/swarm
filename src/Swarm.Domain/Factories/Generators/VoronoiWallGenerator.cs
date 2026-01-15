@@ -6,13 +6,13 @@ namespace Swarm.Domain.Factories.Generators;
 public static class VoronoiWallGenerator
 {
     public static IEnumerable<Wall> Generate(
+        Vector2 start,
+        Vector2 targetPos,
         Bounds levelBounds,
-        Vector2? start = null,
-        Vector2? targetPos = null,
-        int seedCount = 16,
-        float cellSize = 64f,
-        float wallRadius = 12f,
-        float wallDensity = 0.6f,
+        int seedCount,
+        float cellSize,
+        float wallRadius,
+        float wallDensity,
         int? seed = null)
     {
         var rng = seed.HasValue ? new Random(seed.Value) : new Random();

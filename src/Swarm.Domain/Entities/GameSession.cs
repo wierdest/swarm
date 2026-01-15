@@ -43,8 +43,6 @@ public sealed class GameSession(
     private void AddSalvation() => Salvations = Salvations.Add(1);
     public Score Infected { get; private set; } = new(0);
     private void AddInfected() => Infected = Infected.Add(1);
-
-
     public void SaveHealthy(INonPlayerEntity healthy)
     {
         _nonPlayerEntities.Remove(healthy);

@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Swarm.Application.Contracts;
 using Swarm.Application.Config;
-using Swarm.Application.Primitives;
 using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
 using Swarm.Domain.Entities.Weapons;
@@ -26,12 +25,10 @@ using Swarm.Domain.Factories.Strategies;
 namespace Swarm.Application.Services;
 
 public sealed class GameSessionService(
-    ILogger<GameSessionService>? logger,
-    ISaveGameRepository repository
+    ILogger<GameSessionService>? logger
 ) : IGameSessionService
 {
     private readonly ILogger<GameSessionService> _logger = logger ?? new NullLogger<GameSessionService>();
-    private readonly ISaveGameRepository _repository = repository;
     private GameSession? _session;
     private readonly List<NonPlayerEntitySpawner> _spawners = new();
     private PlayerArea? _playerArea;
@@ -39,48 +36,6 @@ public sealed class GameSessionService(
     private readonly object _savesLock = new();
     private List<SaveGame> _allSaves = [];
     private Vector2 _crosshairs = new();
-
-    private readonly static int FINAL_TARGET_SCORE = 800;
-    private readonly static int TARGET_SCORE_INCREMENT = 125;
-
-    private bool _hasReachedAlpha = false;
-
-
-    // thread safe, because saving may be done in multithreading later on???
-    // TODO SaveGameService?
-    private IReadOnlyList<SaveGame> AllSaves
-    {
-        get
-        {
-            lock (_savesLock)
-            {
-                return _allSaves.AsReadOnly();
-            }
-        }
-    }
-
-    public IReadOnlyList<SaveGame> GetSaveGames() => AllSaves;
-
-    public SaveGame? LatestCachedSave
-    {
-        get
-        {
-            lock (_savesLock)
-            {
-                return _allSaves.Count > 0 ? _allSaves[0] : null;
-            }
-        }
-    }
-
-    public async Task LoadAllSavesAsync(SaveName saveName, CancellationToken cancellationToken = default)
-    {
-        var saves = await _repository.LoadAllAsync(saveName, cancellationToken);
-        lock (_savesLock)
-        {
-            _allSaves = [.. saves];
-        }
-    }
-
     public bool HasSession => _session != null && _playerArea != null && _targetArea != null;
 
     public void ApplyInput(float dirX, float dirY, float speed)
@@ -121,9 +76,8 @@ public sealed class GameSessionService(
 
     public void DropBomb() => _session?.DropBomb();
 
-    public async Task StartNewSession(GameConfig config)
+    public async Task StartNewSession(GameSessionConfig config)
     {
-        // TODO Domain mapper deals with this:
         var level = config.LevelConfig;
 
         var stageConfig = config.StageConfig;
@@ -138,62 +92,48 @@ public sealed class GameSessionService(
         var playerArea = level.PlayerAreaConfig;
         var playerStart = new Vector2(playerArea.X, playerArea.Y);
         var playerRadius = new Radius(config.PlayerRadius);
-
-        var weaponConfig = level.Weapon;
-
-        var pattern = new SingleShotPattern(
-            new Damage(weaponConfig.Damage),
-            weaponConfig.ProjectileSpeed,
-            new Radius(weaponConfig.ProjectileRadius),
-            weaponConfig.ProjectileLifetimeSeconds
-        );
-
-        var cooldown = new Cooldown(1f / weaponConfig.RatePerSecond);
-
-        var playerWeapon = new PlayerWeapon(
-            weaponConfig.Name,
-            pattern,
-            cooldown,
-            ProjectileOwnerTypes.Player,
-            weaponConfig.MaxAmmo,
-            WeaponTypes.Automatic
-        );
-
         var player = new Player(
             EntityId.New(),
             playerStart,
-            playerRadius,
-            playerWeapon,
-            weaponConfig.MaxAmmo * 4
+            playerRadius
         );
 
-        // Loads narrative! 
-        await LoadAllSavesAsync(new SaveName("Progression"));
-
-        int targetScoreValue = LatestCachedSave?.HudData.TargetKills is int prevTarget
-            ? GetLevelTargetScore(prevTarget)
-            : level.InitialTargetScore;
-
-        
-        var targetScore = new Score(targetScoreValue);
-
-        var phaseALevel = targetScore.Value.Equals(FINAL_TARGET_SCORE);
-
-        _logger.LogInformation("Phase A Level? {}", phaseALevel.ToString());
-
-        if (!_hasReachedAlpha && phaseALevel)
+        var weaponConfig = level.Weapon;
+        if (weaponConfig is not null)
         {
-            targetScore = new Score(level.InitialTargetScore);
-            _hasReachedAlpha = true;
+            var pattern = new SingleShotPattern(
+                new Damage(weaponConfig.Damage),
+                weaponConfig.ProjectileSpeed,
+                new Radius(weaponConfig.ProjectileRadius),
+                weaponConfig.ProjectileLifetimeSeconds
+            );
+
+            var cooldown = new Cooldown(1f / weaponConfig.RatePerSecond);
+
+            var playerWeapon = new PlayerWeapon(
+                weaponConfig.Name,
+                pattern,
+                cooldown,
+                ProjectileOwnerTypes.Player,
+                weaponConfig.MaxAmmo,
+                WeaponTypes.Automatic
+            );
+
+            player.SetWeapon(playerWeapon);
+
         }
 
+
+    
         var walls = WallFactory.CreateVoronoiWalls(
             start: playerStart,
             end: new Vector2(level.TargetAreaConfig.X, level.TargetAreaConfig.Y),
             levelBounds: stage,
-            wallRadius: 40f,
-            seedCount: phaseALevel ? 7 : 3
- 
+            wallRadius: level.WallRadius,
+            seedCount: level.WallSeedCount,
+            wallDensity: level.WallDensity,
+            cellSize: level.WallCellSize,
+            seed: level.WallRandomSeed
         ).ToList();
 
         var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
@@ -202,12 +142,6 @@ public sealed class GameSessionService(
             wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, stage);
         }
         var timer = new RoundTimer(config.RoundLength);
-
-        var bombs = LatestCachedSave?.Bombs
-            .Select(b => new Bomb(b.Identifier, new Cooldown(b.CooldownSeconds)))
-            .ToList()
-            ?? [];
-
         
         _session = new GameSession(EntityId.New(), stage, player, walls, timer, targetScore, bombs);
 
@@ -217,14 +151,6 @@ public sealed class GameSessionService(
         _logger.LogInformation("New session started with target score: {TargetScore}", targetScore.Value);
 
     }
-
-    private static int GetLevelTargetScore(int prevTarget)
-    {
-        var next = prevTarget + TARGET_SCORE_INCREMENT;
-
-        return next > FINAL_TARGET_SCORE ? FINAL_TARGET_SCORE : next;
-    }
-
 
     private void StartAreas(LevelConfig level)
     {
@@ -403,7 +329,7 @@ public sealed class GameSessionService(
         _logger.LogInformation("Session {SessionId} resumed", _session.Id);
     }
 
-    public async Task Restart(GameConfig config)
+    public async Task Restart(GameSessionConfig config)
     {
         if (_session is null)
             throw new InvalidOperationException("No session exists to restart.");
@@ -532,29 +458,18 @@ public sealed class GameSessionService(
     private void OnLevelCompletedEvent(LevelCompletedEvent evt)
     {
         _logger.LogInformation("Level completed for session {SessionId}", evt.SessionId);
-         _ = SaveAsync(new SaveName("Progression"));
         _logger.LogInformation("Game saved after reaching target score for session {SessionId}.", evt.SessionId);
 
     }
 
     private void OnTimeIsUpEvent(TimeIsUpEvent evt)
     {
-        _ = SaveAsync(new SaveName("Progression"));        
         _logger.LogInformation("Time is up for session {SessionId}", evt.SessionId);
     }
 
     private void OnTimeUpdatedEvent(TimeUpdatedEvent evt)
     {
         // _logger.LogInformation("Session {SessionId} timer: {Seconds} remaining", evt.SessionId, evt.Timer.SecondsRemaining);    
-    }
-
-    public async Task SaveAsync(SaveName saveName, CancellationToken cancellationToken = default)
-    {
-        if (_session is null || _playerArea is null || _targetArea is null) return;
-
-        var save = DomainMappers.ToSaveGame(_session, _playerArea, _targetArea);
-
-        await _repository.SaveAsync(save, saveName, cancellationToken);
     }
 
 }

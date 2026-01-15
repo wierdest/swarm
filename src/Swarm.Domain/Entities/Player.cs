@@ -10,26 +10,30 @@ namespace Swarm.Domain.Entities;
 public sealed class Player(
     EntityId id,
     Vector2 startPos,
-    Radius radius,
-    PlayerWeapon weapon,
-    int initialAmmo = 0
+    Radius radius
 ) : ILivingEntity
 {
     public EntityId Id { get; } = id;
     public Vector2 Position { get; private set; } = startPos;
     private Vector2 _lastPosition = startPos;
     public Radius Radius { get; } = radius;
-    public PlayerWeapon ActiveWeapon { get; private set; } = weapon;
+    public PlayerWeapon? ActiveWeapon { get; set; } = weapon;
     public Direction Direction { get; private set; } = Direction.From(1, 0);
     public Direction Rotation { get; private set; } = Direction.From(1, 0);
     public float Speed { get; private set; } = 0f;
     public HitPoints HP { get; private set; } = new(10);
-    private readonly int _maxAmmo = initialAmmo;
-    public int Ammo { get; private set; } = initialAmmo;
+    public int Ammo { get; private set; } = 0;
     public bool IsDead => HP.IsZero;
+
+    public void SetWeapon(PlayerWeapon? weapon)
+    {
+        ActiveWeapon = weapon;
+        Ammo = weapon?.MaxAmmo ?? 0;
+    }
 
     public void ReloadWeapon()
     {
+        if (ActiveWeapon is null) return;
         ActiveWeapon.Reload(Ammo, out var ammoUsed);
         Ammo -= ammoUsed;
     }
@@ -53,12 +57,20 @@ public sealed class Player(
         Speed = speed;
     }
 
-    public bool TryFire(out IEnumerable<Projectile> projectiles) =>
-        ActiveWeapon.TryFire(Position, Rotation, out projectiles);
+    public bool TryFire(out IEnumerable<Projectile> projectiles)
+    {
+        if (ActiveWeapon is null)
+        {
+            projectiles = [];
+            return false;
+        }
+
+        return ActiveWeapon.TryFire(Position, Rotation, out projectiles);
+    }
 
     public void Tick(DeltaTime dt, Bounds stage)
     {
-        ActiveWeapon.Tick(dt);
+        ActiveWeapon?.Tick(dt);
         _lastPosition = Position;
         Position = MovementIntegrator.Advance(Position, Direction, Speed, dt, stage);
     }

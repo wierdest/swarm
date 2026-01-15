@@ -25,7 +25,7 @@ public class Swarm : Game
     private HudRenderer _hud = null!;
     private SpriteFont _font = null!;
     private readonly InputManager _input;
-    private GameConfig? gameConfig;
+    private GameSessionConfig? gameConfig;
     private RenderTarget2D _renderTarget = null!;
     private Rectangle _drawDestination;
     private readonly float WIDTH = 960f;
@@ -81,7 +81,7 @@ public class Swarm : Game
         var outer = new Rectangle(0, 0, (int)WIDTH, (int)HEIGHT);
         var inner = GetInnerGameRect(outer, BORDER);
 
-        gameConfig = new GameConfig(
+        gameConfig = new GameSessionConfig(
             StageConfig: new StageConfig(
                 Left: inner.Left,
                 Top: inner.Top,
@@ -104,6 +104,11 @@ public class Swarm : Game
                     new(X: 480, Y: 270, Radius:80),
 
                 ],
+                WallRandomSeed: null,
+                WallSeedCount: 3,
+                WallCellSize: 64f,
+                WallRadius: 40f,
+                WallDensity: 0.3f,
                 Spawners:
                 [
                     new(
@@ -152,7 +157,7 @@ public class Swarm : Game
                     ProjectileRadius: 6f,
                     ProjectileRatePerSecond: 4f,
                     ProjectileLifetimeSeconds: 2f),
-                InitialTargetScore: 250
+                TargetScore: 250
             ),
             PlayerRadius: 12,
             RoundLength: 45

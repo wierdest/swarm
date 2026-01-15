@@ -2,7 +2,6 @@
 using Swarm.Application.Contracts;
 using Swarm.Application.Services;
 
-
 namespace Swarm.Application.Extensions;
 
 public static class DependencyInjection
