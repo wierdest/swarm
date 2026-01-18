@@ -1,11 +1,10 @@
 ﻿using Swarm.Domain.Events;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
-using Swarm.Domain.Time;
 
 namespace Swarm.Domain.Entities.NonPlayerEntities.DeathTriggers;
 
-public sealed class SpawnRadicalsDeathTrigger(
+public sealed class SpawnZombiesDeathTrigger(
     int count,
     Radius radius
 ) : IDeathTrigger
@@ -21,7 +20,7 @@ public sealed class SpawnRadicalsDeathTrigger(
 
         for (int i = 0; i < _count; i++)
         {
-            float angle = MathF.Tau * i / _count; // 360° around
+            float angle = MathF.Tau * i / _count; // 360°
             var offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * _radius;
             spawnPositions.Add(position + offset);
         }

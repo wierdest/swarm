@@ -5,8 +5,11 @@ public sealed record class LevelConfig(
     int? PlayerInitialAmmoModifier,
     AreaConfig? PlayerAreaConfig,
     AreaConfig? TargetAreaConfig,
-    IReadOnlyList<WallConfig>? Walls,
+    IReadOnlyList<AreaConfig>? Walls,
     WallGeneratorConfig? WallGeneratorConfig,
-    NonPlayerEntityConfig? BossConfig,
+    IReadOnlyList<SpawnerConfig>? Spawners,
+    NonPlayerEntityConfig? ShooterConfig,
+    NonPlayerEntityConfig? ZombieConfig,
+    NonPlayerEntityConfig? HealthyConfig,
     GoalConfig? GoalConfig
 );

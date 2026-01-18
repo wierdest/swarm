@@ -1,17 +1,15 @@
 ﻿namespace Swarm.Application.Config;
 
 public sealed record class NonPlayerEntityConfig(
-    float HP,
+    int HP,
     float Radius,   
     float Speed,
     float? ShootRange,
     float Cooldown,
     int? Damage,
-    float? DodgeThreshold,
-    float? DodgeSpeedMultiplier,
-    int? RunawayThreshold,
-    float? RunawaySafehouseWeight,
-    float? RunawayAvoidPlayerWeight,
+    DodgeConfig? DodgeConfig,
+    RunawayConfig? RunawayConfig,
+    TargetConfig? TargetConfig,
     IReadOnlyList<PointConfig>? PatrolPoints,
     WeaponConfig? Weapon
 

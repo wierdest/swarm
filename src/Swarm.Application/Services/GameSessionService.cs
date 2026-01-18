@@ -30,11 +30,10 @@ public sealed class GameSessionService(
 {
     private readonly ILogger<GameSessionService> _logger = logger ?? new NullLogger<GameSessionService>();
     private GameSession? _session;
-    private readonly List<NonPlayerEntitySpawner> _spawners = new();
+    private Bounds _stage;
+    private readonly List<NonPlayerEntitySpawner> _spawners = [];
     private PlayerArea? _playerArea;
     private TargetArea? _targetArea; 
-    private readonly object _savesLock = new();
-    private List<SaveGame> _allSaves = [];
     private Vector2 _crosshairs = new();
     public bool HasSession => _session != null && _playerArea != null && _targetArea != null;
 
@@ -78,11 +77,12 @@ public sealed class GameSessionService(
 
     public async Task StartNewSession(GameSessionConfig config)
     {
+        // todo: it is better to have this method take a json string and deserialize it into game session config
         var level = config.LevelConfig;
 
         var stageConfig = config.StageConfig;
 
-        var stage = new Bounds(
+        _stage = new Bounds(
             stageConfig.Left,
             stageConfig.Top,
             stageConfig.Right,
@@ -91,7 +91,7 @@ public sealed class GameSessionService(
 
         var playerStart = level.PlayerAreaConfig is AreaConfig playerArea
             ? new Vector2(playerArea.X, playerArea.Y)
-            : stage.Center;
+            : _stage.Center;
         var playerRadius = new Radius(config.PlayerRadius);
         var player = new Player(
             EntityId.New(),
@@ -123,42 +123,41 @@ public sealed class GameSessionService(
 
         }
 
-        var walls = new List<Wall>();
+        var walls = new List<Wall>(); 
         if (level.WallGeneratorConfig is WallGeneratorConfig wallGeneratorConfig)
         {
-            walls = WallFactory.CreateVoronoiWalls(
-                start: playerStart,
-                end: new Vector2(level.TargetAreaConfig.X, level.TargetAreaConfig.Y),
-                levelBounds: stage,
+            walls = [.. WallFactory.CreateVoronoiWalls(
+                start: _stage.TopLeftCorner,
+                end: _stage.BottomRightCorner,
+                levelBounds: _stage,
                 wallRadius: wallGeneratorConfig.WallRadius,
                 seedCount: wallGeneratorConfig.WallSeedCount,
                 wallDensity: wallGeneratorConfig.WallDensity,
                 cellSize: wallGeneratorConfig.WallCellSize,
-                minWallCount: wallGeneratorConfig.Spawners?.Count ?? 0,
+                minWallCount: level.Spawners?.Count ?? 0,
                 seed: wallGeneratorConfig.WallRandomSeed
-            ).ToList();
+            )];
             
             var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
             foreach (var wall in walls)
             {
-                wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, stage);
+                wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, _stage);
             }
         }
 
         // todo add for walls from config
-
         var bombs = new List<Bomb>();
 
         var timer = new RoundTimer(config.RoundLength);
 
         // todo generate goals from goal config
         // todo hook up goals to session
-        _session = new GameSession(EntityId.New(), stage, player, walls, timer, bombs);
+        _session = new GameSession(EntityId.New(), _stage, player, walls, timer, bombs);
 
         StartAreas(level);
         StartSpawners(level);
 
-        _logger.LogInformation("New session started with target score: {TargetScore}", targetScore.Value);
+        _logger.LogInformation("New session started");
 
     }
 
@@ -190,21 +189,45 @@ public sealed class GameSessionService(
     {
         if (_session is null) return;
 
-        if (level.BossConfig is NonPlayerEntityConfig boss)
-        {
-            if (boss.Weapon is WeaponConfig bossWeapon)
-            {
-                var pattern = new SingleShotPattern(
-                    new Damage(bossWeapon.Damage),
-                    bossWeapon.ProjectileSpeed,
-                    new Radius(bossWeapon.ProjectileRadius),
-                    bossWeapon.ProjectileLifetimeSeconds
-                );
-                
-                var cooldown = new Cooldown(1f / bossWeapon.RatePerSecond);
+        if (level.Spawners is null || level.Spawners.Count == 0) return;
 
-                var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
-            }
+        Shooter? shooter = null;
+        Zombie? zombie = null;
+        Healthy? healthy = null;
+
+        if (level.ShooterConfig is NonPlayerEntityConfig boss)
+        {
+            var shooterSpawners = level.Spawners
+                .Where(s => SpawnObjectTypesExtensions.Parse(s.SpawnObjectType) == SpawnObjectTypes.Shooter)
+                .ToList();
+            
+            if (shooterSpawners.Count == 0)
+                throw new DomainException("Shooter config provided but no shooter spawner defined in level config.");
+
+            if (boss.Weapon is null)
+                throw new DomainException("Shooter config must have a weapon defined.");
+            
+            var bossWeapon = boss.Weapon;
+            
+            var pattern = new SingleShotPattern(
+                new Damage(bossWeapon.Damage),
+                bossWeapon.ProjectileSpeed,
+                new Radius(bossWeapon.ProjectileRadius),
+                bossWeapon.ProjectileLifetimeSeconds
+            );
+            
+            var cooldown = new Cooldown(1f / bossWeapon.RatePerSecond);
+
+            var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
+
+            var safehouse = _targetArea is not null
+                ? _targetArea.Position
+                : _stage.RightRandomCorner;
+
+            if (boss.TargetConfig is not TargetConfig targetConfig || 
+                boss.DodgeConfig is not DodgeConfig dodgeConfig || 
+                boss.RunawayConfig is not RunawayConfig runawayConfig)
+                throw new DomainException("Shooter config must have TargetConfig, DodgeConfig and Runaway defined.");
 
             var seekAndShootBehaviour = new SeekBehaviour(
                 speed: boss.Speed,
@@ -214,19 +237,74 @@ public sealed class GameSessionService(
                 ),
                 dodgeStrategy: new NearestProjectileDodgeStrategy(
                     owner: ProjectileOwnerTypes.Player,
-                    threshold: boss.DodgeThreshold ?? 150f
+                    threshold: dodgeConfig.Threshold ?? 150f
                 ),
                 runawayStrategy: new PlayerToSafehouseRunawayStrategy(
-                    threshold: boss.RunawayThreshold ?? 9,
+                    threshold: runawayConfig.Threshold ?? 9,
                     safehouse: new Vector2(
-                        level.TargetAreaConfig.X + 12f,
-                        level.TargetAreaConfig.Y - 12f),
-                    safehouseWeight: boss.RunawaySafehouseWeight ?? 0.5f,
-                    avoidPlayerWeight: 0.5f
+                        safehouse.X + 12f,
+                        safehouse.Y - 12f),
+                    safehouseWeight: runawayConfig.SafehouseWeight ?? 0.5f,
+                    avoidPlayerWeight: runawayConfig.AvoidPlayerWeight ?? 0.5f
                 )
             );
+
+            var shooterPos = new Vector2();
+
+            shooter = new Shooter(
+                id: EntityId.New(),
+                startPosition: shooterPos,
+                radius: new(boss.Radius),
+                hp: new(boss.HP),
+                behaviour: seekAndShootBehaviour,
+                weapon: weapon,
+                deathTrigger: new SpawnZombiesDeathTrigger(4, new Radius(10f))
+            );
+
+
         }
 
+        if (level.ZombieConfig is NonPlayerEntityConfig zombieConfig)
+        {
+            if (zombieConfig.TargetConfig is not TargetConfig targetConfig ||
+                zombieConfig.DodgeConfig is not DodgeConfig dodgeConfig)
+                throw new DomainException("Zombie config must have TargetConfig defined.");
+            
+            var zombieSeekBehaviour = new SeekBehaviour(
+                speed: zombieConfig.Speed,
+                targetStrategy: new NearestHealthyOrPlayerTargetStrategy(
+                    threshold: targetConfig.Threshold ?? 150f
+                ),
+                actionStrategy: null,
+                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                    owner: ProjectileOwnerTypes.Player,
+                    threshold: dodgeConfig.Threshold ?? 150f
+                ),
+                runawayStrategy: null
+            );
+
+            zombie = new Zombie(
+                id: EntityId.New(),
+                startPosition: new Vector2(),
+                radius: new(zombieConfig.Radius),
+                hp: new(zombieConfig.HP),
+                behaviour: zombieSeekBehaviour
+            );
+        }
+        
+
+        var healthySeekBehaviour = new SeekBehaviour(
+            speed: 200f,
+            targetStrategy: new SafehouseTargetStrategy(
+                safehouse: _playerArea!.Position
+            ),
+            actionStrategy: null,
+            dodgeStrategy: new NearestProjectileDodgeStrategy(
+                owner: ProjectileOwnerTypes.All,
+                threshold: 150f
+            ),
+            runawayStrategy: null
+        );
 
         _spawners.Clear();
         var spawnerPositions = _session.SpawnerPoints.ToList();
@@ -244,34 +322,6 @@ public sealed class GameSessionService(
             spawnerPositions.RemoveAt(index);
 
             var spawnObjectType = SpawnObjectTypesExtensions.Parse(spawnerConfig.SpawnObjectType);
-
-                                
-            var healthySeekBehaviour = new SeekBehaviour(
-                                    speed: 200f,
-                                    targetStrategy: new SafehouseTargetStrategy(
-                                        safehouse: _playerArea!.Position
-                                    ),
-                                    actionStrategy: null,
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        owner: ProjectileOwnerTypes.All,
-                                        threshold: 150f
-                                    ),
-                                    runawayStrategy: null
-            );
-
-            var zombieSeekBehaviour = new SeekBehaviour(
-                                    speed: 200f,
-                                    targetStrategy: new NearestHealthyOrPlayerTargetStrategy(
-                                        threshold: 150f
-                                    ),
-                                    actionStrategy: null,
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        owner: ProjectileOwnerTypes.Player,
-                                        threshold: 150f
-                                    ),
-                                    runawayStrategy: null
-                                );
-
            
             var spawner = new NonPlayerEntitySpawner(
                 _session,
@@ -288,7 +338,7 @@ public sealed class GameSessionService(
                                 radius: new(10f),
                                 hp: new(1),
                                 behaviours: [healthySeekBehaviour, zombieSeekBehaviour],
-                                deathTrigger: new SpawnRadicalsDeathTrigger(1, new Radius(10f))
+                                deathTrigger: new SpawnZombiesDeathTrigger(1, new Radius(10f))
                             ),
 
                             SpawnObjectTypes.Zombie => new Zombie(
@@ -299,15 +349,7 @@ public sealed class GameSessionService(
                                 behaviour: zombieSeekBehaviour
                             ),
 
-                            SpawnObjectTypes.Shooter => new Shooter(
-                                id: EntityId.New(),
-                                startPosition: pos,
-                                radius: new(12f),
-                                hp: new(10),
-                                behaviour: seekAndShootBehaviour,
-                                weapon: weapon,
-                                deathTrigger: new SpawnRadicalsDeathTrigger(4, new Radius(10f))
-                            ),
+                            SpawnObjectTypes.Shooter => shooter ?? throw new DomainException("Shooter config is missing."),
                             _ => throw new DomainException($"Invalid spawn object type: {spawnObjectType}")
                         };
                     }
