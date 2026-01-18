@@ -15,6 +15,7 @@ public static class WallFactory
         int seedCount, // lower values + open space
         float wallDensity,
         float cellSize,
+        int minWallCount,
         int? seed = null // TODO we need to store this value to be able to replicate them, store nice layouts
     )
     {
@@ -26,6 +27,7 @@ public static class WallFactory
             cellSize: cellSize,
             wallRadius: wallRadius,
             wallDensity: wallDensity,
+            minWallCount: minWallCount,
             seed: seed
         );
 

@@ -98,8 +98,7 @@ public sealed class GameSessionService(
             playerRadius
         );
 
-        var weaponConfig = level.Weapon;
-        if (weaponConfig is not null)
+        if (level.Weapon is WeaponConfig weaponConfig)
         {
             var pattern = new SingleShotPattern(
                 new Damage(weaponConfig.Damage),
@@ -123,27 +122,37 @@ public sealed class GameSessionService(
 
         }
 
-
-    
-        var walls = WallFactory.CreateVoronoiWalls(
-            start: playerStart,
-            end: new Vector2(level.TargetAreaConfig.X, level.TargetAreaConfig.Y),
-            levelBounds: stage,
-            wallRadius: level.WallRadius,
-            seedCount: level.WallSeedCount,
-            wallDensity: level.WallDensity,
-            cellSize: level.WallCellSize,
-            seed: level.WallRandomSeed
-        ).ToList();
-
-        var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
-        foreach (var wall in walls)
+        var walls = new List<Wall>();
+        if (level.WallGeneratorConfig is WallGeneratorConfig wallGeneratorConfig)
         {
-            wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, stage);
+            walls = WallFactory.CreateVoronoiWalls(
+                start: playerStart,
+                end: new Vector2(level.TargetAreaConfig.X, level.TargetAreaConfig.Y),
+                levelBounds: stage,
+                wallRadius: wallGeneratorConfig.WallRadius,
+                seedCount: wallGeneratorConfig.WallSeedCount,
+                wallDensity: wallGeneratorConfig.WallDensity,
+                cellSize: wallGeneratorConfig.WallCellSize,
+                minWallCount: wallGeneratorConfig.Spawners?.Count ?? 0,
+                seed: wallGeneratorConfig.WallRandomSeed
+            ).ToList();
+            
+            var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
+            foreach (var wall in walls)
+            {
+                wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, stage);
+            }
         }
+
+        // todo add for walls from config
+
+        var bombs = new List<Bomb>();
+
         var timer = new RoundTimer(config.RoundLength);
-        
-        _session = new GameSession(EntityId.New(), stage, player, walls, timer, targetScore, bombs);
+
+        // todo generate goals from goal config
+        // todo hook up goals to session
+        _session = new GameSession(EntityId.New(), stage, player, walls, timer, bombs);
 
         StartAreas(level);
         StartSpawners(level);
@@ -155,50 +164,74 @@ public sealed class GameSessionService(
     private void StartAreas(LevelConfig level)
     {
         if (_session is null) return;
+        
+        if (level.PlayerAreaConfig is AreaConfig playerAreaConfig)
+        {
+            _playerArea = new PlayerArea(
+                _session,
+                new Vector2(playerAreaConfig.X, playerAreaConfig.Y),
+                new Radius(playerAreaConfig.Radius)
+            );
+        }
 
-        var playerAreaConfig = level.PlayerAreaConfig;
-
-        _playerArea = new PlayerArea(
-            _session,
-            new Vector2(playerAreaConfig.X, playerAreaConfig.Y),
-            new Radius(level.PlayerAreaConfig.Radius)
-        );
-
-        _targetArea = new TargetArea(
-            _session,
-            new Vector2(level.TargetAreaConfig.X, level.TargetAreaConfig.Y),
-            new Radius(level.TargetAreaConfig.Radius)
-        );
+        if (level.TargetAreaConfig is AreaConfig targetAreConfig)
+        {
+            _targetArea = new TargetArea(
+                _session,
+                new Vector2(targetAreConfig.X, targetAreConfig.Y),
+                new Radius(targetAreConfig.Radius)
+            );
+        }
+            
     }
 
     private void StartSpawners(LevelConfig level)
     {
         if (_session is null) return;
 
-        var boss = level.BossConfig;
+        if (level.BossConfig is NonPlayerEntityConfig boss)
+        {
+            if (boss.Weapon is WeaponConfig bossWeapon)
+            {
+                var pattern = new SingleShotPattern(
+                    new Damage(bossWeapon.Damage),
+                    bossWeapon.ProjectileSpeed,
+                    new Radius(bossWeapon.ProjectileRadius),
+                    bossWeapon.ProjectileLifetimeSeconds
+                );
+                
+                var cooldown = new Cooldown(1f / bossWeapon.RatePerSecond);
 
-        var pattern = new SingleShotPattern(
-            new Damage(boss.Damage),
-            boss.ProjectileSpeed,
-            new Radius(boss.ProjectileRadius),
-            boss.ProjectileLifetimeSeconds
-        );
+                var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
+            }
 
-        var cooldown = new Cooldown(1f / boss.ProjectileRatePerSecond);
+            var seekAndShootBehaviour = new SeekBehaviour(
+                speed: boss.Speed,
+                targetStrategy: new PlayerTargetStrategy(),
+                actionStrategy: new RangeShootStrategy(
+                    shootRange: boss.ShootRange ?? 600f
+                ),
+                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                    owner: ProjectileOwnerTypes.Player,
+                    threshold: boss.DodgeThreshold ?? 150f
+                ),
+                runawayStrategy: new PlayerToSafehouseRunawayStrategy(
+                    threshold: boss.RunawayThreshold ?? 9,
+                    safehouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
+                    safehouseWeight: boss.RunawaySafehouseWeight ?? 0.5f,
+                    avoidPlayerWeight: 0.5f
+                )
+            );
+        }
 
-        var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
 
         _spawners.Clear();
-        // SpawnerPoints are decided by the Wall building process
-        // We should make sure that we have enough room to fit the level.Spawners
-        // TODO: this, urgent
         var spawnerPositions = _session.SpawnerPoints.ToList();
         var random = new Random();
 
         foreach (var spawnerConfig in level.Spawners)
         {
-            if (spawnerPositions.Count == 0)
-                throw new DomainException("No available spawner positions left!");
+            if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
 
             // Pick a random position
             var index = random.Next(spawnerPositions.Count);
@@ -209,21 +242,6 @@ public sealed class GameSessionService(
 
             var spawnObjectType = SpawnObjectTypesExtensions.Parse(spawnerConfig.SpawnObjectType);
 
-            // TODO behaviour factory
-            var patrolBehaviour = new PatrolBehaviour(
-                                    waypoints: level.BossConfig.Waypoints.Select(p => new Vector2(p.X, p.Y)).ToList(),
-                                    speed: level.BossConfig.Speed,
-                                    actionStrategy: new RangeShootStrategy(
-                                        shootRange: level.BossConfig.ShootRange
-                                    ),
-                                    actionCooldown: new Cooldown(level.BossConfig.Cooldown),
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        owner: ProjectileOwnerTypes.Player,
-                                        threshold: 150f,
-                                        multiplier: 1.5f
-                                    ),
-                                    runawayStrategy: null
-                                );
                                 
             var healthySeekBehaviour = new SeekBehaviour(
                                     speed: 200f,
@@ -251,24 +269,7 @@ public sealed class GameSessionService(
                                     runawayStrategy: null
                                 );
 
-            var seekAndShootBehaviour = new SeekBehaviour(
-                                    speed: 200f,
-                                    targetStrategy: new PlayerTargetStrategy(),
-                                    actionStrategy: new RangeShootStrategy(
-                                        shootRange: level.BossConfig.ShootRange
-                                    ),
-                                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                                        owner: ProjectileOwnerTypes.Player,
-                                        threshold: 150f
-                                    ),
-                                    runawayStrategy: new PlayerToSafehouseRunawayStrategy(
-                                        threshold: 9,
-                                        safehouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
-                                        safehouseWeight: 0.5f,
-                                        avoidPlayerWeight: 0.5f
-                                    )
-                                );
-
+           
             var spawner = new NonPlayerEntitySpawner(
                 _session,
                 new FixedPositionNonPlayerEntitySpawnerBehaviour(

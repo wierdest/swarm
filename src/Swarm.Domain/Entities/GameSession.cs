@@ -15,7 +15,6 @@ public sealed class GameSession(
     Player player,
     List<Wall> walls,
     RoundTimer timer,
-    Score targetKill,
     List<Bomb> bombs
 )
 {
@@ -34,7 +33,7 @@ public sealed class GameSession(
     public bool ReachedMaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
     public Score Kills { get; private set; } = new(0);
     private void AddKill() => Kills = Kills.Add(1);
-    public Score TargetKills => targetKill;
+    public Score TargetKills => targetKill; // this will come from the goals config passed in the service
     public Score KillBonus => (Score)(HasReachedTargetKills() ? Kills - targetKill : 0);
     public bool HasReachedTargetKills() => Kills >= TargetKills;
     public Score Casualties { get; private set; } = new(0);

@@ -141,8 +141,8 @@ public class Swarm : Game
                         BatchSize: 1
                     )
                 ],
-                BossConfig: new BossConfig(
-                    Waypoints: new List<PointConfig>
+                BossConfig: new EnemyConfig(
+                    PatrolPoints: new List<PointConfig>
                     {
                         new PointConfig(600, 300),
                         new PointConfig(600, 100),

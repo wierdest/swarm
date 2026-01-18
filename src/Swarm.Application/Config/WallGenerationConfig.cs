@@ -6,6 +6,6 @@ public sealed record class WallGeneratorConfig(
     float WallCellSize, // grid sampling size for Voronoi walls
     float WallRadius, // radius for generated wall objects
     float WallDensity, // chance to place a wall on a Voronoi boundary
-    List<SpawnerConfig>? Spawners // todo voronoi wall generator needs to abide by this
+    List<SpawnerConfig>? Spawners
 );
 
