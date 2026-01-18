@@ -89,8 +89,9 @@ public sealed class GameSessionService(
             stageConfig.Bottom
         );
 
-        var playerArea = level.PlayerAreaConfig;
-        var playerStart = new Vector2(playerArea.X, playerArea.Y);
+        var playerStart = level.PlayerAreaConfig is AreaConfig playerArea
+            ? new Vector2(playerArea.X, playerArea.Y)
+            : stage.Center;
         var playerRadius = new Radius(config.PlayerRadius);
         var player = new Player(
             EntityId.New(),
@@ -174,12 +175,12 @@ public sealed class GameSessionService(
             );
         }
 
-        if (level.TargetAreaConfig is AreaConfig targetAreConfig)
+        if (level.TargetAreaConfig is AreaConfig targetAreaConfig)
         {
             _targetArea = new TargetArea(
                 _session,
-                new Vector2(targetAreConfig.X, targetAreConfig.Y),
-                new Radius(targetAreConfig.Radius)
+                new Vector2(targetAreaConfig.X, targetAreaConfig.Y),
+                new Radius(targetAreaConfig.Radius)
             );
         }
             
@@ -217,7 +218,9 @@ public sealed class GameSessionService(
                 ),
                 runawayStrategy: new PlayerToSafehouseRunawayStrategy(
                     threshold: boss.RunawayThreshold ?? 9,
-                    safehouse: new Vector2(level.TargetAreaConfig.X + 12f, level.TargetAreaConfig.Y - 12f),
+                    safehouse: new Vector2(
+                        level.TargetAreaConfig.X + 12f,
+                        level.TargetAreaConfig.Y - 12f),
                     safehouseWeight: boss.RunawaySafehouseWeight ?? 0.5f,
                     avoidPlayerWeight: 0.5f
                 )

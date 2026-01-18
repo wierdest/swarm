@@ -23,6 +23,9 @@ public readonly record struct Bounds
 
     public float Width => Right - Left;
     public float Height => Bottom - Top;
+    public Vector2 Center => new(
+        (Left + Right) * 0.5f,
+        (Top + Bottom) * 0.5f);
 
     public Vector2 Clamp(Vector2 p) => new(
        MathF.Min(MathF.Max(p.X, Left), Right),
