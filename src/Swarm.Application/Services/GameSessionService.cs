@@ -55,7 +55,7 @@ public sealed class GameSessionService(
     public GameSnapshot GetSnapshot()
     {
         if (_session is null || _playerArea is null || _targetArea is null)
-            throw new InvalidOperationException("Game snapshot cannot be created before session and areas are initialized.");
+            throw new DomainException("Game snapshot cannot be created before session and areas are initialized.");
 
         return DomainMappers.ToSnapshot(_session, _playerArea, _targetArea);
     }
@@ -189,87 +189,20 @@ public sealed class GameSessionService(
     {
         if (_session is null) return;
 
-        if (level.Spawners is null || level.Spawners.Count == 0) return;
-
         Shooter? shooter = null;
         Zombie? zombie = null;
         Healthy? healthy = null;
 
-        if (level.ShooterConfig is NonPlayerEntityConfig boss)
-        {
-            var shooterSpawners = level.Spawners
-                .Where(s => SpawnObjectTypesExtensions.Parse(s.SpawnObjectType) == SpawnObjectTypes.Shooter)
-                .ToList();
-            
-            if (shooterSpawners.Count == 0)
-                throw new DomainException("Shooter config provided but no shooter spawner defined in level config.");
-
-            if (boss.Weapon is null)
-                throw new DomainException("Shooter config must have a weapon defined.");
-            
-            var bossWeapon = boss.Weapon;
-            
-            var pattern = new SingleShotPattern(
-                new Damage(bossWeapon.Damage),
-                bossWeapon.ProjectileSpeed,
-                new Radius(bossWeapon.ProjectileRadius),
-                bossWeapon.ProjectileLifetimeSeconds
-            );
-            
-            var cooldown = new Cooldown(1f / bossWeapon.RatePerSecond);
-
-            var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
-
-            var safehouse = _targetArea is not null
-                ? _targetArea.Position
-                : _stage.RightRandomCorner;
-
-            if (boss.TargetConfig is not TargetConfig targetConfig || 
-                boss.DodgeConfig is not DodgeConfig dodgeConfig || 
-                boss.RunawayConfig is not RunawayConfig runawayConfig)
-                throw new DomainException("Shooter config must have TargetConfig, DodgeConfig and Runaway defined.");
-
-            var seekAndShootBehaviour = new SeekBehaviour(
-                speed: boss.Speed,
-                targetStrategy: new PlayerTargetStrategy(),
-                actionStrategy: new RangeShootStrategy(
-                    shootRange: boss.ShootRange ?? 600f
-                ),
-                dodgeStrategy: new NearestProjectileDodgeStrategy(
-                    owner: ProjectileOwnerTypes.Player,
-                    threshold: dodgeConfig.Threshold ?? 150f
-                ),
-                runawayStrategy: new PlayerToSafehouseRunawayStrategy(
-                    threshold: runawayConfig.Threshold ?? 9,
-                    safehouse: new Vector2(
-                        safehouse.X + 12f,
-                        safehouse.Y - 12f),
-                    safehouseWeight: runawayConfig.SafehouseWeight ?? 0.5f,
-                    avoidPlayerWeight: runawayConfig.AvoidPlayerWeight ?? 0.5f
-                )
-            );
-
-            var shooterPos = new Vector2();
-
-            shooter = new Shooter(
-                id: EntityId.New(),
-                startPosition: shooterPos,
-                radius: new(boss.Radius),
-                hp: new(boss.HP),
-                behaviour: seekAndShootBehaviour,
-                weapon: weapon,
-                deathTrigger: new SpawnZombiesDeathTrigger(4, new Radius(10f))
-            );
-
-
-        }
+        _spawners.Clear();
+        var spawnerPositions = _session.SpawnerPoints.ToList();
+        var random = new Random();
 
         if (level.ZombieConfig is NonPlayerEntityConfig zombieConfig)
         {
             if (zombieConfig.TargetConfig is not TargetConfig targetConfig ||
                 zombieConfig.DodgeConfig is not DodgeConfig dodgeConfig)
                 throw new DomainException("Zombie config must have TargetConfig defined.");
-            
+                    
             var zombieSeekBehaviour = new SeekBehaviour(
                 speed: zombieConfig.Speed,
                 targetStrategy: new NearestHealthyOrPlayerTargetStrategy(
@@ -290,75 +223,189 @@ public sealed class GameSessionService(
                 hp: new(zombieConfig.HP),
                 behaviour: zombieSeekBehaviour
             );
+
+            var zombieSpawners = zombieConfig.Spawners;
+
+            if (zombieSpawners is not null && zombieSpawners.Count > 0)
+            {
+                foreach (var spawnerConfig in zombieSpawners)
+                {
+                    if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
+
+                    // Pick a random position
+                    var index = random.Next(spawnerPositions.Count);
+                    var spawnPos = spawnerPositions[index];
+
+                    // Remove it from the available pool
+                    spawnerPositions.RemoveAt(index);
+
+                    var spawner = new NonPlayerEntitySpawner(
+                        _session,
+                        new FixedPositionNonPlayerEntitySpawnerBehaviour(
+                            position: spawnPos,
+                            cooldownSeconds: spawnerConfig.CooldownSeconds,
+                            entityFactory: pos => zombie
+                            ),
+                        spawnerConfig.BatchSize > 0 ? spawnerConfig.BatchSize : 1
+                    );
+
+                    _spawners.Add(spawner); 
+
+                }
+            }
+    
         }
         
-
-        var healthySeekBehaviour = new SeekBehaviour(
-            speed: 200f,
-            targetStrategy: new SafehouseTargetStrategy(
-                safehouse: _playerArea!.Position
-            ),
-            actionStrategy: null,
-            dodgeStrategy: new NearestProjectileDodgeStrategy(
-                owner: ProjectileOwnerTypes.All,
-                threshold: 150f
-            ),
-            runawayStrategy: null
-        );
-
-        _spawners.Clear();
-        var spawnerPositions = _session.SpawnerPoints.ToList();
-        var random = new Random();
-
-        foreach (var spawnerConfig in level.Spawners)
+        if (level.HealthyConfig is NonPlayerEntityConfig healthyConfig)
         {
-            if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
-
-            // Pick a random position
-            var index = random.Next(spawnerPositions.Count);
-            var spawnPos = spawnerPositions[index];
-
-            // Remove it from the available pool
-            spawnerPositions.RemoveAt(index);
-
-            var spawnObjectType = SpawnObjectTypesExtensions.Parse(spawnerConfig.SpawnObjectType);
-           
-            var spawner = new NonPlayerEntitySpawner(
-                _session,
-                new FixedPositionNonPlayerEntitySpawnerBehaviour(
-                    position: spawnPos,
-                    cooldownSeconds: spawnerConfig.CooldownSeconds,
-                    entityFactory: pos =>
-                    {
-                        return spawnObjectType switch
-                        {
-                            SpawnObjectTypes.Healthy => new Healthy(
-                                id: EntityId.New(),
-                                startPosition: pos,
-                                radius: new(10f),
-                                hp: new(1),
-                                behaviours: [healthySeekBehaviour, zombieSeekBehaviour],
-                                deathTrigger: new SpawnZombiesDeathTrigger(1, new Radius(10f))
-                            ),
-
-                            SpawnObjectTypes.Zombie => new Zombie(
-                                id: EntityId.New(),
-                                startPosition: pos,
-                                radius: new(10f),
-                                hp: new(1),
-                                behaviour: zombieSeekBehaviour
-                            ),
-
-                            SpawnObjectTypes.Shooter => shooter ?? throw new DomainException("Shooter config is missing."),
-                            _ => throw new DomainException($"Invalid spawn object type: {spawnObjectType}")
-                        };
-                    }
+            if (healthyConfig.TargetConfig is not TargetConfig targetConfig ||
+                healthyConfig.DodgeConfig is not DodgeConfig dodgeConfig)
+                throw new DomainException("Healthy config must have TargetConfig defined.");
+            
+            var healthySpawners = healthyConfig.Spawners;
+            
+            if (healthySpawners is null|| healthySpawners.Count == 0)
+                throw new DomainException("Healthy config provided but no healthy spawner defined in non player entity config.");
+            
+            var healthySeekBehaviour = new SeekBehaviour(
+                speed: healthyConfig.Speed,
+                targetStrategy: new SafehouseTargetStrategy(
+                    safehouse: _playerArea is null ? _stage.LeftRandomCorner : _playerArea.Position
                 ),
-                spawnerConfig.BatchSize
+                actionStrategy: null,
+                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                    owner: ProjectileOwnerTypes.All,
+                    threshold: dodgeConfig.Threshold ?? 150f
+                ),
+                runawayStrategy: null
             );
 
-            _spawners.Add(spawner);
+            healthy = new Healthy(
+                id: EntityId.New(),
+                startPosition: new Vector2(),
+                radius: new(healthyConfig.Radius),
+                hp: new(healthyConfig.HP),
+                behaviours: [healthySeekBehaviour, zombie!.GetBehaviour()],
+                deathTrigger: new SpawnZombiesDeathTrigger(1, new Radius(healthyConfig.Radius))
+            );
+
+            foreach (var spawnerConfig in healthySpawners)
+            {
+                if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
+
+                // Pick a random position
+                var index = random.Next(spawnerPositions.Count);
+                var spawnPos = spawnerPositions[index];
+
+                // Remove it from the available pool
+                spawnerPositions.RemoveAt(index);
+                var batch = spawnerConfig.BatchSize > 0 ? spawnerConfig.BatchSize : 1;
+                var spawner = new NonPlayerEntitySpawner(
+                    _session,
+                    new FixedPositionNonPlayerEntitySpawnerBehaviour(
+                        position: spawnPos,
+                        cooldownSeconds: spawnerConfig.CooldownSeconds,
+                        entityFactory: pos => healthy
+                        ),
+                    batch
+                );
+
+                _spawners.Add(spawner); 
+
+            }
         }
+
+        if (level.ShooterConfig is NonPlayerEntityConfig shooterConfig)
+        {
+            if (shooterConfig.TargetConfig is not TargetConfig targetConfig || 
+                shooterConfig.DodgeConfig is not DodgeConfig dodgeConfig || 
+                shooterConfig.RunawayConfig is not RunawayConfig runawayConfig)
+                throw new DomainException("Shooter config must have TargetConfig, DodgeConfig and RunawayConfig defined.");
+            
+            var shooterSpawners = shooterConfig.Spawners;
+            
+            if (shooterSpawners is null || shooterSpawners.Count == 0)
+                throw new DomainException("Shooter config provided but no shooter spawner defined in level config.");
+
+            if (shooterConfig.Weapon is null)
+                throw new DomainException("Shooter config must have a weapon defined.");
+            
+            var bossWeapon = shooterConfig.Weapon;
+            
+            var pattern = new SingleShotPattern(
+                new Damage(bossWeapon.Damage),
+                bossWeapon.ProjectileSpeed,
+                new Radius(bossWeapon.ProjectileRadius),
+                bossWeapon.ProjectileLifetimeSeconds
+            );
+            
+            var cooldown = new Cooldown(1f / bossWeapon.RatePerSecond);
+
+            var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
+
+            var safehouse = _targetArea is not null
+                ? _targetArea.Position
+                : _stage.RightRandomCorner;
+
+            var seekAndShootBehaviour = new SeekBehaviour(
+                speed: shooterConfig.Speed,
+                targetStrategy: new PlayerTargetStrategy(),
+                actionStrategy: new RangeShootStrategy(
+                    shootRange: shooterConfig.ShootRange ?? 600f
+                ),
+                dodgeStrategy: new NearestProjectileDodgeStrategy(
+                    owner: ProjectileOwnerTypes.Player,
+                    threshold: dodgeConfig.Threshold ?? 150f
+                ),
+                runawayStrategy: new PlayerToSafehouseRunawayStrategy(
+                    threshold: runawayConfig.Threshold ?? 9,
+                    safehouse: new Vector2(
+                        safehouse.X + 12f,
+                        safehouse.Y - 12f),
+                    safehouseWeight: runawayConfig.SafehouseWeight ?? 0.5f,
+                    avoidPlayerWeight: runawayConfig.AvoidPlayerWeight ?? 0.5f
+                )
+            );
+
+            var shooterPos = new Vector2();
+
+            shooter = new Shooter(
+                id: EntityId.New(),
+                startPosition: shooterPos,
+                radius: new(shooterConfig.Radius),
+                hp: new(shooterConfig.HP),
+                behaviour: seekAndShootBehaviour,
+                weapon: weapon,
+                deathTrigger: new SpawnZombiesDeathTrigger(4, new Radius(10f))
+            );
+
+            foreach (var spawnerConfig in shooterSpawners)
+            {
+                if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
+
+                // Pick a random position
+                var index = random.Next(spawnerPositions.Count);
+                var spawnPos = spawnerPositions[index];
+
+                // Remove it from the available pool
+                spawnerPositions.RemoveAt(index);
+                var batch = spawnerConfig.BatchSize > 0 ? spawnerConfig.BatchSize : 1;
+                var spawner = new NonPlayerEntitySpawner(
+                    _session,
+                    new FixedPositionNonPlayerEntitySpawnerBehaviour(
+                        position: spawnPos,
+                        cooldownSeconds: spawnerConfig.CooldownSeconds,
+                        entityFactory: pos => shooter
+                        ),
+                    batch
+                );
+
+                _spawners.Add(spawner); 
+
+            }
+        }
+
+
     }
 
     public void Pause()

@@ -10,7 +10,8 @@ public sealed record class NonPlayerEntityConfig(
     DodgeConfig? DodgeConfig,
     RunawayConfig? RunawayConfig,
     TargetConfig? TargetConfig,
-    IReadOnlyList<PointConfig>? PatrolPoints,
-    WeaponConfig? Weapon
+    WeaponConfig? Weapon,
+    IReadOnlyList<SpawnerConfig>? Spawners
+
 
 );

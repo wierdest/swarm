@@ -2,6 +2,6 @@
 
 public sealed record class SpawnerConfig(
     float CooldownSeconds,
-    string SpawnObjectType,
-    int BatchSize
+    int BatchSize,
+    int? Number
 );  

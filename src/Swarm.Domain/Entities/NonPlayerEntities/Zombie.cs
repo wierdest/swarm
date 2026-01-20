@@ -12,4 +12,5 @@ public sealed class Zombie(
     INonPlayerEntityBehaviour behaviour)
     : NonPlayerEntityBase(id, startPosition, radius, hp, behaviour)
 {
+    public INonPlayerEntityBehaviour GetBehaviour() => behaviour;
 }

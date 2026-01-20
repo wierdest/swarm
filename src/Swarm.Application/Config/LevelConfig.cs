@@ -7,7 +7,6 @@ public sealed record class LevelConfig(
     AreaConfig? TargetAreaConfig,
     IReadOnlyList<AreaConfig>? Walls,
     WallGeneratorConfig? WallGeneratorConfig,
-    IReadOnlyList<SpawnerConfig>? Spawners,
     NonPlayerEntityConfig? ShooterConfig,
     NonPlayerEntityConfig? ZombieConfig,
     NonPlayerEntityConfig? HealthyConfig,
