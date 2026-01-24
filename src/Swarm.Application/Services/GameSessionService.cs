@@ -80,7 +80,6 @@ public sealed class GameSessionService(
         var level = config.LevelConfig;
 
         var stageConfig = config.StageConfig;
-
         _stage = new Bounds(
             stageConfig.Left,
             stageConfig.Top,
@@ -121,9 +120,16 @@ public sealed class GameSessionService(
             player.SetWeapon(playerWeapon);
 
         }
+        
+        var walls = new List<Wall>();
 
-        var walls = new List<Wall>(); 
-        if (level.WallGeneratorConfig is WallGeneratorConfig wallGeneratorConfig)
+        if (level.Walls is { Count: > 0 } wallConfigs)
+        {
+            walls = [.. WallFactory.CreateWallsFromList(
+                wallConfigs.Select(wall => (new Vector2(wall.X, wall.Y), new Radius(wall.Radius)))
+            )];
+        }
+        else if (level.WallGeneratorConfig is WallGeneratorConfig wallGeneratorConfig)
         {
             walls = [.. WallFactory.CreateVoronoiWalls(
                 start: _stage.TopLeftCorner,
@@ -136,7 +142,10 @@ public sealed class GameSessionService(
                 minWallCount: GetTotalSpawnerCount(level),
                 seed: wallGeneratorConfig.WallRandomSeed
             )];
-            
+        }
+
+        if (walls.Count > 0)
+        {
             var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
             foreach (var wall in walls)
             {
@@ -144,11 +153,9 @@ public sealed class GameSessionService(
             }
         }
 
-        // todo add for walls from config
         var bombs = new List<Bomb>();
 
         var timer = new RoundTimer(config.RoundLength);
-
         // todo generate goals from goal config
         // todo hook up goals to session
         _session = new GameSession(EntityId.New(), _stage, player, walls, timer, bombs);
