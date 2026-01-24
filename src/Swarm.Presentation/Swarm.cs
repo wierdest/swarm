@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Swarm.Application.Config;
 using Swarm.Application.Contracts;
-using Swarm.Application.Primitives;
 using Swarm.Presentation.Input;
 using Swarm.Presentation.Renderers;
 using Swarm.Presentation.Renderers.Hud;
@@ -26,15 +25,12 @@ public class Swarm : Game
     private SpriteFont _font = null!;
     private readonly InputManager _input;
     private GameSessionConfig? gameConfig;
+    private string? _gameConfigJson;
     private RenderTarget2D _renderTarget = null!;
     private Rectangle _drawDestination;
     private readonly float WIDTH = 960f;
     private readonly float HEIGHT = 540f;
     private readonly int BORDER = 40;
-    private readonly SaveName SAVE = new("Progression");
-    private bool _iShowingSaveGames = false;
-    private SaveGameRenderer _saveGameRenderer = null!;
-
     private CrosshairRenderer _crosshairRenderer = null!;
     private bool _prevViewStatsKey = false;
 
@@ -164,7 +160,8 @@ public class Swarm : Game
         );
 
         
-        _service.StartNewSession(gameConfig).GetAwaiter().GetResult();
+        _gameConfigJson = JsonSerializer.Serialize(gameConfig);
+        _service.StartNewSession(_gameConfigJson).GetAwaiter().GetResult();
 
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
@@ -177,8 +174,6 @@ public class Swarm : Game
         _font = Content.Load<SpriteFont>("DefaultFont");
 
         _hud = new HudRenderer(_spriteBatch, _font, GraphicsDevice);
-
-        _saveGameRenderer = new SaveGameRenderer(_spriteBatch, _font);
 
         _crosshairRenderer = new CrosshairRenderer(_spriteBatch, GraphicsDevice);
 
@@ -217,27 +212,7 @@ public class Swarm : Game
 
         if (snap.IsPaused || snap.IsTimeUp || snap.IsCompleted || snap.IsInterrupted)
         {
-            if (state.Restart) _service.Restart(gameConfig!);
-
-            if (state.ViewStats && !_prevViewStatsKey)
-            {
-                _iShowingSaveGames = !_iShowingSaveGames;
-            }
-            _prevViewStatsKey = state.ViewStats;
-
-            if (_iShowingSaveGames)
-            {
-                if (state.Left)
-                {
-                    _saveGameRenderer.PrevPage();
-
-                }
-                else if (state.Right)
-                {
-                    _saveGameRenderer.NextPage(_service.GetSaveGames());
-                }
-            }
-
+            if (state.Restart) _service.Restart(_gameConfigJson!);
             return;
         }
 
@@ -255,18 +230,8 @@ public class Swarm : Game
 
         if (dt > 0f) _service.Tick(dt);
 
-        // if (state.Save) _ = SaveGameAsync(new SaveName("QuickSave"));
-        // if (state.Load) _ = LoadGameAsync(new SaveName("QuickSave"));
-
         base.Update(gameTime);
     }
-
-    private async Task SaveGameAsync()
-    {
-        await _service.SaveAsync(SAVE);
-        _logger.LogInformation("Game saved to {SaveName}",  SAVE.Value);
-    }
-
 
     protected override void Draw(GameTime gameTime)
     {
@@ -356,12 +321,6 @@ public class Swarm : Game
                 subPos.Y + subSubSize.Y + 10
             );
             _spriteBatch.DrawString(_font, subSubText, subSubPos, Color.White);
-
-            if (_iShowingSaveGames)
-            {
-                var saves = _service.GetSaveGames();
-                _saveGameRenderer.Draw(saves);
-            }
 
         }
         _spriteBatch.End();
@@ -464,8 +423,6 @@ public class Swarm : Game
             outer.Height - thickness * 2
         );
     }
-
-
 
     private static Texture2D? _pixel;
     private Texture2D Pixel

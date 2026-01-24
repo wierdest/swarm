@@ -24,10 +24,12 @@ using Swarm.Domain.Factories.Strategies;
 namespace Swarm.Application.Services;
 
 public sealed class GameSessionService(
-    ILogger<GameSessionService>? logger
+    ILogger<GameSessionService>? logger,
+    IGameSessionConfigLoader configLoader
 ) : IGameSessionService
 {
     private readonly ILogger<GameSessionService> _logger = logger ?? new NullLogger<GameSessionService>();
+    private readonly IGameSessionConfigLoader _configLoader = configLoader;
     private GameSession? _session;
     private Bounds _stage;
     private readonly List<NonPlayerEntitySpawner> _spawners = [];
@@ -74,9 +76,17 @@ public sealed class GameSessionService(
 
     public void DropBomb() => _session?.DropBomb();
 
-    public async Task StartNewSession(GameSessionConfig config)
+    public async Task StartNewSession(string configJson)
     {
-        // todo: it is better to have this method take a json string and deserialize it into game session config
+        GameSessionConfig config;
+        try
+        {
+            config = _configLoader.Load(configJson);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new DomainException(ex.Message);
+        }
         var level = config.LevelConfig;
 
         var stageConfig = config.StageConfig;
@@ -154,6 +164,17 @@ public sealed class GameSessionService(
         }
 
         var bombs = new List<Bomb>();
+
+        if (level.Bombs is { Count: > 0 } bombConfigs)
+        {
+            foreach (var bombConfig in bombConfigs)
+            {
+                bombs.Add(new Bomb(
+                    bombConfig.Identifier,
+                    new Cooldown(bombConfig.CooldownSeconds)
+                ));
+            }
+        }
 
         var timer = new RoundTimer(config.RoundLength);
         
@@ -416,7 +437,7 @@ public sealed class GameSessionService(
         _logger.LogInformation("Session {SessionId} resumed", _session.Id);
     }
 
-    public async Task Restart(GameSessionConfig config)
+    public async Task Restart(string configJson)
     {
         if (_session is null)
             throw new InvalidOperationException("No session exists to restart.");
@@ -428,7 +449,7 @@ public sealed class GameSessionService(
         _playerArea = null;
         _targetArea = null;
 
-        await StartNewSession(config);
+        await StartNewSession(configJson);
     }
 
     public void Tick(float deltaSeconds)

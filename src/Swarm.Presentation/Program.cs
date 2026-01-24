@@ -38,6 +38,7 @@ class Program
 
         
         services.AddApplication(saveConfig);
+        services.AddLoader();
         services.AddGamePersistence();
 
         var provider = services.BuildServiceProvider();

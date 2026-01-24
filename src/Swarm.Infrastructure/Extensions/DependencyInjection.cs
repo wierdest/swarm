@@ -1,14 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Swarm.Application.Contracts;
-using Swarm.Infrastructure.Persistence;
+using Swarm.Infrastructure.Loader;
 
 namespace Swarm.Infrastructure.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddGamePersistence(this IServiceCollection services)
+    public static IServiceCollection AddLoader(this IServiceCollection services)
     {
-        services.AddScoped<ISaveGameRepository, EncryptedJsonSaveGameRepository>();
+        services.AddSingleton<IGameSessionConfigLoader, GameSessionConfigLoader>();
         return services;
     }
 } 
