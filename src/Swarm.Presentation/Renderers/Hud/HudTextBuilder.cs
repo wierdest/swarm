@@ -37,7 +37,7 @@ public static class HudTextBuilder
     public static string BuildInfectedText(int inffected) => $"I: {inffected}";
 
 
-    public static string BuildTopLine(HudData hud)
+    public static string BuildTopLine(GameSessionData hud)
     {
         return string.Join(" | ",
             BuildHpText(hud.HP),
@@ -53,18 +53,18 @@ public static class HudTextBuilder
         );
     }
 
-    public static string BuildMissionText(HudData hud)
+    public static string BuildMissionText(GameSessionData hud)
     {
         if (hud.LevelCompleted)
             return _successHint;
 
-        if (hud.HasReachedTargetKills)
+        if (hud.HasReachedTargetGoal)
             return _levelMissionHint;
 
         return KillMissionHint(hud.TargetKills);
     }
 
-    public static string BuildSaveGameString(HudData hud)
+    public static string BuildSaveGameString(GameSessionData hud)
 {
     var killsText = $"Kill Count: {hud.Kills} / {hud.TargetKills}";
     var hpText = $"HP: {hud.HP}";

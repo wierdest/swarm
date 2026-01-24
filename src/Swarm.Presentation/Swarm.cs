@@ -375,7 +375,7 @@ public class Swarm : Game
 
         DrawBorder(_spriteBatch, _drawDestination, BORDER, Color.Black );
 
-        _hud.Draw(snap.HudData);
+        _hud.Draw(snap.GameSessionData);
 
         _crosshairRenderer.Draw(snap.AimPositionX, snap.AimPositionY);
         _spriteBatch.End();

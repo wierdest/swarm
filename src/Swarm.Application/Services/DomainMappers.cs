@@ -2,8 +2,6 @@
 using Swarm.Application.DTOs;
 using Swarm.Domain.Entities;
 using Swarm.Domain.Entities.NonPlayerEntities;
-using Swarm.Domain.Factories;
-using Swarm.Domain.Factories.Evaluators;
 using Swarm.Domain.GameObjects;
 
 namespace Swarm.Application.Services;
@@ -75,7 +73,7 @@ static class DomainMappers
         var p = s.Player;
         var w = p.ActiveWeapon;
 
-        return new HudData(
+        return new GameSessionData(
             s.Kills,
             p.HP,
             pA.PlayerRespawns,
@@ -92,20 +90,6 @@ static class DomainMappers
             s.Casualties,
             s.Salvations,
             s.Infected
-        );
-    }
-
-   public static SaveGame ToSaveGame(GameSession s, PlayerArea pA, TargetArea t)
-   {
-        var hud = ToHud(s, pA, t);
-
-        var bombQuantity = new BombQuantityEvaluator(s, pA).Evaluate();
-        var bombs = BombFactory.CreateBombs(bombQuantity);
-        var bombDTOs = bombs.Select(b => new BombDTO(b.Identifier, b.Cooldown.PeriodSeconds));
-        return new SaveGame(
-            DateTimeOffset.Now,
-            hud,
-            bombDTOs
         );
     }
 }

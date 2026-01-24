@@ -1,14 +1,13 @@
 ﻿namespace Swarm.Application.Contracts;
 
-public record class HudData(
+public record class GameSessionData(
     int Kills,
-    int TargetKills,
     int HP,
     int NumberOfPlayerRespawns,
     string Timer,
     int NumberOfEnemiesAlive, // zombies, shooters, infected
     bool LevelCompleted,
-    bool HasReachedTargetKills,
+    bool HasReachedTargetGoal,
     string WeaponName,
     int AmmoStock,
     int CurrentAmmo,
@@ -18,7 +17,4 @@ public record class HudData(
     int Casualties,
     int NumberOfHealthySaved,
     int Infected
-)
-{
-    
-}
+);
