@@ -10,22 +10,15 @@ public class Healthy(
     Vector2 startPosition,
     Radius radius,
     HitPoints hp,
-    IDeathTrigger deathTrigger,
-    INonPlayerEntityBehaviour[] behaviours)
-    : NonPlayerEntityBase(id, startPosition, radius, hp, behaviours[0])
+    INonPlayerEntityBehaviour?[] behaviours)
+    : NonPlayerEntityBase(id, startPosition, radius, hp, behaviours[0]!)
 {
-    private readonly IDeathTrigger _deathTrigger = deathTrigger;
     public bool IsInfected { get; private set; } = false;
     private readonly INonPlayerEntityBehaviour[] _behaviours = behaviours;
-    protected override void OnDeath(NonPlayerEntityContext<INonPlayerEntity> context)
-    {
-        foreach (var evt in _deathTrigger.OnDeath(Position))
-            RaiseEvent(evt);
-    }
 
     protected override void ResolveCollisionWith(INonPlayerEntity other, ref Vector2 newPos, float minDist, float distSq, Vector2 delta)
     {
-        if (!IsInfected && other is Zombie)
+        if (_behaviours[1] is not null && !IsInfected && other is Zombie)
         {
             IsInfected = true;
             SwitchBehaviour(_behaviours[1]);

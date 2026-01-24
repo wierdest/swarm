@@ -7,8 +7,8 @@ public sealed record class LevelConfig(
     AreaConfig? TargetAreaConfig,
     IReadOnlyList<AreaConfig>? Walls,
     WallGeneratorConfig? WallGeneratorConfig,
-    NonPlayerEntityConfig? ShooterConfig,
+    ShooterConfig? ShooterConfig,
     NonPlayerEntityConfig? ZombieConfig,
-    NonPlayerEntityConfig? HealthyConfig,
+    HealthyConfig? HealthyConfig,
     GoalConfig? GoalConfig
 );

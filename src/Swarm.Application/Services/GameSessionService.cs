@@ -19,7 +19,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Swarm.Domain.Entities.NonPlayerEntities.Behaviours;
 using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.Entities.NonPlayerEntities.Behaviours.Strategies;
-using Swarm.Domain.Entities.NonPlayerEntities.DeathTriggers;
 using Swarm.Domain.Factories.Strategies;
 
 namespace Swarm.Application.Services;
@@ -33,7 +32,7 @@ public sealed class GameSessionService(
     private Bounds _stage;
     private readonly List<NonPlayerEntitySpawner> _spawners = [];
     private PlayerArea? _playerArea;
-    private TargetArea? _targetArea; 
+    private TargetArea? _targetArea;
     private Vector2 _crosshairs = new();
     public bool HasSession => _session != null && _playerArea != null && _targetArea != null;
 
@@ -134,7 +133,7 @@ public sealed class GameSessionService(
                 seedCount: wallGeneratorConfig.WallSeedCount,
                 wallDensity: wallGeneratorConfig.WallDensity,
                 cellSize: wallGeneratorConfig.WallCellSize,
-                minWallCount: level.Spawners?.Count ?? 0,
+                minWallCount: GetTotalSpawnerCount(level),
                 seed: wallGeneratorConfig.WallRandomSeed
             )];
             
@@ -159,6 +158,28 @@ public sealed class GameSessionService(
 
         _logger.LogInformation("New session started");
 
+    }
+
+    private static int GetTotalSpawnerCount(LevelConfig level)
+    {
+        var total = 0;
+
+        if (level.ZombieConfig?.Spawners is { Count: > 0 } zombieSpawners)
+        {
+            total += zombieSpawners.Count;
+        }
+
+        if (level.HealthyConfig?.NonPlayerEntityConfig.Spawners is { Count: > 0 } healthySpawners)
+        {
+            total += healthySpawners.Count;
+        }
+
+        if (level.ShooterConfig?.NonPlayerEntityConfig.Spawners is { Count: > 0 } shooterSpawners)
+        {
+            total += shooterSpawners.Count;
+        }
+
+        return total;
     }
 
     private void StartAreas(LevelConfig level)
@@ -189,10 +210,6 @@ public sealed class GameSessionService(
     {
         if (_session is null) return;
 
-        Shooter? shooter = null;
-        Zombie? zombie = null;
-        Healthy? healthy = null;
-
         _spawners.Clear();
         var spawnerPositions = _session.SpawnerPoints.ToList();
         var random = new Random();
@@ -202,27 +219,6 @@ public sealed class GameSessionService(
             if (zombieConfig.TargetConfig is not TargetConfig targetConfig ||
                 zombieConfig.DodgeConfig is not DodgeConfig dodgeConfig)
                 throw new DomainException("Zombie config must have TargetConfig defined.");
-                    
-            var zombieSeekBehaviour = new SeekBehaviour(
-                speed: zombieConfig.Speed,
-                targetStrategy: new NearestHealthyOrPlayerTargetStrategy(
-                    threshold: targetConfig.Threshold ?? 150f
-                ),
-                actionStrategy: null,
-                dodgeStrategy: new NearestProjectileDodgeStrategy(
-                    owner: ProjectileOwnerTypes.Player,
-                    threshold: dodgeConfig.Threshold ?? 150f
-                ),
-                runawayStrategy: null
-            );
-
-            zombie = new Zombie(
-                id: EntityId.New(),
-                startPosition: new Vector2(),
-                radius: new(zombieConfig.Radius),
-                hp: new(zombieConfig.HP),
-                behaviour: zombieSeekBehaviour
-            );
 
             var zombieSpawners = zombieConfig.Spawners;
 
@@ -238,57 +234,46 @@ public sealed class GameSessionService(
 
                     // Remove it from the available pool
                     spawnerPositions.RemoveAt(index);
-
+                    
                     var spawner = new NonPlayerEntitySpawner(
                         _session,
                         new FixedPositionNonPlayerEntitySpawnerBehaviour(
                             position: spawnPos,
                             cooldownSeconds: spawnerConfig.CooldownSeconds,
-                            entityFactory: pos => zombie
-                            ),
+                            entityFactory: pos => 
+                            {
+                                return NonPlayerEntityFactory.CreateZombie(
+                                    startPosition: pos,
+                                    radius: new(zombieConfig.Radius),
+                                    hp: new(zombieConfig.HP),
+                                    speed: zombieConfig.Speed,
+                                    targetThreshold: targetConfig.Threshold,
+                                    dodgeThreshold: dodgeConfig.Threshold
+                                );
+                            }
+                        ),
                         spawnerConfig.BatchSize > 0 ? spawnerConfig.BatchSize : 1
                     );
 
-                    _spawners.Add(spawner); 
+                    _spawners.Add(spawner);
 
                 }
             }
     
         }
         
-        if (level.HealthyConfig is NonPlayerEntityConfig healthyConfig)
+        if (level.HealthyConfig is HealthyConfig healthyConfig)
         {
-            if (healthyConfig.TargetConfig is not TargetConfig targetConfig ||
-                healthyConfig.DodgeConfig is not DodgeConfig dodgeConfig)
+            var entityConfig = healthyConfig.NonPlayerEntityConfig;
+            if (entityConfig.TargetConfig is not TargetConfig targetConfig ||
+                entityConfig.DodgeConfig is not DodgeConfig dodgeConfig)
                 throw new DomainException("Healthy config must have TargetConfig defined.");
             
-            var healthySpawners = healthyConfig.Spawners;
+            var healthySpawners = entityConfig.Spawners;
             
             if (healthySpawners is null|| healthySpawners.Count == 0)
                 throw new DomainException("Healthy config provided but no healthy spawner defined in non player entity config.");
             
-            var healthySeekBehaviour = new SeekBehaviour(
-                speed: healthyConfig.Speed,
-                targetStrategy: new SafehouseTargetStrategy(
-                    safehouse: _playerArea is null ? _stage.LeftRandomCorner : _playerArea.Position
-                ),
-                actionStrategy: null,
-                dodgeStrategy: new NearestProjectileDodgeStrategy(
-                    owner: ProjectileOwnerTypes.All,
-                    threshold: dodgeConfig.Threshold ?? 150f
-                ),
-                runawayStrategy: null
-            );
-
-            healthy = new Healthy(
-                id: EntityId.New(),
-                startPosition: new Vector2(),
-                radius: new(healthyConfig.Radius),
-                hp: new(healthyConfig.HP),
-                behaviours: [healthySeekBehaviour, zombie!.GetBehaviour()],
-                deathTrigger: new SpawnZombiesDeathTrigger(1, new Radius(healthyConfig.Radius))
-            );
-
             foreach (var spawnerConfig in healthySpawners)
             {
                 if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
@@ -305,8 +290,18 @@ public sealed class GameSessionService(
                     new FixedPositionNonPlayerEntitySpawnerBehaviour(
                         position: spawnPos,
                         cooldownSeconds: spawnerConfig.CooldownSeconds,
-                        entityFactory: pos => healthy
-                        ),
+                        entityFactory: pos => NonPlayerEntityFactory.CreateHealthy(
+                            startPosition: pos,
+                            radius: new(entityConfig.Radius),
+                            hp: new(entityConfig.HP),
+                            speed: entityConfig.Speed,
+                            safehouse: _playerArea is null ? _stage.LeftRandomCorner : _playerArea.Position,
+                            dodgeThreshold: dodgeConfig.Threshold ?? 150f,
+                            infectedSpeed: healthyConfig.InfectedSpeed,
+                            infectedTargetThreshold: healthyConfig.InfectedTargetThreshold,
+                            infectedDodgeThreshold: healthyConfig.InfectedDodgeThreshold
+                        )
+                    ),
                     batch
                 );
 
@@ -315,14 +310,16 @@ public sealed class GameSessionService(
             }
         }
 
-        if (level.ShooterConfig is NonPlayerEntityConfig shooterConfig)
+        if (level.ShooterConfig is ShooterConfig shooterConfig)
         {
-            if (shooterConfig.TargetConfig is not TargetConfig targetConfig || 
-                shooterConfig.DodgeConfig is not DodgeConfig dodgeConfig || 
+            var entityConfig = shooterConfig.NonPlayerEntityConfig;
+
+            if (entityConfig.TargetConfig is not TargetConfig targetConfig || 
+                entityConfig.DodgeConfig is not DodgeConfig dodgeConfig || 
                 shooterConfig.RunawayConfig is not RunawayConfig runawayConfig)
                 throw new DomainException("Shooter config must have TargetConfig, DodgeConfig and RunawayConfig defined.");
             
-            var shooterSpawners = shooterConfig.Spawners;
+            var shooterSpawners = entityConfig.Spawners;
             
             if (shooterSpawners is null || shooterSpawners.Count == 0)
                 throw new DomainException("Shooter config provided but no shooter spawner defined in level config.");
@@ -347,38 +344,6 @@ public sealed class GameSessionService(
                 ? _targetArea.Position
                 : _stage.RightRandomCorner;
 
-            var seekAndShootBehaviour = new SeekBehaviour(
-                speed: shooterConfig.Speed,
-                targetStrategy: new PlayerTargetStrategy(),
-                actionStrategy: new RangeShootStrategy(
-                    shootRange: shooterConfig.ShootRange ?? 600f
-                ),
-                dodgeStrategy: new NearestProjectileDodgeStrategy(
-                    owner: ProjectileOwnerTypes.Player,
-                    threshold: dodgeConfig.Threshold ?? 150f
-                ),
-                runawayStrategy: new PlayerToSafehouseRunawayStrategy(
-                    threshold: runawayConfig.Threshold ?? 9,
-                    safehouse: new Vector2(
-                        safehouse.X + 12f,
-                        safehouse.Y - 12f),
-                    safehouseWeight: runawayConfig.SafehouseWeight ?? 0.5f,
-                    avoidPlayerWeight: runawayConfig.AvoidPlayerWeight ?? 0.5f
-                )
-            );
-
-            var shooterPos = new Vector2();
-
-            shooter = new Shooter(
-                id: EntityId.New(),
-                startPosition: shooterPos,
-                radius: new(shooterConfig.Radius),
-                hp: new(shooterConfig.HP),
-                behaviour: seekAndShootBehaviour,
-                weapon: weapon,
-                deathTrigger: new SpawnZombiesDeathTrigger(4, new Radius(10f))
-            );
-
             foreach (var spawnerConfig in shooterSpawners)
             {
                 if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
@@ -395,7 +360,21 @@ public sealed class GameSessionService(
                     new FixedPositionNonPlayerEntitySpawnerBehaviour(
                         position: spawnPos,
                         cooldownSeconds: spawnerConfig.CooldownSeconds,
-                        entityFactory: pos => shooter
+                        entityFactory: pos => NonPlayerEntityFactory.CreateShooter(
+                            startPosition: pos,
+                            radius: new(entityConfig.Radius),
+                            hp: new(entityConfig.HP),
+                            speed: entityConfig.Speed,
+                            shootRange: shooterConfig.ShootRange ?? 600f,
+                            dodgeThreshold: dodgeConfig.Threshold ?? 150f,
+                            runawayThreshold: runawayConfig.Threshold ?? 9,
+                            safehouse: safehouse,
+                            safehouseWeight: runawayConfig.SafehouseWeight ?? 0.5f,
+                            avoidPlayerWeight: runawayConfig.AvoidPlayerWeight ?? 0.5f,
+                            weapon: weapon,
+                            minionSpawnCount: shooterConfig.MinionSpawnCount ?? 4,
+                            minionRadius: new(shooterConfig.MinionSpawnRadius ?? 10f)
+                            )
                         ),
                     batch
                 );
@@ -404,7 +383,6 @@ public sealed class GameSessionService(
 
             }
         }
-
 
     }
 
