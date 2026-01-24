@@ -70,20 +70,19 @@ static class DomainMappers
                 s.AimPosition.Y
             );
     }
-    private static HudData ToHud(GameSession s, PlayerArea pA, TargetArea t)
+    private static GameSessionData ToHud(GameSession s, PlayerArea pA, TargetArea t)
     {
         var p = s.Player;
         var w = p.ActiveWeapon;
 
         return new HudData(
             s.Kills,
-            s.TargetKills,
             p.HP,
             pA.PlayerRespawns,
             s.TimeString,
             s.EnemyCount + s.InfectedCount,
             s.IsLevelCompleted,
-            s.HasReachedTargetKills(),
+            s.HasReachedTargetGoal(),
             w.Name,
             p.Ammo,
             w.CurrentAmmo,

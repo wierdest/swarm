@@ -156,10 +156,19 @@ public sealed class GameSessionService(
         var bombs = new List<Bomb>();
 
         var timer = new RoundTimer(config.RoundLength);
-        // todo generate goals from goal config
-        // todo hook up goals to session
-        _session = new GameSession(EntityId.New(), _stage, player, walls, timer, bombs);
+        
+        if (level.GoalConfig is not GoalConfig goalConfig)
+            throw new DomainException("Goal config is required to start a session.");
 
+        var goal = GoalFactory.Create(
+            goalConfig.GoalDescription,
+            goalConfig.GameSessionPropertyIdentifier,
+            goalConfig.Operator,
+            goalConfig.TargetValue
+        );
+
+        _session = new GameSession(EntityId.New(), _stage, player, walls, timer, goal, bombs);
+        
         StartAreas(level);
         StartSpawners(level);
 

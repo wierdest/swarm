@@ -15,6 +15,7 @@ public sealed class GameSession(
     Player player,
     List<Wall> walls,
     RoundTimer timer,
+    IGoal goal,
     List<Bomb> bombs
 )
 {
@@ -33,9 +34,7 @@ public sealed class GameSession(
     public bool ReachedMaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
     public Score Kills { get; private set; } = new(0);
     private void AddKill() => Kills = Kills.Add(1);
-    public Score TargetKills => targetKill; // this will come from the goals config passed in the service
-    public Score KillBonus => (Score)(HasReachedTargetKills() ? Kills - targetKill : 0);
-    public bool HasReachedTargetKills() => Kills >= TargetKills;
+    public bool HasReachedTargetGoal() => goal.Evaluate(this);
     public Score Casualties { get; private set; } = new(0);
     private void AddCasualty() => Casualties = Casualties.Add(1);
     public Score Salvations { get; private set; } = new(0);
@@ -52,7 +51,6 @@ public sealed class GameSession(
     public IReadOnlyList<Bomb> Bombs => _bombs;
     public Score BombCount => new(_bombs.Count);
     public void AddBomb(Bomb bomb) => _bombs.Add(bomb);
-
     private bool _isWaitingForBombCooldown = false;
     public bool IsWaitingForBombCooldown => _isWaitingForBombCooldown;
     public void DropBomb()
@@ -72,7 +70,7 @@ public sealed class GameSession(
     private float _accumulator = 0f;
     private bool _isTimeUp = false;
     public bool IsTimeUp => _isTimeUp;
-    public String TimeString => _timer.ToString();
+    public string TimeString => _timer.ToString();
     public bool IsPaused { get; private set; }
     public void Pause() => IsPaused = true;
     public void Resume() => IsPaused = false;
@@ -80,7 +78,7 @@ public sealed class GameSession(
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
     private void RaiseEvent(IDomainEvent evt) => _domainEvents.Add(evt);
     public void ClearDomainEvents() => _domainEvents.Clear();
-    public bool IsOverrun => NonPlayerEntities.Count > TargetKills;
+    public bool IsOverrun => NonPlayerEntities.Count > 666;
     public bool IsInterrupted { get; private set; }
     public void Interrupt() => IsInterrupted = true;
     public Vector2 AimPosition = new();
@@ -99,6 +97,8 @@ public sealed class GameSession(
     public void Fire(bool isPressed, bool isHeld)
     {
         var weapon = Player.ActiveWeapon;
+
+        if (weapon is null) return;
 
         if (weapon.IsAutomatic() && !isHeld) return;
 
@@ -159,6 +159,11 @@ public sealed class GameSession(
         UpdatePlayer(dt);
         UpdateNonPlayerEntities(dt);
         UpdateProjectiles(dt);
+
+        if (HasReachedTargetGoal())
+        {
+            RaiseEvent(new ReachedTargetScoreEvent(Id));
+        }
     }
 
     private void UpdateTimer(DeltaTime dt)
@@ -303,10 +308,6 @@ public sealed class GameSession(
                         }
 
                         AddKill();
-                        if (HasReachedTargetKills())
-                        {
-                            RaiseEvent(new ReachedTargetScoreEvent(Id));
-                        }
                     }
               
                     return true;

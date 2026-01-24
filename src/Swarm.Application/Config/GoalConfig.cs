@@ -4,6 +4,6 @@ public sealed record class GoalConfig(
     string GoalDescription,
     string GameSessionPropertyIdentifier,
     string Operator,
-    string TargetValue
+    int TargetValue
 );
 
