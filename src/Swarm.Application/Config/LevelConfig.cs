@@ -10,5 +10,6 @@ public sealed record class LevelConfig(
     ShooterConfig? ShooterConfig,
     NonPlayerEntityConfig? ZombieConfig,
     HealthyConfig? HealthyConfig,
-    GoalConfig? GoalConfig
+    GoalConfig? GoalConfig,
+    List<BombConfig>? Bombs
 );
