@@ -15,7 +15,6 @@ public record class InputStateDTO(
     bool Save,
     bool Load,
     bool Restart,
-    bool ViewStats,
     bool Left,
     bool Right
 )
@@ -38,7 +37,6 @@ public record class InputStateDTO(
         if (Save) parts.Add("Save");
         if (Load) parts.Add("Load");
         if (Restart) parts.Add("Restart");
-        if (ViewStats) parts.Add("ViewStats");
         if (Left) parts.Add("Left");
         if (Right) parts.Add("Right");
 
