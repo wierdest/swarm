@@ -24,7 +24,7 @@ public static class HudTextBuilder
 
         return $"{weaponName} {currentAmmo}/{maxAmmo} | S: {ammoStock}";
     }
-    public static string BuildKillsText(int kills, int targetKills) => $"K: {kills}/{targetKills}";
+    public static string BuildKillsText(int kills) => $"K: {kills}";
     public static string BuildEnemiesText(int enemiesAlive) => $"E: {enemiesAlive}";
     public static string BuildBombText(int amount) => $"{_bombsHint} {amount}";
     public static string BuildHealthyAliveText(int healthyAlive) => $"H: {healthyAlive}";
@@ -34,7 +34,7 @@ public static class HudTextBuilder
     public static string BuildInfectedText(int inffected) => $"I: {inffected}";
 
 
-    public static string BuildTopLine(GameSessionData hud)
+    public static string BuildTopLine(HudData hud)
     {
         return string.Join(" | ",
             BuildHpText(hud.HP),
@@ -42,6 +42,7 @@ public static class HudTextBuilder
             BuildWeaponText(hud.WeaponName, hud.CurrentAmmo, hud.MaxAmmo, hud.AmmoStock),
             BuildEnemiesText(hud.NumberOfEnemiesAlive),
             BuildHealthyAliveText(hud.NumberOfHealthyAlive),
+            BuildKillsText(hud.Kills),
             BuildCasualtiesText(hud.Casualties),
             BuildHealthySavedText(hud.NumberOfHealthySaved),
             BuildInfectedText(hud.Infected),
@@ -49,7 +50,7 @@ public static class HudTextBuilder
         );
     }
 
-    public static string BuildMissionText(GameSessionData hud)
+    public static string BuildMissionText(HudData hud)
     {
         if (hud.LevelCompleted)
             return _successHint;
@@ -57,10 +58,10 @@ public static class HudTextBuilder
         if (hud.HasReachedTargetGoal)
             return _levelMissionHint;
 
-        return "TODO Goal Hint here!";
+        return hud.GoalDescription;
     }
 
-    public static string BuildSaveGameString(GameSessionData hud)
+    public static string BuildSaveGameString(HudData hud)
 {
     var hpText = $"HP: {hud.HP}";
     var playerDeathsText = $"Deaths: {hud.NumberOfPlayerRespawns}";

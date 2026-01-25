@@ -15,7 +15,6 @@
       "ProjectileRadius": 16,
       "ProjectileLifetimeSeconds": 10
     },
-    "PlayerInitialAmmoModifier": null,
     "PlayerAreaConfig": {
       "X": 80,
       "Y": 80,
@@ -26,6 +25,7 @@
       "Y": 460,
       "Radius": 40
     },
+    "Walls": null,
     "WallGeneratorConfig": {
       "WallRandomSeed": null,
       "WallSeedCount": 3,
@@ -126,7 +126,7 @@
       "MinionSpawnRadius": 10
     },
     "GoalConfig": {
-      "GoalDescription": "Reach target score",
+      "GoalDescription": "Kill 250 zombies",
       "GameSessionPropertyIdentifier": "Kills",
       "Operator": ">=",
       "TargetValue": 250

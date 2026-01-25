@@ -1,6 +1,6 @@
 ﻿namespace Swarm.Application.Contracts;
 
-public record class GameSessionData(
+public record class HudData(
     int Kills,
     int HP,
     int NumberOfPlayerRespawns,
@@ -16,5 +16,6 @@ public record class GameSessionData(
     int NumberOfHealthyAlive, // healthy and saved
     int Casualties,
     int NumberOfHealthySaved,
-    int Infected
+    int Infected,
+    string GoalDescription
 );

@@ -35,6 +35,7 @@ public sealed class GameSession(
     public Score Kills { get; private set; } = new(0);
     private void AddKill() => Kills = Kills.Add(1);
     public bool HasReachedTargetGoal() => goal.Evaluate(this);
+    public string GetGoalDescription() => goal.Description;
     public Score Casualties { get; private set; } = new(0);
     private void AddCasualty() => Casualties = Casualties.Add(1);
     public Score Salvations { get; private set; } = new(0);

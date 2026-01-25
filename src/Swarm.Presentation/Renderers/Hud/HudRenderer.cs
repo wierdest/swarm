@@ -16,7 +16,7 @@ public class HudRenderer(
     private readonly static string _exitHint = "Press ESC to EXIT";
     private readonly GraphicsDevice _graphicsDevice = graphicsDevice;
 
-    public void Draw(GameSessionData gameSessionData)
+    public void Draw(HudData gameSessionData)
     {
         var leftText = HudTextBuilder.BuildTopLine(gameSessionData);
         var leftPos = new Vector2(10, 10);

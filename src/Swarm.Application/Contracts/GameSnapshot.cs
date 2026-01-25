@@ -6,7 +6,7 @@ namespace Swarm.Application.Contracts;
 public record class GameSnapshot(
     BoundsDTO Stage,
     PlayerDTO Player,
-    GameSessionData GameSessionData,
+    HudData GameSessionData,
     IReadOnlyList<ProjectileDTO> Projectiles,
     IReadOnlyList<NonPlayerEntityDTO> Enemies,
     IReadOnlyCollection<DrawableDTO> Walls,

@@ -68,12 +68,12 @@ static class DomainMappers
                 s.AimPosition.Y
             );
     }
-    private static GameSessionData ToHud(GameSession s, PlayerArea pA, TargetArea t)
+    private static HudData ToHud(GameSession s, PlayerArea pA, TargetArea t)
     {
         var p = s.Player;
         var w = p.ActiveWeapon;
 
-        return new GameSessionData(
+        return new HudData(
             s.Kills,
             p.HP,
             pA.PlayerRespawns,
@@ -89,7 +89,8 @@ static class DomainMappers
             s.HealthyCount + s.Salvations,
             s.Casualties,
             s.Salvations,
-            s.Infected
+            s.Infected,
+            s.GetGoalDescription()
         );
     }
 }
