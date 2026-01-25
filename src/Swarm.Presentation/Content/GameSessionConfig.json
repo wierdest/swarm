@@ -123,7 +123,21 @@
         "ProjectileLifetimeSeconds": 2
       },
       "MinionSpawnCount": 4,
-      "MinionSpawnRadius": 10
+      "ZombieSpawnedOnDeathTriggerConfig": {
+        "HP": 1,
+        "Radius": 12,
+        "Speed": 150,
+        "Cooldown": 0.2,
+        "Damage": 1,
+        "DodgeConfig": {
+          "Threshold": 150,
+          "SpeedMultiplier": 3.0
+        },
+        "TargetConfig": {
+          "Threshold": 150
+        },
+        "Spawners": null
+      }
     },
     "GoalConfig": {
       "GoalDescription": "Kill 250 zombies",
