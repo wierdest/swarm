@@ -17,7 +17,7 @@
       "Radius": 40
     },
     "GoalConfig": {
-      "GoalDescription": "This is a time-based game.",
+      "GoalDescription": "This is a time-based game. Wait for 5 seconds.",
       "GameSessionPropertyIdentifier": "Timer",
       "Operator": "<=",
       "TargetValue": 10

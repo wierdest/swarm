@@ -201,7 +201,6 @@ public class Swarm : Game
         {
             string mainText = "";
             string subText = "PRESS R TO RERUN";
-            string subSubText = "PRESS V TO VIEW SAVE GAMES";
 
             if (snap.IsPaused) mainText = "PAUSED";
             else if (snap.IsInterrupted) mainText = "GAME OVER";
@@ -210,7 +209,7 @@ public class Swarm : Game
             if (!string.IsNullOrEmpty(mainText))
             {
                 Vector2 size = _font.MeasureString(mainText);
-                Vector2 pos = new Vector2(
+                Vector2 pos = new(
                     (WIDTH - size.X) / 2f,
                     (HEIGHT - size.Y) / 2f
                 );
@@ -220,18 +219,11 @@ public class Swarm : Game
             Vector2 mainSize = string.IsNullOrEmpty(mainText) ? Vector2.Zero : _font.MeasureString(mainText);
 
             Vector2 subSize = _font.MeasureString(subText);
-            Vector2 subPos = new Vector2(
+            Vector2 subPos = new(
                 (WIDTH - subSize.X) / 2f,
                 (HEIGHT - mainSize.Y) / 2f + mainSize.Y + 10
             );
             _spriteBatch.DrawString(_font, subText, subPos, Color.White);
-
-            Vector2 subSubSize = _font.MeasureString(subSubText);
-            Vector2 subSubPos = new(
-                (WIDTH - subSubSize.X) / 2f,
-                subPos.Y + subSubSize.Y + 10
-            );
-            _spriteBatch.DrawString(_font, subSubText, subSubPos, Color.White);
 
         }
         _spriteBatch.End();
