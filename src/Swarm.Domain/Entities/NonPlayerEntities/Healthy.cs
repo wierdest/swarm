@@ -18,7 +18,10 @@ public class Healthy(
 
     protected override void ResolveCollisionWith(INonPlayerEntity other, ref Vector2 newPos, float minDist, float distSq, Vector2 delta)
     {
+        if (other.GetType().Equals(this.GetType())) return; 
+        
         var infectedBehaviour = _behaviours[1];
+        
         if (infectedBehaviour is not null && !IsInfected && other is Zombie)
         {
             IsInfected = true;
