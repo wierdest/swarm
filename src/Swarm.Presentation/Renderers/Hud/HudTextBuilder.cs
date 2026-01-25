@@ -10,9 +10,6 @@ public static class HudTextBuilder
     private static readonly string _bombsHint = "[Press Q to drop bomb] | Bombs:";
     private static readonly string _successHint = "SUCCESS!";
     private static readonly string _levelMissionHint = "Reach the green area!";
-    private static string KillMissionHint(int amount) => $"Kill {amount} enemies!";
-    private static string SaveMissionHint(int amount) => $"Save {amount} people!";
-
     public static string BuildHpText(int hp) => $"HP: {hp}";
     public static string BuildDeathsText(int respawns) => $"D: {respawns}";
     public static string BuildWeaponText(string weaponName, int currentAmmo, int maxAmmo, int ammoStock)
@@ -27,7 +24,7 @@ public static class HudTextBuilder
 
         return $"{weaponName} {currentAmmo}/{maxAmmo} | S: {ammoStock}";
     }
-    public static string BuildKillsText(int kills, int targetKills) => $"K: {kills}/{targetKills}";
+    public static string BuildKillsText(int kills) => $"K: {kills}";
     public static string BuildEnemiesText(int enemiesAlive) => $"E: {enemiesAlive}";
     public static string BuildBombText(int amount) => $"{_bombsHint} {amount}";
     public static string BuildHealthyAliveText(int healthyAlive) => $"H: {healthyAlive}";
@@ -43,9 +40,9 @@ public static class HudTextBuilder
             BuildHpText(hud.HP),
             BuildDeathsText(hud.NumberOfPlayerRespawns),
             BuildWeaponText(hud.WeaponName, hud.CurrentAmmo, hud.MaxAmmo, hud.AmmoStock),
-            BuildKillsText(hud.Kills, hud.TargetKills),
             BuildEnemiesText(hud.NumberOfEnemiesAlive),
             BuildHealthyAliveText(hud.NumberOfHealthyAlive),
+            BuildKillsText(hud.Kills),
             BuildCasualtiesText(hud.Casualties),
             BuildHealthySavedText(hud.NumberOfHealthySaved),
             BuildInfectedText(hud.Infected),
@@ -58,15 +55,14 @@ public static class HudTextBuilder
         if (hud.LevelCompleted)
             return _successHint;
 
-        if (hud.HasReachedTargetKills)
+        if (hud.HasReachedTargetGoal)
             return _levelMissionHint;
 
-        return KillMissionHint(hud.TargetKills);
+        return hud.GoalDescription;
     }
 
     public static string BuildSaveGameString(HudData hud)
 {
-    var killsText = $"Kill Count: {hud.Kills} / {hud.TargetKills}";
     var hpText = $"HP: {hud.HP}";
     var playerDeathsText = $"Deaths: {hud.NumberOfPlayerRespawns}";
     var enemiesText = $"Enemies: {hud.NumberOfEnemiesAlive}";
@@ -76,7 +72,7 @@ public static class HudTextBuilder
     var casualtiesText = $"Casualties: {hud.Casualties}";
     var healthySavedText = $"Saved: {hud.NumberOfHealthySaved}";
 
-    return $"{hpText} {playerDeathsText} {weaponText} {killsText} " +
+    return $"{hpText} {playerDeathsText} {weaponText} " +
            $"{enemiesText} {timerText} {healthyAliveText} " +
            $"{casualtiesText} {healthySavedText} {timerText}";
 }

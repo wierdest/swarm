@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Swarm.Application.Config;
 using Swarm.Application.Contracts;
-using Swarm.Application.Primitives;
 using Swarm.Presentation.Input;
 using Swarm.Presentation.Renderers;
 using Swarm.Presentation.Renderers.Hud;
@@ -19,26 +16,19 @@ public class Swarm : Game
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
     private readonly IGameSessionService _service;
-    private readonly ILogger<Swarm> _logger;
     private readonly Dictionary<int, Texture2D> _circleCache = new();
     private readonly float _moveSpeed = 360f;
     private HudRenderer _hud = null!;
     private SpriteFont _font = null!;
     private readonly InputManager _input;
-    private GameConfig? gameConfig;
+    private string? _gameConfigJson;
     private RenderTarget2D _renderTarget = null!;
     private Rectangle _drawDestination;
     private readonly float WIDTH = 960f;
     private readonly float HEIGHT = 540f;
     private readonly int BORDER = 40;
-    private readonly SaveName SAVE = new("Progression");
-    private bool _iShowingSaveGames = false;
-    private SaveGameRenderer _saveGameRenderer = null!;
-
     private CrosshairRenderer _crosshairRenderer = null!;
-    private bool _prevViewStatsKey = false;
-
-    public Swarm(IGameSessionService service, ILogger<Swarm> logger)
+    public Swarm(IGameSessionService service)
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
@@ -46,7 +36,6 @@ public class Swarm : Game
         _graphics.PreferredBackBufferWidth = (int)WIDTH;
         _graphics.PreferredBackBufferHeight = (int)HEIGHT;
         _service = service;
-        _logger = logger;
         _input = new InputManager();
         _graphics.IsFullScreen = true;
         _graphics.ApplyChanges();
@@ -77,89 +66,9 @@ public class Swarm : Game
     protected override void Initialize()
     {
         Window.ClientSizeChanged += (_, __) => RecalculateDestination();
-
-        var outer = new Rectangle(0, 0, (int)WIDTH, (int)HEIGHT);
-        var inner = GetInnerGameRect(outer, BORDER);
-
-        gameConfig = new GameConfig(
-            StageConfig: new StageConfig(
-                Left: inner.Left,
-                Top: inner.Top,
-                Right: inner.Right,
-                Bottom: inner.Bottom
-            ),
-            LevelConfig: new LevelConfig(
-                Weapon: new WeaponConfig(
-                    Name: "",
-                    Damage: 1,
-                    ProjectileSpeed: 840f,
-                    ProjectileRadius: 16f,
-                    RatePerSecond: 60f,
-                    ProjectileLifetimeSeconds: 10f,
-                    MaxAmmo: 1000),
-                PlayerAreaConfig: new AreaConfig(X: inner.Left + BORDER, Y: inner.Top + BORDER, Radius: 40),
-                TargetAreaConfig: new AreaConfig(X: inner.Right - BORDER, Y: inner.Bottom - BORDER, Radius: 40),
-                Walls:
-                [
-                    new(X: 480, Y: 270, Radius:80),
-
-                ],
-                Spawners:
-                [
-                    new(
-                        CooldownSeconds: 0.2f,
-                        SpawnObjectType: "Zombie",
-                        BatchSize: 10
-                    ),
-
-                    new(
-                        CooldownSeconds: 0.2f,
-                        SpawnObjectType: "Zombie",
-                        BatchSize: 10
-                    ),
-
-                    new(
-                        CooldownSeconds: 0.2f,
-                        SpawnObjectType: "Zombie",
-                        BatchSize: 10
-                    ),
-
-                     new(
-                        CooldownSeconds: 0.2f,
-                        SpawnObjectType: "Healthy",
-                        BatchSize: 10
-                    ),
-
-                    new(
-                        CooldownSeconds: 12f,
-                        SpawnObjectType: "Shooter",
-                        BatchSize: 1
-                    )
-                ],
-                BossConfig: new BossConfig(
-                    Waypoints: new List<PointConfig>
-                    {
-                        new PointConfig(600, 300),
-                        new PointConfig(600, 100),
-                        new PointConfig(700, 100),
-                        new PointConfig(700, 400)
-                    },
-                    Speed: 100f,
-                    ShootRange: 600f,
-                    Cooldown: 1f,
-                    Damage: 10,
-                    ProjectileSpeed: 900f,
-                    ProjectileRadius: 6f,
-                    ProjectileRatePerSecond: 4f,
-                    ProjectileLifetimeSeconds: 2f),
-                InitialTargetScore: 250
-            ),
-            PlayerRadius: 12,
-            RoundLength: 45
-        );
-
-        
-        _service.StartNewSession(gameConfig).GetAwaiter().GetResult();
+        var configPath = Path.Combine(AppContext.BaseDirectory, Content.RootDirectory, "GameSessionConfig.json");
+        _gameConfigJson = File.ReadAllText(configPath);
+        _service.StartNewSession(_gameConfigJson).GetAwaiter().GetResult();
 
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
@@ -172,8 +81,6 @@ public class Swarm : Game
         _font = Content.Load<SpriteFont>("DefaultFont");
 
         _hud = new HudRenderer(_spriteBatch, _font, GraphicsDevice);
-
-        _saveGameRenderer = new SaveGameRenderer(_spriteBatch, _font);
 
         _crosshairRenderer = new CrosshairRenderer(_spriteBatch, GraphicsDevice);
 
@@ -212,27 +119,7 @@ public class Swarm : Game
 
         if (snap.IsPaused || snap.IsTimeUp || snap.IsCompleted || snap.IsInterrupted)
         {
-            if (state.Restart) _service.Restart(gameConfig!);
-
-            if (state.ViewStats && !_prevViewStatsKey)
-            {
-                _iShowingSaveGames = !_iShowingSaveGames;
-            }
-            _prevViewStatsKey = state.ViewStats;
-
-            if (_iShowingSaveGames)
-            {
-                if (state.Left)
-                {
-                    _saveGameRenderer.PrevPage();
-
-                }
-                else if (state.Right)
-                {
-                    _saveGameRenderer.NextPage(_service.GetSaveGames());
-                }
-            }
-
+            if (state.Restart) _service.Restart(_gameConfigJson!);
             return;
         }
 
@@ -250,18 +137,8 @@ public class Swarm : Game
 
         if (dt > 0f) _service.Tick(dt);
 
-        // if (state.Save) _ = SaveGameAsync(new SaveName("QuickSave"));
-        // if (state.Load) _ = LoadGameAsync(new SaveName("QuickSave"));
-
         base.Update(gameTime);
     }
-
-    private async Task SaveGameAsync()
-    {
-        await _service.SaveAsync(SAVE);
-        _logger.LogInformation("Game saved to {SaveName}",  SAVE.Value);
-    }
-
 
     protected override void Draw(GameTime gameTime)
     {
@@ -352,12 +229,6 @@ public class Swarm : Game
             );
             _spriteBatch.DrawString(_font, subSubText, subSubPos, Color.White);
 
-            if (_iShowingSaveGames)
-            {
-                var saves = _service.GetSaveGames();
-                _saveGameRenderer.Draw(saves);
-            }
-
         }
         _spriteBatch.End();
 
@@ -370,7 +241,7 @@ public class Swarm : Game
 
         DrawBorder(_spriteBatch, _drawDestination, BORDER, Color.Black );
 
-        _hud.Draw(snap.HudData);
+        _hud.Draw(snap.GameSessionData);
 
         _crosshairRenderer.Draw(snap.AimPositionX, snap.AimPositionY);
         _spriteBatch.End();
@@ -446,21 +317,6 @@ public class Swarm : Game
         // Right
         spriteBatch.Draw(Pixel, new Rectangle(rect.X + rect.Width - thickness, rect.Y, thickness, rect.Height), color);
     }
-
-    private Rectangle GetInnerGameRect(Rectangle outer, int baseThickness)
-    {
-        float scale = outer.Width / WIDTH; // proportional to scaling
-        int thickness = (int)(baseThickness * scale);
-
-        return new Rectangle(
-            outer.X + thickness,
-            outer.Y + thickness,
-            outer.Width - thickness * 2,
-            outer.Height - thickness * 2
-        );
-    }
-
-
 
     private static Texture2D? _pixel;
     private Texture2D Pixel

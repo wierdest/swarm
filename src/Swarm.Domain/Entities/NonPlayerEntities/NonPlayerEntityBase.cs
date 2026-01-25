@@ -25,7 +25,7 @@ public abstract class NonPlayerEntityBase(
     public virtual void RaiseEvent(IDomainEvent evt) => DomainEventList.Add(evt);
     public virtual IReadOnlyList<IDomainEvent>? DomainEvents => DomainEventList;
 
-     public virtual void Heal(Damage damage)
+    public virtual void Heal(Damage damage)
     {
         HP = HP.Heal(damage);
     }

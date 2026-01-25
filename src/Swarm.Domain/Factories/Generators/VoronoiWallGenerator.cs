@@ -6,17 +6,52 @@ namespace Swarm.Domain.Factories.Generators;
 public static class VoronoiWallGenerator
 {
     public static IEnumerable<Wall> Generate(
+        Vector2 start,
+        Vector2 targetPos,
         Bounds levelBounds,
-        Vector2? start = null,
-        Vector2? targetPos = null,
-        int seedCount = 16,
-        float cellSize = 64f,
-        float wallRadius = 12f,
-        float wallDensity = 0.6f,
+        int seedCount,
+        float cellSize,
+        float wallRadius,
+        float wallDensity,
+        int minWallCount,
         int? seed = null)
     {
-        var rng = seed.HasValue ? new Random(seed.Value) : new Random();
+        const int maxAttempts = 8;
+        int attempts = 0;
+        var walls = new List<Wall>();
 
+        while (walls.Count < minWallCount && attempts < maxAttempts)
+        {
+            var attemptSeed = seed.HasValue ? seed.Value + attempts : Environment.TickCount + attempts;
+            var rng = new Random(attemptSeed);
+            walls.Clear();
+            GenerateOnce(
+                start,
+                targetPos,
+                levelBounds,
+                seedCount,
+                cellSize,
+                wallRadius,
+                wallDensity,
+                rng,
+                walls);
+            attempts++;
+        }
+
+        return walls;
+    }
+
+    private static void GenerateOnce(
+        Vector2 start,
+        Vector2 targetPos,
+        Bounds levelBounds,
+        int seedCount,
+        float cellSize,
+        float wallRadius,
+        float wallDensity,
+        Random rng,
+        List<Wall> walls)
+    {
         // Step 1: generate Voronoi seed points
         var seeds = new List<Vector2>(seedCount);
         for (int i = 0; i < seedCount; i++)
@@ -44,14 +79,14 @@ public static class VoronoiWallGenerator
                 {
                     var pos = current + new Vector2(cellSize / 2f, 0);
                     if (!IsNearArea(pos, start, targetPos))
-                        yield return new Wall(pos, new Radius(wallRadius), null);
+                        walls.Add(new Wall(pos, new Radius(wallRadius), null));
                 }
 
                 if (nearestDown != nearest && rng.NextDouble() < wallDensity)
                 {
                     var pos = current + new Vector2(0, cellSize / 2f);
                     if (!IsNearArea(pos, start, targetPos))
-                        yield return new Wall(pos, new Radius(wallRadius), null);
+                        walls.Add(new Wall(pos, new Radius(wallRadius), null));
                 }
             }
         }
