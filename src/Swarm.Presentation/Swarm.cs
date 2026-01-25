@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -28,7 +27,8 @@ public class Swarm : Game
     private readonly float HEIGHT = 540f;
     private readonly int BORDER = 40;
     private CrosshairRenderer _crosshairRenderer = null!;
-    public Swarm(IGameSessionService service)
+    private readonly IGameSessionConfigSource _configSource;
+    public Swarm(IGameSessionService service, IGameSessionConfigSource configSource)
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
@@ -36,6 +36,7 @@ public class Swarm : Game
         _graphics.PreferredBackBufferWidth = (int)WIDTH;
         _graphics.PreferredBackBufferHeight = (int)HEIGHT;
         _service = service;
+        _configSource = configSource ?? throw new ArgumentNullException(nameof(configSource));
         _input = new InputManager();
         _graphics.IsFullScreen = true;
         _graphics.ApplyChanges();
@@ -66,8 +67,7 @@ public class Swarm : Game
     protected override void Initialize()
     {
         Window.ClientSizeChanged += (_, __) => RecalculateDestination();
-        var configPath = Path.Combine(AppContext.BaseDirectory, Content.RootDirectory, "GameSessionConfig.json");
-        _gameConfigJson = File.ReadAllText(configPath);
+        _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
         _service.StartNewSession(_gameConfigJson).GetAwaiter().GetResult();
 
         _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -119,7 +119,11 @@ public class Swarm : Game
 
         if (snap.IsPaused || snap.IsTimeUp || snap.IsCompleted || snap.IsInterrupted)
         {
-            if (state.Restart) _service.Restart(_gameConfigJson!);
+            if (state.Restart)
+            {
+                _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
+                _service.Restart(_gameConfigJson!);
+            }
             return;
         }
 
@@ -336,4 +340,5 @@ public class Swarm : Game
     {
         _spriteBatch.Draw(Pixel, rect, color);
     }
+
 }

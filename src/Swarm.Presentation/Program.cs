@@ -22,12 +22,11 @@ class Program
         
         services.AddApplication();
         services.AddLoader();
+        services.AddSingleton<Swarm>();
 
         var provider = services.BuildServiceProvider();
 
-        using var game = new Swarm(
-            provider.GetRequiredService<IGameSessionService>()
-        );
+        using var game = provider.GetRequiredService<Swarm>();
         
         game.Run();
     }

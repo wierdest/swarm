@@ -15,7 +15,7 @@ public readonly record struct RoundTimer
 
     public bool IsExpired => Seconds <= 0;
 
-    public RoundTimer Reset(int seconds) => new(seconds);
+    public static RoundTimer Reset(int seconds) => new(seconds);
 
     public RoundTimer Tick(int delta = 1)
     {
