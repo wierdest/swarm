@@ -18,7 +18,11 @@ public class Healthy(
 
     protected override void ResolveCollisionWith(INonPlayerEntity other, ref Vector2 newPos, float minDist, float distSq, Vector2 delta)
     {
-        if (other.GetType().Equals(this.GetType())) return; 
+        if (other is Healthy or Shooter)
+        {
+            base.ResolveCollisionWith(other, ref newPos, minDist, distSq, delta);
+            return;
+        }
         
         var infectedBehaviour = _behaviours[1];
         
@@ -29,6 +33,7 @@ public class Healthy(
             RaiseEvent(new HealthyInfectedEvent(Id, Position));
             return;
         }
+
         base.ResolveCollisionWith(other, ref newPos, minDist, distSq, delta);
     }
 }
