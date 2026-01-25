@@ -16,19 +16,19 @@ public class HudRenderer(
     private readonly static string _exitHint = "Press ESC to EXIT";
     private readonly GraphicsDevice _graphicsDevice = graphicsDevice;
 
-    public void Draw(HudData hudData)
+    public void Draw(HudData gameSessionData)
     {
-        var leftText = HudTextBuilder.BuildTopLine(hudData);
+        var leftText = HudTextBuilder.BuildTopLine(gameSessionData);
         var leftPos = new Vector2(10, 10);
         _spriteBatch.DrawString(_font, leftText, leftPos, Color.White);
 
-        var levelText = HudTextBuilder.BuildMissionText(hudData);
+        var levelText = HudTextBuilder.BuildMissionText(gameSessionData);
         var rightTextSize = _font.MeasureString(levelText);
         var rightPos = new Vector2(_graphicsDevice.Viewport.Width - rightTextSize.X - 10, 10);
         _spriteBatch.DrawString(_font, levelText, rightPos, Color.White);
 
 
-        var bombText = HudTextBuilder.BuildBombText(hudData.BombCount);
+        var bombText = HudTextBuilder.BuildBombText(gameSessionData.BombCount);
         var bombTextSize = _font.MeasureString(bombText);
         float screenCenterX = _graphicsDevice.Viewport.Width / 2f;
         float bottomY = _graphicsDevice.Viewport.Height - bombTextSize.Y - 10;

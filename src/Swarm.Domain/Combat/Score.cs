@@ -1,7 +1,7 @@
 ﻿using Swarm.Domain.Common;
 
 namespace Swarm.Domain.Combat;
-
+// todo move this to primitives, it actually is an int scalar
 public readonly record struct Score
 {
     public int Value { get; }

@@ -56,10 +56,6 @@ public sealed class InputManager
             JustPressed(Keys.R, kb, _prevKb) ||
             JustPressed(Buttons.Y, pad, _prevPad);
 
-        bool view =
-            JustPressed(Keys.V, kb, _prevKb) ||
-            JustPressed(Buttons.Back, pad, _prevPad);
-
         bool left =
             JustPressed(Keys.Left, kb, _prevKb) ||
             JustPressed(Buttons.DPadLeft, pad, _prevPad);
@@ -102,7 +98,6 @@ public sealed class InputManager
             false,
             false,
             restart,
-            view,
             left,
             right
         );

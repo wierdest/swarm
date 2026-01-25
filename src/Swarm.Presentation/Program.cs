@@ -1,9 +1,6 @@
-﻿using System;
-using System.IO;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Swarm.Application.Config;
 using Swarm.Application.Contracts;
 using Swarm.Application.Extensions;
 using Swarm.Infrastructure.Extensions;
@@ -22,29 +19,14 @@ class Program
                         .AddUserSecrets<Program>() // this works because <UserSecretsId> is in Presentation.csproj
                         .Build();
 
-
-        string encryptionKey = configuration["EncryptionKey"] 
-                               ?? throw new InvalidOperationException("EncryptionKey not found in user secrets.");
-
-        // Save config
-        var saveConfig = new SaveConfig(
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Swarm",
-                "saves"
-            ),
-            encryptionKey
-        );
-
         
-        services.AddApplication(saveConfig);
-        services.AddGamePersistence();
+        services.AddApplication();
+        services.AddLoader();
 
         var provider = services.BuildServiceProvider();
 
         using var game = new Swarm(
-            provider.GetRequiredService<IGameSessionService>(),
-            provider.GetRequiredService<ILogger<Swarm>>()
+            provider.GetRequiredService<IGameSessionService>()
         );
         
         game.Run();
