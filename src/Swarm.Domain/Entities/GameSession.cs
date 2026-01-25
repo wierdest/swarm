@@ -252,7 +252,7 @@ public sealed class GameSession(
                     _projectiles.AddRange(fired.Projectiles);
                     break;
 
-                case RadicalSpawnEvent spawned:
+                case ZombieSpawnEvent spawned:
                     RaiseEvent(spawned);
                     break;
                 

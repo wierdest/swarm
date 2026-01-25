@@ -13,10 +13,10 @@ public sealed class Shooter(
     HitPoints hp,
     INonPlayerEntityBehaviour behaviour,
     Weapon weapon,
-    IDeathTrigger deathTrigger
+    IDeathTrigger? deathTrigger
 ) : NonPlayerEntityBase(id, startPosition, radius, hp, behaviour)
 {
-    private readonly IDeathTrigger _deathTrigger = deathTrigger;
+    private readonly IDeathTrigger? _deathTrigger = deathTrigger;
     private readonly Weapon _weapon = weapon;
 
     protected override void UpdateRotation(NonPlayerEntityContext<INonPlayerEntity> context)
@@ -28,6 +28,7 @@ public sealed class Shooter(
 
     protected override void OnDeath(NonPlayerEntityContext<INonPlayerEntity> context)
     {
+        if (_deathTrigger is null) return;
         foreach (var evt in _deathTrigger.OnDeath(Position))
             RaiseEvent(evt);
     }

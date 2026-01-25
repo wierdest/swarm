@@ -18,7 +18,8 @@ public static class NonPlayerEntityFactory
         HitPoints hp,
         float speed,
         float? targetThreshold,
-        float? dodgeThreshold
+        float? dodgeThreshold,
+        float? dodgeMultiplier = null
     )
     {
         var behaviour = new SeekBehaviour(
@@ -29,7 +30,8 @@ public static class NonPlayerEntityFactory
             actionStrategy: null,
             dodgeStrategy: new NearestProjectileDodgeStrategy(
                 owner: ProjectileOwnerTypes.Player,
-                threshold: dodgeThreshold ?? radius.Value * 10f
+                threshold: dodgeThreshold ?? radius.Value * 10f,
+                multiplier: dodgeMultiplier ?? 1.5f
             ),
             runawayStrategy: null
         );
@@ -108,8 +110,13 @@ public static class NonPlayerEntityFactory
         float safehouseWeight,
         float avoidPlayerWeight,
         Weapon weapon,
-        int minionSpawnCount,
-        Radius minionRadius
+        int? minionSpawnCount,
+        Radius? minionRadius,
+        HitPoints? minionHp,
+        float? minionSpeed,
+        float? minionTargetThreshold,
+        float? minionDodgeThreshold,
+        float? minionDodgeMultiplier
     )
     {
         var behaviour = new SeekBehaviour(
@@ -133,6 +140,23 @@ public static class NonPlayerEntityFactory
             )
         );
 
+        IDeathTrigger? deathTrigger = null;
+        if (minionSpawnCount is > 0 &&
+            minionRadius is not null &&
+            minionHp is not null &&
+            minionSpeed is not null)
+        {
+            deathTrigger = new ZombiesSpawnDeathTrigger(
+                minionSpawnCount.Value,
+                minionRadius.Value,
+                minionHp.Value,
+                minionSpeed.Value,
+                minionTargetThreshold,
+                minionDodgeThreshold,
+                minionDodgeMultiplier
+            );
+        }
+
         return new Shooter(
             id: EntityId.New(),
             startPosition: startPosition,
@@ -140,10 +164,7 @@ public static class NonPlayerEntityFactory
             hp: hp,
             behaviour: behaviour,
             weapon: weapon,
-            deathTrigger: new SpawnZombiesDeathTrigger(
-                minionSpawnCount,
-                minionRadius
-            )
+            deathTrigger: deathTrigger
         );
     }
 }

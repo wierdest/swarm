@@ -4,7 +4,7 @@ using Swarm.Domain.Entities;
 using Swarm.Domain.Entities.NonPlayerEntities;
 using Swarm.Domain.GameObjects;
 
-namespace Swarm.Application.Services;
+namespace Swarm.Application.Mappers;
 
 static class DomainMappers
 {
@@ -37,7 +37,7 @@ static class DomainMappers
                     type));
         }
 
-        var hud = ToHud(s, pA, t);
+        var hud = ToHud(s, pA);
 
         var walls = new List<DrawableDTO>(s.Walls.Count);
         
@@ -68,7 +68,7 @@ static class DomainMappers
                 s.AimPosition.Y
             );
     }
-    private static HudData ToHud(GameSession s, PlayerArea pA, TargetArea t)
+    private static HudData ToHud(GameSession s, PlayerArea pA)
     {
         var p = s.Player;
         var w = p.ActiveWeapon;

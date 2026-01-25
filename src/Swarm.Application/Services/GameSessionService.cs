@@ -1,25 +1,17 @@
 ﻿using Microsoft.Extensions.Logging;
 using Swarm.Application.Contracts;
 using Swarm.Application.Config;
-using Swarm.Domain.Combat;
 using Swarm.Domain.Entities;
-using Swarm.Domain.Entities.Weapons;
-using Swarm.Domain.Entities.Weapons.Patterns;
 using Swarm.Domain.Factories;
-using Swarm.Domain.GameObjects;
-using Swarm.Domain.GameObjects.Spawners;
-using Swarm.Domain.GameObjects.Spawners.Behaviours;
 using Swarm.Domain.Primitives;
 using Swarm.Domain.Time;
 using Swarm.Domain.Events;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Common;
-using Swarm.Domain.Entities.Projectiles;
 using Microsoft.Extensions.Logging.Abstractions;
-using Swarm.Domain.Entities.NonPlayerEntities.Behaviours;
-using Swarm.Domain.Entities.NonPlayerEntities;
-using Swarm.Domain.Entities.NonPlayerEntities.Behaviours.Strategies;
-using Swarm.Domain.Factories.Strategies;
+using Swarm.Domain.GameObjects.Spawners;
+using Swarm.Application.Mappers;
+using Swarm.Domain.GameObjects;
 
 namespace Swarm.Application.Services;
 
@@ -89,338 +81,22 @@ public sealed class GameSessionService(
         }
         var level = config.LevelConfig;
 
-        var stageConfig = config.StageConfig;
-        _stage = new Bounds(
-            stageConfig.Left,
-            stageConfig.Top,
-            stageConfig.Right,
-            stageConfig.Bottom
-        );
-
-        var playerStart = level.PlayerAreaConfig is AreaConfig playerArea
-            ? new Vector2(playerArea.X, playerArea.Y)
-            : _stage.Center;
-        var playerRadius = new Radius(config.PlayerRadius);
-        var player = new Player(
-            EntityId.New(),
-            playerStart,
-            playerRadius
-        );
-
-        if (level.Weapon is WeaponConfig weaponConfig)
-        {
-            var pattern = new SingleShotPattern(
-                new Damage(weaponConfig.Damage),
-                weaponConfig.ProjectileSpeed,
-                new Radius(weaponConfig.ProjectileRadius),
-                weaponConfig.ProjectileLifetimeSeconds
-            );
-
-            var cooldown = new Cooldown(1f / weaponConfig.RatePerSecond);
-
-            var playerWeapon = new PlayerWeapon(
-                weaponConfig.Name,
-                pattern,
-                cooldown,
-                ProjectileOwnerTypes.Player,
-                weaponConfig.MaxAmmo,
-                WeaponTypes.Automatic
-            );
-
-            player.SetWeapon(playerWeapon);
-
-        }
-        
-        var walls = new List<Wall>();
-
-        if (level.Walls is { Count: > 0 } wallConfigs)
-        {
-            walls = [.. WallFactory.CreateWallsFromList(
-                wallConfigs.Select(wall => (new Vector2(wall.X, wall.Y), new Radius(wall.Radius)))
-            )];
-        }
-        else if (level.WallGeneratorConfig is WallGeneratorConfig wallGeneratorConfig)
-        {
-            walls = [.. WallFactory.CreateVoronoiWalls(
-                start: _stage.TopLeftCorner,
-                end: _stage.BottomRightCorner,
-                levelBounds: _stage,
-                wallRadius: wallGeneratorConfig.WallRadius,
-                seedCount: wallGeneratorConfig.WallSeedCount,
-                wallDensity: wallGeneratorConfig.WallDensity,
-                cellSize: wallGeneratorConfig.WallCellSize,
-                minWallCount: GetTotalSpawnerCount(level),
-                seed: wallGeneratorConfig.WallRandomSeed
-            )];
-        }
-
-        if (walls.Count > 0)
-        {
-            var spawnerPlacementStrategy = new OpenSideSpawnerStrategy(walls);
-            foreach (var wall in walls)
-            {
-                wall.Spawners = spawnerPlacementStrategy.GetSpawnerPositions(wall, _stage);
-            }
-        }
-
-        var bombs = new List<Bomb>();
-
-        if (level.Bombs is { Count: > 0 } bombConfigs)
-        {
-            foreach (var bombConfig in bombConfigs)
-            {
-                bombs.Add(new Bomb(
-                    bombConfig.Identifier,
-                    new Cooldown(bombConfig.CooldownSeconds)
-                ));
-            }
-        }
-
-        var timer = new RoundTimer(config.RoundLength);
-        
-        if (level.GoalConfig is not GoalConfig goalConfig)
-            throw new DomainException("Goal config is required to start a session.");
-
-        var goal = GoalFactory.Create(
-            goalConfig.GoalDescription,
-            goalConfig.GameSessionPropertyIdentifier,
-            goalConfig.Operator,
-            goalConfig.TargetValue
-        );
+        _stage = ConfigMappers.ToStage(config);
+        var player = ConfigMappers.ToPlayer(config, _stage);
+        var walls = ConfigMappers.ToWalls(level, _stage);
+        var bombs = ConfigMappers.ToBombs(level);
+        var timer = ConfigMappers.ToTimer(config);
+        var goal = ConfigMappers.ToGoal(level);
 
         _session = new GameSession(EntityId.New(), _stage, player, walls, timer, goal, bombs);
-        
-        StartAreas(level);
-        StartSpawners(level);
+
+        _playerArea = ConfigMappers.ToPlayerArea(_session, level);
+        _targetArea = ConfigMappers.ToTargetArea(_session, level);
+        _spawners.Clear();
+        _spawners.AddRange(ConfigMappers.ToSpawners(_session, level, _playerArea, _targetArea, _stage));
 
         _logger.LogInformation("New session started");
         return Task.CompletedTask;
-    }
-
-    private static int GetTotalSpawnerCount(LevelConfig level)
-    {
-        var total = 0;
-
-        if (level.ZombieConfig?.Spawners is { Count: > 0 } zombieSpawners)
-        {
-            total += zombieSpawners.Count;
-        }
-
-        if (level.HealthyConfig?.NonPlayerEntityConfig.Spawners is { Count: > 0 } healthySpawners)
-        {
-            total += healthySpawners.Count;
-        }
-
-        if (level.ShooterConfig?.NonPlayerEntityConfig.Spawners is { Count: > 0 } shooterSpawners)
-        {
-            total += shooterSpawners.Count;
-        }
-
-        return total;
-    }
-
-    private void StartAreas(LevelConfig level)
-    {
-        if (_session is null) return;
-        
-        if (level.PlayerAreaConfig is AreaConfig playerAreaConfig)
-        {
-            _playerArea = new PlayerArea(
-                _session,
-                new Vector2(playerAreaConfig.X, playerAreaConfig.Y),
-                new Radius(playerAreaConfig.Radius)
-            );
-        }
-
-        if (level.TargetAreaConfig is AreaConfig targetAreaConfig)
-        {
-            _targetArea = new TargetArea(
-                _session,
-                new Vector2(targetAreaConfig.X, targetAreaConfig.Y),
-                new Radius(targetAreaConfig.Radius)
-            );
-        }
-            
-    }
-
-    private void StartSpawners(LevelConfig level)
-    {
-        if (_session is null) return;
-
-        _spawners.Clear();
-        var spawnerPositions = _session.SpawnerPoints.ToList();
-        var random = new Random();
-
-        if (level.ZombieConfig is NonPlayerEntityConfig zombieConfig)
-        {
-            if (zombieConfig.TargetConfig is not TargetConfig targetConfig ||
-                zombieConfig.DodgeConfig is not DodgeConfig dodgeConfig)
-                throw new DomainException("Zombie config must have TargetConfig defined.");
-
-            var zombieSpawners = zombieConfig.Spawners;
-
-            if (zombieSpawners is not null && zombieSpawners.Count > 0)
-            {
-                foreach (var spawnerConfig in zombieSpawners)
-                {
-                    if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
-
-                    // Pick a random position
-                    var index = random.Next(spawnerPositions.Count);
-                    var spawnPos = spawnerPositions[index];
-
-                    // Remove it from the available pool
-                    spawnerPositions.RemoveAt(index);
-                    
-                    var spawner = new NonPlayerEntitySpawner(
-                        _session,
-                        new FixedPositionNonPlayerEntitySpawnerBehaviour(
-                            position: spawnPos,
-                            cooldownSeconds: spawnerConfig.CooldownSeconds,
-                            entityFactory: pos => 
-                            {
-                                return NonPlayerEntityFactory.CreateZombie(
-                                    startPosition: pos,
-                                    radius: new(zombieConfig.Radius),
-                                    hp: new(zombieConfig.HP),
-                                    speed: zombieConfig.Speed,
-                                    targetThreshold: targetConfig.Threshold,
-                                    dodgeThreshold: dodgeConfig.Threshold
-                                );
-                            }
-                        ),
-                        spawnerConfig.BatchSize > 0 ? spawnerConfig.BatchSize : 1
-                    );
-
-                    _spawners.Add(spawner);
-
-                }
-            }
-    
-        }
-        
-        if (level.HealthyConfig is HealthyConfig healthyConfig)
-        {
-            var entityConfig = healthyConfig.NonPlayerEntityConfig;
-            if (entityConfig.TargetConfig is not TargetConfig targetConfig ||
-                entityConfig.DodgeConfig is not DodgeConfig dodgeConfig)
-                throw new DomainException("Healthy config must have TargetConfig defined.");
-            
-            var healthySpawners = entityConfig.Spawners;
-            
-            if (healthySpawners is null|| healthySpawners.Count == 0)
-                throw new DomainException("Healthy config provided but no healthy spawner defined in non player entity config.");
-            
-            foreach (var spawnerConfig in healthySpawners)
-            {
-                if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
-
-                // Pick a random position
-                var index = random.Next(spawnerPositions.Count);
-                var spawnPos = spawnerPositions[index];
-
-                // Remove it from the available pool
-                spawnerPositions.RemoveAt(index);
-                var batch = spawnerConfig.BatchSize > 0 ? spawnerConfig.BatchSize : 1;
-                var spawner = new NonPlayerEntitySpawner(
-                    _session,
-                    new FixedPositionNonPlayerEntitySpawnerBehaviour(
-                        position: spawnPos,
-                        cooldownSeconds: spawnerConfig.CooldownSeconds,
-                        entityFactory: pos => NonPlayerEntityFactory.CreateHealthy(
-                            startPosition: pos,
-                            radius: new(entityConfig.Radius),
-                            hp: new(entityConfig.HP),
-                            speed: entityConfig.Speed,
-                            safehouse: _playerArea is null ? _stage.LeftRandomCorner : _playerArea.Position,
-                            dodgeThreshold: dodgeConfig.Threshold ?? 150f,
-                            infectedSpeed: healthyConfig.InfectedSpeed,
-                            infectedTargetThreshold: healthyConfig.InfectedTargetThreshold,
-                            infectedDodgeThreshold: healthyConfig.InfectedDodgeThreshold
-                        )
-                    ),
-                    batch
-                );
-
-                _spawners.Add(spawner); 
-
-            }
-        }
-
-        if (level.ShooterConfig is ShooterConfig shooterConfig)
-        {
-            var entityConfig = shooterConfig.NonPlayerEntityConfig;
-
-            if (entityConfig.TargetConfig is not TargetConfig targetConfig || 
-                entityConfig.DodgeConfig is not DodgeConfig dodgeConfig || 
-                shooterConfig.RunawayConfig is not RunawayConfig runawayConfig)
-                throw new DomainException("Shooter config must have TargetConfig, DodgeConfig and RunawayConfig defined.");
-            
-            var shooterSpawners = entityConfig.Spawners;
-            
-            if (shooterSpawners is null || shooterSpawners.Count == 0)
-                throw new DomainException("Shooter config provided but no shooter spawner defined in level config.");
-
-            if (shooterConfig.Weapon is null)
-                throw new DomainException("Shooter config must have a weapon defined.");
-            
-            var bossWeapon = shooterConfig.Weapon;
-            
-            var pattern = new SingleShotPattern(
-                new Damage(bossWeapon.Damage),
-                bossWeapon.ProjectileSpeed,
-                new Radius(bossWeapon.ProjectileRadius),
-                bossWeapon.ProjectileLifetimeSeconds
-            );
-            
-            var cooldown = new Cooldown(1f / bossWeapon.RatePerSecond);
-
-            var weapon = new Weapon(pattern, cooldown, ProjectileOwnerTypes.Enemy);
-
-            var safehouse = _targetArea is not null
-                ? _targetArea.Position
-                : _stage.RightRandomCorner;
-
-            foreach (var spawnerConfig in shooterSpawners)
-            {
-                if (spawnerPositions.Count == 0) throw new DomainException("No available spawner positions left!");
-
-                // Pick a random position
-                var index = random.Next(spawnerPositions.Count);
-                var spawnPos = spawnerPositions[index];
-
-                // Remove it from the available pool
-                spawnerPositions.RemoveAt(index);
-                var batch = spawnerConfig.BatchSize > 0 ? spawnerConfig.BatchSize : 1;
-                var spawner = new NonPlayerEntitySpawner(
-                    _session,
-                    new FixedPositionNonPlayerEntitySpawnerBehaviour(
-                        position: spawnPos,
-                        cooldownSeconds: spawnerConfig.CooldownSeconds,
-                        entityFactory: pos => NonPlayerEntityFactory.CreateShooter(
-                            startPosition: pos,
-                            radius: new(entityConfig.Radius),
-                            hp: new(entityConfig.HP),
-                            speed: entityConfig.Speed,
-                            shootRange: shooterConfig.ShootRange ?? 600f,
-                            dodgeThreshold: dodgeConfig.Threshold ?? 150f,
-                            runawayThreshold: runawayConfig.Threshold ?? 9,
-                            safehouse: safehouse,
-                            safehouseWeight: runawayConfig.SafehouseWeight ?? 0.5f,
-                            avoidPlayerWeight: runawayConfig.AvoidPlayerWeight ?? 0.5f,
-                            weapon: weapon,
-                            minionSpawnCount: shooterConfig.MinionSpawnCount ?? 4,
-                            minionRadius: new(shooterConfig.MinionSpawnRadius ?? 10f)
-                            )
-                        ),
-                    batch
-                );
-
-                _spawners.Add(spawner); 
-
-            }
-        }
-
     }
 
     public void Pause()
@@ -501,8 +177,8 @@ public sealed class GameSessionService(
             case TimeUpdatedEvent e:
                 OnTimeUpdatedEvent(e);
                 break;
-            case RadicalSpawnEvent e:
-                OnRadicalSpawnEvent(e);
+            case ZombieSpawnEvent e:
+                OnZombieSpawnEvent(e);
                 break;
             case ReachedTargetScoreEvent e:
                 OnReachedTargetScoreEvent(e);
@@ -533,28 +209,20 @@ public sealed class GameSessionService(
        
     }
 
-    private void OnRadicalSpawnEvent(RadicalSpawnEvent evt)
+    private void OnZombieSpawnEvent(ZombieSpawnEvent evt)
     {
         if (_session is null) return;
 
         for (int i = 0; i < evt.SpawnPositions.Count; i++)
         {
-            var newEnemy = new Zombie(
-                id: EntityId.New(),
+            var newEnemy = NonPlayerEntityFactory.CreateZombie(
                 startPosition: evt.SpawnPositions[i],
-                radius: new Radius(10f),
-                hp: new HitPoints(1),
-                behaviour: new SeekBehaviour(
-                    speed: 120f,
-                    targetStrategy: new PlayerTargetStrategy(),
-                    actionStrategy: null,
-                    dodgeStrategy: new NearestProjectileDodgeStrategy(
-                        owner: ProjectileOwnerTypes.Player,
-                        threshold: 250f,
-                        multiplier: 3.0f
-                    ),
-                    runawayStrategy: null
-                )
+                radius: evt.Radius,
+                hp: evt.HitPoints,
+                speed: evt.Speed,
+                targetThreshold: evt.TargetThreshold,
+                dodgeThreshold: evt.DodgeThreshold,
+                dodgeMultiplier: evt.DodgeMultiplier
             );
 
             _session.AddNonPlayerEntity(newEnemy);

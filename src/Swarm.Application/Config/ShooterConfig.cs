@@ -6,5 +6,5 @@ public record class ShooterConfig(
     RunawayConfig? RunawayConfig,
     WeaponConfig? Weapon,
     int? MinionSpawnCount,
-    float? MinionSpawnRadius
+    NonPlayerEntityConfig? ZombieSpawnedOnDeathTriggerConfig
 );
