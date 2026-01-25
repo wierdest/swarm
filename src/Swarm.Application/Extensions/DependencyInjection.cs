@@ -6,10 +6,8 @@ namespace Swarm.Application.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplication(this IServiceCollection services, ISaveConfig saveConfig)
+    public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddSingleton(saveConfig);
-
         services.AddScoped<IGameSessionService, GameSessionService>();
 
         return services;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -65,7 +66,8 @@ public class Swarm : Game
     protected override void Initialize()
     {
         Window.ClientSizeChanged += (_, __) => RecalculateDestination();
-        _gameConfigJson = Content.Load<string>("GameSessionConfig");
+        var configPath = Path.Combine(AppContext.BaseDirectory, Content.RootDirectory, "GameSessionConfig.json");
+        _gameConfigJson = File.ReadAllText(configPath);
         _service.StartNewSession(_gameConfigJson).GetAwaiter().GetResult();
 
         _spriteBatch = new SpriteBatch(GraphicsDevice);
