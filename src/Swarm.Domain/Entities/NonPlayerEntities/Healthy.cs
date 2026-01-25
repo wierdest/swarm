@@ -18,10 +18,11 @@ public class Healthy(
 
     protected override void ResolveCollisionWith(INonPlayerEntity other, ref Vector2 newPos, float minDist, float distSq, Vector2 delta)
     {
-        if (_behaviours[1] is not null && !IsInfected && other is Zombie)
+        var infectedBehaviour = _behaviours[1];
+        if (infectedBehaviour is not null && !IsInfected && other is Zombie)
         {
             IsInfected = true;
-            SwitchBehaviour(_behaviours[1]);
+            SwitchBehaviour(infectedBehaviour);
             RaiseEvent(new HealthyInfectedEvent(Id, Position));
             return;
         }
