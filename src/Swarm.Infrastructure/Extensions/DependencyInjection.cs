@@ -9,6 +9,7 @@ public static class DependencyInjection
     public static IServiceCollection AddLoader(this IServiceCollection services)
     {
         services.AddSingleton<IGameSessionConfigLoader, GameSessionConfigLoader>();
+        services.AddSingleton<IGameSessionConfigSource, GameSessionConfigManifestSource>();
         return services;
     }
 } 

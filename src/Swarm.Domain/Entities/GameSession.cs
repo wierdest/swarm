@@ -72,6 +72,7 @@ public sealed class GameSession(
     private bool _isTimeUp = false;
     public bool IsTimeUp => _isTimeUp;
     public string TimeString => _timer.ToString();
+    public RoundTimer Timer => _timer;
     public bool IsPaused { get; private set; }
     public void Pause() => IsPaused = true;
     public void Resume() => IsPaused = false;
@@ -113,7 +114,6 @@ public sealed class GameSession(
 
     public void AddAmmo(int value) => Player.AddAmmo(value);
     
-
     public void RotatePlayerTowards(Vector2 target)
     {
         AimPosition = target;

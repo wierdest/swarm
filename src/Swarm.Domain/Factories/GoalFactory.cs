@@ -4,6 +4,7 @@ using Swarm.Domain.Common;
 using Swarm.Domain.Entities;
 using Swarm.Domain.Interfaces;
 using Swarm.Domain.Primitives;
+using Swarm.Domain.Time;
 
 namespace Swarm.Domain.Factories;
 
@@ -42,8 +43,10 @@ public static class GoalFactory
 
         Expression body = memberAccess.Type == typeof(Score)
             ? memberAccess
-            : memberAccess.Type == typeof(int)
-                ? Expression.New(typeof(Score).GetConstructor(new[] { typeof(int) })!, memberAccess)
+            : memberAccess.Type == typeof(RoundTimer)
+                ? Expression.New(
+                    typeof(Score).GetConstructor([typeof(int)])!,
+                    Expression.PropertyOrField(memberAccess, nameof(RoundTimer.Seconds)))
                 : throw new DomainException($"Unsupported property type '{memberAccess.Type.Name}' for '{propertyName}'.");
 
         return Expression.Lambda<Func<GameSession, Score>>(body, sessionParam).Compile();
