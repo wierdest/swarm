@@ -76,7 +76,7 @@ public sealed class GameSessionService(
 
     public void DropBomb() => _session?.DropBomb();
 
-    public async Task StartNewSession(string configJson)
+    public Task StartNewSession(string configJson)
     {
         GameSessionConfig config;
         try
@@ -194,7 +194,7 @@ public sealed class GameSessionService(
         StartSpawners(level);
 
         _logger.LogInformation("New session started");
-
+        return Task.CompletedTask;
     }
 
     private static int GetTotalSpawnerCount(LevelConfig level)
@@ -437,7 +437,7 @@ public sealed class GameSessionService(
         _logger.LogInformation("Session {SessionId} resumed", _session.Id);
     }
 
-    public async Task Restart(string configJson)
+    public Task Restart(string configJson)
     {
         if (_session is null)
             throw new InvalidOperationException("No session exists to restart.");
@@ -449,7 +449,7 @@ public sealed class GameSessionService(
         _playerArea = null;
         _targetArea = null;
 
-        await StartNewSession(configJson);
+        return StartNewSession(configJson);
     }
 
     public void Tick(float deltaSeconds)

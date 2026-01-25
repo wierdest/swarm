@@ -4,13 +4,20 @@ using Swarm.Domain.Primitives;
 
 namespace Swarm.Domain.Entities.NonPlayerEntities;
 
-public sealed class Zombie(
-    EntityId id,
-    Vector2 startPosition,
-    Radius radius,
-    HitPoints hp,
-    INonPlayerEntityBehaviour behaviour)
-    : NonPlayerEntityBase(id, startPosition, radius, hp, behaviour)
+public sealed class Zombie : NonPlayerEntityBase
 {
-    public INonPlayerEntityBehaviour GetBehaviour() => behaviour;
+    private readonly INonPlayerEntityBehaviour _behaviour;
+
+    public Zombie(
+        EntityId id,
+        Vector2 startPosition,
+        Radius radius,
+        HitPoints hp,
+        INonPlayerEntityBehaviour behaviour)
+        : base(id, startPosition, radius, hp, behaviour)
+    {
+        _behaviour = behaviour;
+    }
+
+    public INonPlayerEntityBehaviour GetBehaviour() => _behaviour;
 }

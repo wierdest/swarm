@@ -14,7 +14,7 @@ public class Healthy(
     : NonPlayerEntityBase(id, startPosition, radius, hp, behaviours[0]!)
 {
     public bool IsInfected { get; private set; } = false;
-    private readonly INonPlayerEntityBehaviour[] _behaviours = behaviours;
+    private readonly INonPlayerEntityBehaviour?[] _behaviours = behaviours;
 
     protected override void ResolveCollisionWith(INonPlayerEntity other, ref Vector2 newPos, float minDist, float distSq, Vector2 delta)
     {
