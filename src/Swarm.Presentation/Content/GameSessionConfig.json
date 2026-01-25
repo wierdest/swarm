@@ -1,0 +1,138 @@
+{
+  "StageConfig": {
+    "Left": 40,
+    "Top": 40,
+    "Right": 920,
+    "Bottom": 500
+  },
+  "LevelConfig": {
+    "Weapon": {
+      "Name": "",
+      "Damage": 1,
+      "MaxAmmo": 1000,
+      "RatePerSecond": 60,
+      "ProjectileSpeed": 840,
+      "ProjectileRadius": 16,
+      "ProjectileLifetimeSeconds": 10
+    },
+    "PlayerInitialAmmoModifier": null,
+    "PlayerAreaConfig": {
+      "X": 80,
+      "Y": 80,
+      "Radius": 40
+    },
+    "TargetAreaConfig": {
+      "X": 880,
+      "Y": 460,
+      "Radius": 40
+    },
+    "WallGeneratorConfig": {
+      "WallRandomSeed": null,
+      "WallSeedCount": 3,
+      "WallCellSize": 64,
+      "WallRadius": 40,
+      "WallDensity": 0.3
+    },
+    "ZombieConfig": {
+      "HP": 1,
+      "Radius": 10,
+      "Speed": 120,
+      "Cooldown": 0.2,
+      "Damage": 1,
+      "DodgeConfig": {
+        "Threshold": 150,
+        "SpeedMultiplier": null
+      },
+      "TargetConfig": {
+        "Threshold": 150
+      },
+      "Spawners": [
+        {
+          "CooldownSeconds": 0.2,
+          "BatchSize": 10
+        },
+        {
+          "CooldownSeconds": 0.2,
+          "BatchSize": 10
+        },
+        {
+          "CooldownSeconds": 0.2,
+          "BatchSize": 10
+        }
+      ]
+    },
+    "HealthyConfig": {
+      "NonPlayerEntityConfig": {
+        "HP": 1,
+        "Radius": 10,
+        "Speed": 120,
+        "Cooldown": 0.2,
+        "Damage": 1,
+        "DodgeConfig": {
+          "Threshold": 150,
+          "SpeedMultiplier": null
+        },
+        "TargetConfig": {
+          "Threshold": 150
+        },
+        "Spawners": [
+          {
+            "CooldownSeconds": 0.2,
+            "BatchSize": 10
+          }
+        ]
+      },
+      "InfectedSpeed": null,
+      "InfectedTargetThreshold": null,
+      "InfectedDodgeThreshold": null
+    },
+    "ShooterConfig": {
+      "NonPlayerEntityConfig": {
+        "HP": 5,
+        "Radius": 12,
+        "Speed": 100,
+        "Cooldown": 1,
+        "Damage": 10,
+        "DodgeConfig": {
+          "Threshold": 150,
+          "SpeedMultiplier": null
+        },
+        "TargetConfig": {
+          "Threshold": 150
+        },
+        "Spawners": [
+          {
+            "CooldownSeconds": 12,
+            "BatchSize": 1
+          }
+        ]
+      },
+      "ShootRange": 600,
+      "RunawayConfig": {
+        "Threshold": 9,
+        "SafehouseWeight": 0.5,
+        "AvoidPlayerWeight": 0.5
+      },
+      "Weapon": {
+        "Name": "BossWeapon",
+        "Damage": 10,
+        "MaxAmmo": 1000,
+        "RatePerSecond": 4,
+        "ProjectileSpeed": 900,
+        "ProjectileRadius": 6,
+        "ProjectileLifetimeSeconds": 2
+      },
+      "MinionSpawnCount": 4,
+      "MinionSpawnRadius": 10
+    },
+    "GoalConfig": {
+      "GoalDescription": "Reach target score",
+      "GameSessionPropertyIdentifier": "Kills",
+      "Operator": ">=",
+      "TargetValue": 250
+    },
+    "Bombs": null
+  },
+  "PlayerRadius": 12,
+  "RoundLength": 45
+}

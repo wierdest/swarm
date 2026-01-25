@@ -20,3 +20,7 @@
 /processorParam:TextureFormat=Compressed
 /build:DefaultFont.spritefont
 
+#begin GameSessionConfig.json
+/importer:TextFileImporter
+/processor:TextFileProcessor
+/build:GameSessionConfig.json

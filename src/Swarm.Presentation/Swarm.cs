@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Swarm.Application.Config;
 using Swarm.Application.Contracts;
 using Swarm.Presentation.Input;
 using Swarm.Presentation.Renderers;
@@ -18,13 +15,11 @@ public class Swarm : Game
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch = null!;
     private readonly IGameSessionService _service;
-    private readonly ILogger<Swarm> _logger;
     private readonly Dictionary<int, Texture2D> _circleCache = new();
     private readonly float _moveSpeed = 360f;
     private HudRenderer _hud = null!;
     private SpriteFont _font = null!;
     private readonly InputManager _input;
-    private GameSessionConfig? gameConfig;
     private string? _gameConfigJson;
     private RenderTarget2D _renderTarget = null!;
     private Rectangle _drawDestination;
@@ -32,9 +27,7 @@ public class Swarm : Game
     private readonly float HEIGHT = 540f;
     private readonly int BORDER = 40;
     private CrosshairRenderer _crosshairRenderer = null!;
-    private bool _prevViewStatsKey = false;
-
-    public Swarm(IGameSessionService service, ILogger<Swarm> logger)
+    public Swarm(IGameSessionService service)
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
@@ -42,7 +35,6 @@ public class Swarm : Game
         _graphics.PreferredBackBufferWidth = (int)WIDTH;
         _graphics.PreferredBackBufferHeight = (int)HEIGHT;
         _service = service;
-        _logger = logger;
         _input = new InputManager();
         _graphics.IsFullScreen = true;
         _graphics.ApplyChanges();
@@ -73,94 +65,7 @@ public class Swarm : Game
     protected override void Initialize()
     {
         Window.ClientSizeChanged += (_, __) => RecalculateDestination();
-
-        var outer = new Rectangle(0, 0, (int)WIDTH, (int)HEIGHT);
-        var inner = GetInnerGameRect(outer, BORDER);
-
-        gameConfig = new GameSessionConfig(
-            StageConfig: new StageConfig(
-                Left: inner.Left,
-                Top: inner.Top,
-                Right: inner.Right,
-                Bottom: inner.Bottom
-            ),
-            LevelConfig: new LevelConfig(
-                Weapon: new WeaponConfig(
-                    Name: "",
-                    Damage: 1,
-                    ProjectileSpeed: 840f,
-                    ProjectileRadius: 16f,
-                    RatePerSecond: 60f,
-                    ProjectileLifetimeSeconds: 10f,
-                    MaxAmmo: 1000),
-                PlayerAreaConfig: new AreaConfig(X: inner.Left + BORDER, Y: inner.Top + BORDER, Radius: 40),
-                TargetAreaConfig: new AreaConfig(X: inner.Right - BORDER, Y: inner.Bottom - BORDER, Radius: 40),
-                Walls:
-                [
-                    new(X: 480, Y: 270, Radius:80),
-
-                ],
-                WallRandomSeed: null,
-                WallSeedCount: 3,
-                WallCellSize: 64f,
-                WallRadius: 40f,
-                WallDensity: 0.3f,
-                Spawners:
-                [
-                    new(
-                        CooldownSeconds: 0.2f,
-                        SpawnObjectType: "Zombie",
-                        BatchSize: 10
-                    ),
-
-                    new(
-                        CooldownSeconds: 0.2f,
-                        SpawnObjectType: "Zombie",
-                        BatchSize: 10
-                    ),
-
-                    new(
-                        CooldownSeconds: 0.2f,
-                        SpawnObjectType: "Zombie",
-                        BatchSize: 10
-                    ),
-
-                     new(
-                        CooldownSeconds: 0.2f,
-                        SpawnObjectType: "Healthy",
-                        BatchSize: 10
-                    ),
-
-                    new(
-                        CooldownSeconds: 12f,
-                        SpawnObjectType: "Shooter",
-                        BatchSize: 1
-                    )
-                ],
-                BossConfig: new EnemyConfig(
-                    PatrolPoints: new List<PointConfig>
-                    {
-                        new PointConfig(600, 300),
-                        new PointConfig(600, 100),
-                        new PointConfig(700, 100),
-                        new PointConfig(700, 400)
-                    },
-                    Speed: 100f,
-                    ShootRange: 600f,
-                    Cooldown: 1f,
-                    Damage: 10,
-                    ProjectileSpeed: 900f,
-                    ProjectileRadius: 6f,
-                    ProjectileRatePerSecond: 4f,
-                    ProjectileLifetimeSeconds: 2f),
-                TargetScore: 250
-            ),
-            PlayerRadius: 12,
-            RoundLength: 45
-        );
-
-        
-        _gameConfigJson = JsonSerializer.Serialize(gameConfig);
+        _gameConfigJson = Content.Load<string>("GameSessionConfig");
         _service.StartNewSession(_gameConfigJson).GetAwaiter().GetResult();
 
         _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -409,19 +314,6 @@ public class Swarm : Game
         spriteBatch.Draw(Pixel, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
         // Right
         spriteBatch.Draw(Pixel, new Rectangle(rect.X + rect.Width - thickness, rect.Y, thickness, rect.Height), color);
-    }
-
-    private Rectangle GetInnerGameRect(Rectangle outer, int baseThickness)
-    {
-        float scale = outer.Width / WIDTH; // proportional to scaling
-        int thickness = (int)(baseThickness * scale);
-
-        return new Rectangle(
-            outer.X + thickness,
-            outer.Y + thickness,
-            outer.Width - thickness * 2,
-            outer.Height - thickness * 2
-        );
     }
 
     private static Texture2D? _pixel;

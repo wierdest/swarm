@@ -44,8 +44,7 @@ class Program
         var provider = services.BuildServiceProvider();
 
         using var game = new Swarm(
-            provider.GetRequiredService<IGameSessionService>(),
-            provider.GetRequiredService<ILogger<Swarm>>()
+            provider.GetRequiredService<IGameSessionService>()
         );
         
         game.Run();
