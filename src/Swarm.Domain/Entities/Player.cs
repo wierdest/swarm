@@ -17,7 +17,7 @@ public sealed class Player(
     public Vector2 Position { get; private set; } = startPos;
     private Vector2 _lastPosition = startPos;
     public Radius Radius { get; } = radius;
-    public PlayerWeapon? ActiveWeapon { get; set; } = weapon;
+    public PlayerWeapon? ActiveWeapon { get; set; }
     public Direction Direction { get; private set; } = Direction.From(1, 0);
     public Direction Rotation { get; private set; } = Direction.From(1, 0);
     public float Speed { get; private set; } = 0f;
@@ -40,7 +40,8 @@ public sealed class Player(
 
     public void AddAmmo(int amount)
     {
-        if (amount > 0 && Ammo < _maxAmmo)
+        if (ActiveWeapon is null) return;
+        if (amount > 0 && Ammo < ActiveWeapon.MaxAmmo)
             Ammo += amount;
     }
 
