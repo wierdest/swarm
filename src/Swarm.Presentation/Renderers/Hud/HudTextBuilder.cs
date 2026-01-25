@@ -10,9 +10,6 @@ public static class HudTextBuilder
     private static readonly string _bombsHint = "[Press Q to drop bomb] | Bombs:";
     private static readonly string _successHint = "SUCCESS!";
     private static readonly string _levelMissionHint = "Reach the green area!";
-    private static string KillMissionHint(int amount) => $"Kill {amount} enemies!";
-    private static string SaveMissionHint(int amount) => $"Save {amount} people!";
-
     public static string BuildHpText(int hp) => $"HP: {hp}";
     public static string BuildDeathsText(int respawns) => $"D: {respawns}";
     public static string BuildWeaponText(string weaponName, int currentAmmo, int maxAmmo, int ammoStock)
@@ -43,7 +40,6 @@ public static class HudTextBuilder
             BuildHpText(hud.HP),
             BuildDeathsText(hud.NumberOfPlayerRespawns),
             BuildWeaponText(hud.WeaponName, hud.CurrentAmmo, hud.MaxAmmo, hud.AmmoStock),
-            BuildKillsText(hud.Kills, hud.TargetKills),
             BuildEnemiesText(hud.NumberOfEnemiesAlive),
             BuildHealthyAliveText(hud.NumberOfHealthyAlive),
             BuildCasualtiesText(hud.Casualties),
@@ -61,12 +57,11 @@ public static class HudTextBuilder
         if (hud.HasReachedTargetGoal)
             return _levelMissionHint;
 
-        return KillMissionHint(hud.TargetKills);
+        return "TODO Goal Hint here!";
     }
 
     public static string BuildSaveGameString(GameSessionData hud)
 {
-    var killsText = $"Kill Count: {hud.Kills} / {hud.TargetKills}";
     var hpText = $"HP: {hud.HP}";
     var playerDeathsText = $"Deaths: {hud.NumberOfPlayerRespawns}";
     var enemiesText = $"Enemies: {hud.NumberOfEnemiesAlive}";
@@ -76,7 +71,7 @@ public static class HudTextBuilder
     var casualtiesText = $"Casualties: {hud.Casualties}";
     var healthySavedText = $"Saved: {hud.NumberOfHealthySaved}";
 
-    return $"{hpText} {playerDeathsText} {weaponText} {killsText} " +
+    return $"{hpText} {playerDeathsText} {weaponText} " +
            $"{enemiesText} {timerText} {healthyAliveText} " +
            $"{casualtiesText} {healthySavedText} {timerText}";
 }
