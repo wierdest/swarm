@@ -23,6 +23,14 @@ public sealed class GameSessionConfigManifestSource : IGameSessionConfigSource
     public string LoadConfigJson(string contentRootDirectory)
     {
         var manifest = LoadManifest(contentRootDirectory);
+        if (AllEntriesCompleted(manifest))
+        {
+            for (int i = 0; i < manifest.Entries.Count; i++)
+            {
+                manifest.Entries[i].Completed = false;
+            }
+            SaveManifest(contentRootDirectory, manifest);
+        }
         var entry = SelectEntry(manifest);
         if (string.IsNullOrWhiteSpace(entry.File))
             throw new InvalidOperationException("Manifest entry must include a file path.");
@@ -103,7 +111,10 @@ public sealed class GameSessionConfigManifestSource : IGameSessionConfigSource
             throw new InvalidOperationException("Manifest must contain at least one entry.");
 
         if (manifest.ActiveIndex is int idx && idx >= 0 && idx < manifest.Entries.Count)
-            return idx;
+        {
+            if (!manifest.Entries[idx].Completed)
+                return idx;
+        }
 
         for (int i = 0; i < manifest.Entries.Count; i++)
         {
@@ -112,6 +123,17 @@ public sealed class GameSessionConfigManifestSource : IGameSessionConfigSource
         }
 
         return 0;
+    }
+
+    private static bool AllEntriesCompleted(GameSessionConfigManifest manifest)
+    {
+        for (int i = 0; i < manifest.Entries.Count; i++)
+        {
+            if (!manifest.Entries[i].Completed)
+                return false;
+        }
+
+        return manifest.Entries.Count > 0;
     }
     private static string LoadConfigJsonFromPath(string path)
     {
