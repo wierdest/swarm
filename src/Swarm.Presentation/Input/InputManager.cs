@@ -52,18 +52,13 @@ public sealed class InputManager
             JustPressed(Keys.P, kb, _prevKb) ||
             JustPressed(Buttons.Start, pad, _prevPad);
 
-        bool restart =
+        bool next =
             JustPressed(Keys.R, kb, _prevKb) ||
             JustPressed(Buttons.Y, pad, _prevPad);
-
-        bool left =
-            JustPressed(Keys.Left, kb, _prevKb) ||
-            JustPressed(Buttons.DPadLeft, pad, _prevPad);
-
-        bool right =
-            JustPressed(Keys.Right, kb, _prevKb) ||
-            JustPressed(Buttons.DPadRight, pad, _prevPad);
-
+        
+        bool reset =
+            JustPressed(Keys.F8, kb, _prevKb);
+            
         if (pad.IsConnected)
         {
             Vector2 rightStick = pad.ThumbSticks.Right;
@@ -97,9 +92,8 @@ public sealed class InputManager
             pause,
             false,
             false,
-            restart,
-            left,
-            right
+            next,
+            reset
         );
 
         _prevKb = kb;

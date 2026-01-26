@@ -14,9 +14,8 @@ public record class InputStateDTO(
     bool Pause,
     bool Save,
     bool Load,
-    bool Restart,
-    bool Left,
-    bool Right
+    bool Next,
+    bool Reset
 )
 {
     public override string ToString()
@@ -36,9 +35,8 @@ public record class InputStateDTO(
         if (Pause) parts.Add("Pause");
         if (Save) parts.Add("Save");
         if (Load) parts.Add("Load");
-        if (Restart) parts.Add("Restart");
-        if (Left) parts.Add("Left");
-        if (Right) parts.Add("Right");
+        if (Next) parts.Add("Next");
+        if (Reset) parts.Add("Reset");
 
         return string.Join(", ", parts);
     }

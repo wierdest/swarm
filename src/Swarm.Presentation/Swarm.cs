@@ -109,6 +109,15 @@ public class Swarm : Game
 
         var state = _input.Update();
 
+        if (state.Reset)
+        {
+            ResetManifestProgress();
+            _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
+            _manifestSaved = false;
+            _service.Restart(_gameConfigJson!);
+            return;
+        }
+
         if (state.Pause)
         {
             if (snap.IsPaused)
@@ -132,7 +141,7 @@ public class Swarm : Game
                 }
                 _manifestSaved = true;
             }
-            if (state.Restart)
+            if (state.Next)
             {
                 _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
                 _manifestSaved = false;
@@ -214,7 +223,8 @@ public class Swarm : Game
         if (snap.IsPaused || snap.IsInterrupted || snap.IsTimeUp || snap.IsCompleted)
         {
             string mainText = "";
-            string subText = "PRESS R TO RERUN";
+            string continueText = "PRESS R TO CONTINUE TO THE NEXT SESSION";
+            string resetText = "PRESS F8 TO RESET PROGRESS";
 
             if (snap.IsPaused) mainText = "PAUSED";
             else if (snap.IsInterrupted) mainText = "GAME OVER";
@@ -232,12 +242,19 @@ public class Swarm : Game
 
             Vector2 mainSize = string.IsNullOrEmpty(mainText) ? Vector2.Zero : _font.MeasureString(mainText);
 
-            Vector2 subSize = _font.MeasureString(subText);
+            Vector2 subSize = _font.MeasureString(continueText);
             Vector2 subPos = new(
                 (WIDTH - subSize.X) / 2f,
                 (HEIGHT - mainSize.Y) / 2f + mainSize.Y + 10
             );
-            _spriteBatch.DrawString(_font, subText, subPos, Color.White);
+            _spriteBatch.DrawString(_font, continueText, subPos, Color.White);
+
+            Vector2 resetSize = _font.MeasureString(resetText);
+            Vector2 resetPos = new(
+                (WIDTH - resetSize.X) / 2f,
+                subPos.Y + resetSize.Y + 10
+            );
+            _spriteBatch.DrawString(_font, resetText, resetPos, Color.White);
 
         }
         _spriteBatch.End();
@@ -345,6 +362,17 @@ public class Swarm : Game
     private void DrawRect(Rectangle rect, Color color)
     {
         _spriteBatch.Draw(Pixel, rect, color);
+    }
+
+    private void ResetManifestProgress()
+    {
+        var manifest = _configSource.LoadManifest(Content.RootDirectory);
+        manifest.ActiveIndex = null;
+        for (int i = 0; i < manifest.Entries.Count; i++)
+        {
+            manifest.Entries[i].Completed = false;
+        }
+        _configSource.SaveManifest(Content.RootDirectory, manifest);
     }
 
 }
