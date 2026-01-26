@@ -1,165 +1,26 @@
-# 🐝 Swarm
+# Swarm
 
-Projeto de aprendizado feito com **.NET 8 + MonoGame**, seguindo princípios de **Clean Architecture**.  
-O jogo é um protótipo de shooter 2D top-down, com camadas bem organizadas: **Domain → Application → Presentation**.  
+Swarm não é o jogo em si — é o **núcleo** de um jogo.  
+O objetivo é manter a lógica e o estado do domínio independentes, expondo um **GameSnapshot** que qualquer Presentation pode renderizar com estilos diferentes.
 
----
-# Protótipo:
-Foi feito em 3 etapas. A partir desse ponto, registramos o progresso na linha do tempo a baixo e nos próximos passos.
+O núcleo (Domain/Application/Infra) é reaproveitável e a Presentation pode mudar para criar outras versões visuais da mesma ideia.
 
-## ✨ Etapa 1 – Primitivos do Domínio & Core
-Começamos definindo as **bases** da camada de Domínio:
+Usamos arquivos de configuração (GameSessionConfig) e um manifest para organizar “tutorials/levels” e demonstrar funcionalidades.
 
-- ✅ **Guards**: verificações defensivas de invariantes
-- 🧩 **Primitivos**: `Vector2`, `Direction`, `Radius`, `Bounds`, `DeltaTime`, `EntityId`, 
-- ⏱️ **Cooldown**: struct para controlar ações baseadas em tempo
+## Estrutura
+- **Domain**: regras do jogo
+- **Application**: serviços e mapeadores
+- **Infrastructure**: loaders/configs
+- **Presentation**: MonoGame (render e input)
 
-Isso garantiu blocos seguros para manter a lógica consistente e validada.
-
----
-
-## 🎯 Etapa 2 – Combate & Entidades
-Depois modelamos a **mecânica do jogo**:
-
-- 🔫 **Weapon** com abstração para padrões de tiro
-- 💥 **SingleShotPattern** implementado (tiro básico!)
-- 🌀 **Projectile** com posição, direção, velocidade e tempo de vida
-- 🧍 **Player** com movimento baseado em input
-- 📦 **GameSession** para manter stage, player e projéteis
-- ⚖️ **MovementIntegrator** (namespace Physics) para integrar movimento e limitar dentro do stage
-
-Aqui já tínhamos o **modelo de gameplay rodando no domínio**.
-
----
-
-## 🖥️ Etapa 3 – Aplicação & Apresentação
-Por fim, deixamos o jogo **jogável**:
-
-- 📜 **Contracts**: DTOs (`PlayerDto`, `ProjectileDto`, `StageDto`, `GameSnapshot`)  
-- 🔌 **Services**: `IGameSessionService` + `GameSessionService` conectando Domain ↔ Presentation
-- 🎮 **Presentation**: loop do MonoGame (`Swarm`)  
-  - Captura inputs ⌨️  
-  - Renderiza
-  - Chama serviços para atualizar e disparar  
-
-Agora já é possível rodar o jogo e **mover + atirar**! 🚀
-
----
-
-## 🚧 Próximos Passos
-fizemos:
-
-[Screenshot Image](./screen.png)
-
-em andamento, é o Step 7, último antes de um release de algo testável...
-
-- Timer ✅
-- Score (persistence)
-- Domain Enrichment (mais behaviours firepatterns)
-- Items
-- Level design
-- Narrative (level)
-
-It is a `feature/GameState`, our last step before a testable release!
-
----
-
-## 🛠️ Stack Tecnológico
-- ⚙️ **.NET 8**
-- 🎮 **MonoGame**
-- 🏗️ **Clean Architecture** (Domain, Application, Presentation)
-
----
-
-## 📜 Linha do Tempo (Commits Principais)
-
-### 🔹 Step 1 – Primitivos - Domain
-- :lock: `Guard` class  
-- :x: `DomainException`  
-- :sparkles: `EntityId`  
-- :triangular_ruler: `Vector2`  
-- :straight_ruler: `Bounds`  
-- :o: `Radius`  
-- :left_right_arrow: `Direction`  
-- :heart: `HP (HitPoints)`  
-- :broken_heart: `Damage`  
-- :alarm_clock: `DeltaTime`  
-- :stopwatch: `Cooldown`
-
-### 🔹 Step 2 – Entidades e Lógica de Jogo - Domain
-- :recycle: Renomeando `Value` → `Vector` em `Direction`  
-- :sparkles: `Bounds` ganhou método `Clamp`  
-- :video_game: `MovementIntegrator`  
-- :boom: `Projectile`  
-- :gun: `Weapon` + `FirePatterns`  
-- :joystick: `Player`  
-- :recycle: `Contains` em `Bounds`  
-- :video_game: `GameSession` (controla estado da partida)
-
-### 🔹 Step 3 – Camada de Aplicação
-- :gun: `WeaponConfig`  
-- :art: `StageConfig`  
-- :joystick: `PlayerDTO`  
-- :straight_ruler: `BoundsDTO`  
-- :boom: `ProjectileDTO`  
-- :camera: `GameSnapshot`  
-- :earth_africa: `DomainMapper`  
-- :video_game: `GameSessionService`
-
-### 🔹 Step 4 – Presentation (MonoGame)
-- :broom: Removendo referências desnecessárias  
-- :sparkles: Protótipo inicial de renderização com **MonoGame**
-
-### 🔹 Step 5 – Player Rotation
-- :gun: Adicionando controle de tiro com o clique, já que estamos usando o mouse  
-- :joystick: Desenhando player como um quadrado para visualizar rotação  
-- :cyclone: Capturando rotação a partir da posição do mouse  
-- :recycle: Making _session readonly  
-- :earth_africa: DomainMapper converts Direction vector to radians  
-- :joystick: PlayerDTO oferece ângulo de rotação  
-- :video_game: GameSessionService implementa IGameSessionService RotateTowards  
-- :video_game: IGameSessionService implementa RotateTowards  
-- :video_game: :bangbang: RotatePlayerTowards na GameSession! Uma mudança de domínio necessária que passou desapercebida. GameSession é o aggregate entry-point do domínio. Application vai se comunicar com ele, apenas. GameSessionService da Application é responsável pela instância.  
-- :gun: IFirePattern TryFire recebe facing  
-- :joystick: Player tem rotação  
-- :cyclone: Adicionando próximo passo, rotação do jogador  
-
-### 🔹 Step 6 – GameObject & Colisões
-- :bricks: **Walls** como collidables simples
-- :house: **PlayerArea** GameObject (respawn, cura, bloqueio de projéteis e inimigos)
-- :checkered_flag: **TargetArea** chama `session.CompleteLevel()`
-- :video_game: Colisões implementadas:
-      - Player ↔ Walls
-      - Enemies ↔ Walls
-      - Player ↔ Enemies
-      - Projectiles ↔ Walls
-      - Enemies ↔ PlayerArea
-      - Projectiles ↔ PlayerArea
-
-- :joystick: **Player** ganhou `RevertLastMovement()`
-- :space_invader: **Enemy** ganhou `RevertLastMovement()`
-
-- :recycle: Segregação clara:
-- **Entities** → auditáveis (Player, Enemy, Projectile)
-- **GameObjects** → acoplados à `GameSession` (PlayerArea, TargetArea, Walls, Spawners)q
-
-
-
----
-
-## ▶️ Como Rodar
-
-Pré-requisitos:
-- [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
-- [MonoGame 3.8.1](https://monogame.net/)
-
-```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/swarm.git
-cd swarm
-
-# Rode o jogo
+## Rodar
+```
 dotnet run --project src/Swarm.Presentation
 ```
 
-Feito com 💙 para estudar Clean Architecture & Game Dev.  
+## Resetar o manifest
+O manifest usado em runtime fica em `src/Swarm.Presentation/bin/<Debug|Release>/net8.0/Content/GameSessionConfigManifest.json`.
+
+Para resetar:
+- apague o arquivo no `bin/`, ou
+- edite e marque `Completed: false` (ou `ActiveIndex: 0`).
