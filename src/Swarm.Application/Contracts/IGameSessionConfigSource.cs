@@ -1,11 +1,10 @@
-using System.Collections.Generic;
-
 namespace Swarm.Application.Contracts;
 
 public interface IGameSessionConfigSource
 {
     string LoadConfigJson(string contentRootDirectory);
     GameSessionConfigManifest LoadManifest(string contentRootDirectory);
+    int SelectEntryIndex(GameSessionConfigManifest manifest);
     void SaveManifest(string contentRootDirectory, GameSessionConfigManifest manifest);
 }
 

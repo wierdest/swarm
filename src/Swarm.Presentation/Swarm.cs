@@ -21,6 +21,7 @@ public class Swarm : Game
     private SpriteFont _font = null!;
     private readonly InputManager _input;
     private string? _gameConfigJson;
+    private bool _manifestSaved;
     private RenderTarget2D _renderTarget = null!;
     private Rectangle _drawDestination;
     private readonly float WIDTH = 960f;
@@ -68,6 +69,7 @@ public class Swarm : Game
     {
         Window.ClientSizeChanged += (_, __) => RecalculateDestination();
         _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
+        _manifestSaved = false;
         _service.StartNewSession(_gameConfigJson).GetAwaiter().GetResult();
 
         _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -119,9 +121,21 @@ public class Swarm : Game
 
         if (snap.IsPaused || snap.IsTimeUp || snap.IsCompleted || snap.IsInterrupted)
         {
+            if (snap.IsCompleted && !_manifestSaved)
+            {
+                var manifest = _configSource.LoadManifest(Content.RootDirectory);
+                var index = _configSource.SelectEntryIndex(manifest);
+                if (index >= 0 && index < manifest.Entries.Count)
+                {
+                    manifest.Entries[index].Completed = true;
+                    _configSource.SaveManifest(Content.RootDirectory, manifest);
+                }
+                _manifestSaved = true;
+            }
             if (state.Restart)
             {
                 _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
+                _manifestSaved = false;
                 _service.Restart(_gameConfigJson!);
             }
             return;

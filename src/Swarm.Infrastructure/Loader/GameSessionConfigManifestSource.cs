@@ -86,18 +86,33 @@ public sealed class GameSessionConfigManifestSource : IGameSessionConfigSource
 
     private static GameSessionConfigEntry SelectEntry(GameSessionConfigManifest manifest)
     {
+        var index = SelectEntryIndexInternal(manifest);
+        return manifest.Entries[index];
+    }
+
+    public int SelectEntryIndex(GameSessionConfigManifest manifest)
+    {
+        return SelectEntryIndexInternal(manifest);
+    }
+
+    private static int SelectEntryIndexInternal(GameSessionConfigManifest manifest)
+    {
+        if (manifest is null)
+            throw new ArgumentNullException(nameof(manifest));
+        if (manifest.Entries.Count == 0)
+            throw new InvalidOperationException("Manifest must contain at least one entry.");
+
         if (manifest.ActiveIndex is int idx && idx >= 0 && idx < manifest.Entries.Count)
-            return manifest.Entries[idx];
+            return idx;
 
         for (int i = 0; i < manifest.Entries.Count; i++)
         {
             if (!manifest.Entries[i].Completed)
-                return manifest.Entries[i];
+                return i;
         }
 
-        return manifest.Entries[0];
+        return 0;
     }
-
     private static string LoadConfigJsonFromPath(string path)
     {
         if (!File.Exists(path))

@@ -1,0 +1,35 @@
+{
+  "StageConfig": {
+    "Left": 40,
+    "Top": 40,
+    "Right": 920,
+    "Bottom": 500
+  },
+  "LevelConfig": {
+    "PlayerAreaConfig": {
+      "X": 80,
+      "Y": 80,
+      "Radius": 40
+    },
+    "TargetAreaConfig": {
+      "X": 880,
+      "Y": 460,
+      "Radius": 40
+    },
+    "Walls": [
+      { "X": 240, "Y": 120, "Radius": 40 },
+      { "X": 360, "Y": 200, "Radius": 40 },
+      { "X": 520, "Y": 280, "Radius": 40 },
+      { "X": 680, "Y": 360, "Radius": 40 },
+      { "X": 760, "Y": 160, "Radius": 40 }
+    ],
+    "GoalConfig": {
+      "GoalDescription": "This is a time-based game. There are obstacles.",
+      "GameSessionPropertyIdentifier": "Timer",
+      "Operator": "<=",
+      "TargetValue": 5
+    }
+  },
+  "PlayerRadius": 12,
+  "RoundLength": 15
+}
