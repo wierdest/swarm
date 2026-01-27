@@ -38,7 +38,7 @@ public static class HudTextBuilder
     {
         return string.Join(" | ",
             BuildHpText(hud.HP),
-            BuildDeathsText(hud.NumberOfPlayerRespawns),
+            BuildDeathsText(hud.PlayerDeaths),
             BuildWeaponText(hud.WeaponName, hud.CurrentAmmo, hud.MaxAmmo, hud.AmmoStock),
             BuildEnemiesText(hud.NumberOfEnemiesAlive),
             BuildHealthyAliveText(hud.NumberOfHealthyAlive),
@@ -64,7 +64,7 @@ public static class HudTextBuilder
     public static string BuildSaveGameString(HudData hud)
 {
     var hpText = $"HP: {hud.HP}";
-    var playerDeathsText = $"Deaths: {hud.NumberOfPlayerRespawns}";
+    var playerDeathsText = $"Deaths: {hud.PlayerDeaths}";
     var enemiesText = $"Enemies: {hud.NumberOfEnemiesAlive}";
     var weaponText = hud.WeaponName;
     var timerText = $"Timer: {hud.Timer}";

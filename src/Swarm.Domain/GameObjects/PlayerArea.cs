@@ -14,8 +14,6 @@ public sealed class PlayerArea(
 {
     public Vector2 Position { get; } = position;
     public Radius Radius { get; } = radius;
-    private int _playerRespawns = 0;
-    public int PlayerRespawns => _playerRespawns;
     private readonly Damage _standardHealAmount = new(1);
 
     public override void Tick(DeltaTime dt)
@@ -25,7 +23,7 @@ public sealed class PlayerArea(
         if (player.IsDead)
         {
             player.Respawn(Position);
-            _playerRespawns++;
+            _session.PlayerDeaths += 1;
         }
 
         if (IsInside(player.Position))

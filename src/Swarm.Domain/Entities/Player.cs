@@ -24,7 +24,6 @@ public sealed class Player(
     public HitPoints HP { get; private set; } = new(10);
     public int Ammo { get; private set; } = 0;
     public bool IsDead => HP.IsZero;
-
     public void SetWeapon(PlayerWeapon? weapon)
     {
         ActiveWeapon = weapon;

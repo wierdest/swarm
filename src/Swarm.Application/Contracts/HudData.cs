@@ -3,7 +3,7 @@
 public record class HudData(
     int Kills,
     int HP,
-    int NumberOfPlayerRespawns,
+    int PlayerDeaths,
     string Timer,
     int NumberOfEnemiesAlive, // zombies, shooters, infected
     bool LevelCompleted,
