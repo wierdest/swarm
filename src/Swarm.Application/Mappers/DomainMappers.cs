@@ -37,7 +37,7 @@ static class DomainMappers
                     type));
         }
 
-        var hud = ToHud(s, pA);
+        var hud = ToHud(s);
 
         var walls = new List<DrawableDTO>(s.Walls.Count);
         
@@ -68,7 +68,7 @@ static class DomainMappers
                 s.AimPosition.Y
             );
     }
-    private static HudData ToHud(GameSession s, PlayerArea pA)
+    private static HudData ToHud(GameSession s)
     {
         var p = s.Player;
         var w = p.ActiveWeapon;
@@ -76,7 +76,7 @@ static class DomainMappers
         return new HudData(
             s.Kills,
             p.HP,
-            pA.PlayerRespawns,
+            s.PlayerDeaths,
             s.TimeString,
             s.EnemyCount + s.InfectedCount,
             s.IsLevelCompleted,

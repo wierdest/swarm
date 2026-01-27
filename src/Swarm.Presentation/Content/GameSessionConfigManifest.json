@@ -10,6 +10,11 @@
       "Name": "Config B",
       "File": "GameSessionConfigs/Config_B.json",
       "Completed": false
+    },
+    {
+      "Name": "Config C",
+      "File": "GameSessionConfigs/Config_C.json",
+      "Completed": false
     }
   ]
 }

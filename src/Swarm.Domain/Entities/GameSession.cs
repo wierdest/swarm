@@ -34,6 +34,7 @@ public sealed class GameSession(
     public bool ReachedMaxNonPlayerEntities => NonPlayerEntities.Count >= 666;
     public Score Kills { get; private set; } = new(0);
     private void AddKill() => Kills = Kills.Add(1);
+    public Score PlayerDeaths;
     public bool HasReachedTargetGoal() => goal.Evaluate(this);
     public string GetGoalDescription() => goal.Description;
     public Score Casualties { get; private set; } = new(0);
