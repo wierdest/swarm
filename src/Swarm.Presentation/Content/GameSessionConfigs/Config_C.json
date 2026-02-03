@@ -18,10 +18,11 @@
     },
     "WallGeneratorConfig": {
       "WallRandomSeed": null,
-      "WallSeedCount": 3,
-      "WallCellSize": 64,
+      "WallSeedCount": 4,
+      "WallCellSize": 56,
       "WallRadius": 40,
-      "WallDensity": 0.3
+      "WallDensity": 0.6,
+      "CorridorWidthMultiplier": 1.1
     },
     "GoalConfig": {
       "GoalDescription": "\nOs níveis podem ter paredes definidas em uma config procedural.\nSe você reiniciar esse nível, terá sempre um mapa diferente.\nObjetivo: Aguarde 5 segundos.",

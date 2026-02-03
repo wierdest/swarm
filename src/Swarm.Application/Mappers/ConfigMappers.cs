@@ -91,7 +91,8 @@ static class ConfigMappers
                 wallDensity: wallGeneratorConfig.WallDensity,
                 cellSize: wallGeneratorConfig.WallCellSize,
                 minWallCount: GetTotalSpawnerCount(level),
-                seed: wallGeneratorConfig.WallRandomSeed
+                seed: wallGeneratorConfig.WallRandomSeed,
+                corridorWidthMultiplier: wallGeneratorConfig.CorridorWidthMultiplier
             )];
         }
 

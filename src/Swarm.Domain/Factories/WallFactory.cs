@@ -25,11 +25,12 @@ public static class WallFactory
         float wallDensity,
         float cellSize,
         int minWallCount,
-        int? seed = null
+        int? seed = null,
+        float? corridorWidthMultiplier = null
     )
     {
         var walls = VoronoiWallGenerator.Generate(
-            start: start,
+            startPos: start,
             targetPos: end,
             levelBounds: levelBounds,
             seedCount: seedCount,
@@ -37,7 +38,8 @@ public static class WallFactory
             wallRadius: wallRadius,
             wallDensity: wallDensity,
             minWallCount: minWallCount,
-            seed: seed
+            seed: seed,
+            corridorWidthMultiplier: corridorWidthMultiplier
         );
 
         foreach (var wall in walls)
