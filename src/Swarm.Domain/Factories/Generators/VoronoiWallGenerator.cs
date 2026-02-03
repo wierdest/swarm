@@ -17,10 +17,11 @@ public static class VoronoiWallGenerator
         int? seed = null)
     {
         const int maxAttempts = 8;
+        var requiredWallCount = Math.Max(1, minWallCount);
         int attempts = 0;
         var walls = new List<Wall>();
 
-        while (walls.Count < minWallCount && attempts < maxAttempts)
+        while (walls.Count < requiredWallCount && attempts < maxAttempts)
         {
             var attemptSeed = seed.HasValue ? seed.Value + attempts : Environment.TickCount + attempts;
             var rng = new Random(attemptSeed);

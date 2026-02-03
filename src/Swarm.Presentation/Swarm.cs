@@ -117,6 +117,13 @@ public class Swarm : Game
             _service.Restart(_gameConfigJson!);
             return;
         }
+        
+        if (state.Replay)
+        {
+            if (!string.IsNullOrWhiteSpace(_gameConfigJson))
+                _service.Restart(_gameConfigJson);
+            return;
+        }
 
         if (state.Pause)
         {
@@ -223,7 +230,8 @@ public class Swarm : Game
         if (snap.IsPaused || snap.IsInterrupted || snap.IsTimeUp || snap.IsCompleted)
         {
             string mainText = "";
-            string continueText = "PRESS R TO CONTINUE TO THE NEXT SESSION";
+            string continueText = "PRESS R TO RUN TO THE NEXT SESSION";
+            string replayText = "PRESS F6 TO REPLAY THIS SESSION";
             string resetText = "PRESS F8 TO RESET PROGRESS";
 
             if (snap.IsPaused) mainText = "PAUSED";
@@ -255,6 +263,13 @@ public class Swarm : Game
                 subPos.Y + resetSize.Y + 10
             );
             _spriteBatch.DrawString(_font, resetText, resetPos, Color.White);
+
+            Vector2 replaySize = _font.MeasureString(replayText);
+            Vector2 replayPos = new(
+                (WIDTH - replaySize.X) / 2f,
+                resetPos.Y + replaySize.Y + 10
+            );
+            _spriteBatch.DrawString(_font, replayText, replayPos, Color.White);
 
         }
         _spriteBatch.End();

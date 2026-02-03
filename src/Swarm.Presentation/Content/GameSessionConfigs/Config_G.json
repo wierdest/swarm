@@ -26,7 +26,7 @@
       "Radius": 40
     },
     "Walls": [
-      { "X": 240, "Y": 120, "Radius": 40 }
+      { "X": 660, "Y": 260, "Radius": 40 }
     ],
     "ZombieConfig": {
       "HP": 1,
@@ -48,13 +48,38 @@
         }
       ]
     },
+    "HealthyConfig": {
+      "NonPlayerEntityConfig": {
+        "HP": 1,
+        "Radius": 10,
+        "Speed": 50,
+        "Cooldown": 0.2,
+        "Damage": 1,
+        "DodgeConfig": {
+          "Threshold": 150,
+          "SpeedMultiplier": null
+        },
+        "TargetConfig": {
+          "Threshold": 150
+        },
+        "Spawners": [
+          {
+            "CooldownSeconds": 0.2,
+            "BatchSize": 20
+          }
+        ]
+      },
+      "InfectedSpeed": 200,
+      "InfectedTargetThreshold": 150,
+      "InfectedDodgeThreshold": 150
+    },
     "GoalConfig": {
-      "GoalDescription": "You can click to shoot. Kill 50 zombies.",
-      "GameSessionPropertyIdentifier": "Kills",
+      "GoalDescription": "Healthy entities can be infected. \n They turn into zombies. \n Save at least 20",
+      "GameSessionPropertyIdentifier": "Salvations",
       "Operator": ">=",
-      "TargetValue": 50
+      "TargetValue": 20
     }
   },
   "PlayerRadius": 12,
-  "RoundLength": 15
+  "RoundLength": 45
 }

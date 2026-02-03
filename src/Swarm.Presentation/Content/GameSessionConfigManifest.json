@@ -25,6 +25,16 @@
       "Name": "Config E",
       "File": "GameSessionConfigs/Config_E.json",
       "Completed": false
+    },
+    {
+      "Name": "Config F",
+      "File": "GameSessionConfigs/Config_F.json",
+      "Completed": false
+    },
+    {
+      "Name": "Config G",
+      "File": "GameSessionConfigs/Config_G.json",
+      "Completed": false
     }
   ]
 }

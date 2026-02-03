@@ -21,15 +21,24 @@
       { "X": 360, "Y": 200, "Radius": 40 },
       { "X": 520, "Y": 280, "Radius": 40 },
       { "X": 680, "Y": 360, "Radius": 40 },
-      { "X": 760, "Y": 160, "Radius": 40 }
+      { "X": 760, "Y": 160, "Radius": 40 },
+      { "X": 160, "Y": 200, "Radius": 40 },
+      { "X": 200, "Y": 320, "Radius": 40 },
+      { "X": 320, "Y": 360, "Radius": 40 },
+      { "X": 440, "Y": 200, "Radius": 40 },
+      { "X": 560, "Y": 120, "Radius": 40 },
+      { "X": 600, "Y": 440, "Radius": 40 },
+      { "X": 720, "Y": 280, "Radius": 40 },
+      { "X": 840, "Y": 240, "Radius": 40 },
+      { "X": 840, "Y": 380, "Radius": 40 }
     ],
     "GoalConfig": {
-      "GoalDescription": "This is a time-based game. There are obstacles.",
+      "GoalDescription": "\nOs níveis podem ter paredes definidas em uma configuração fixa.\n Se você reiniciar esse nível, sempre terá o mesmo mapa toda vez.\nObjetivo: Aguarde 10 segundos...",
       "GameSessionPropertyIdentifier": "Timer",
       "Operator": "<=",
-      "TargetValue": 5
+      "TargetValue": 35
     }
   },
   "PlayerRadius": 12,
-  "RoundLength": 15
+  "RoundLength": 45
 }

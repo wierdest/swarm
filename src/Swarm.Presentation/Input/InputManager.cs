@@ -55,6 +55,10 @@ public sealed class InputManager
         bool next =
             JustPressed(Keys.R, kb, _prevKb) ||
             JustPressed(Buttons.Y, pad, _prevPad);
+
+        bool replay =
+            JustPressed(Keys.F6, kb, _prevKb) ||
+            JustPressed(Buttons.LeftShoulder, pad, _prevPad);
         
         bool reset =
             JustPressed(Keys.F8, kb, _prevKb);
@@ -92,6 +96,7 @@ public sealed class InputManager
             pause,
             false,
             false,
+            replay,
             next,
             reset
         );
