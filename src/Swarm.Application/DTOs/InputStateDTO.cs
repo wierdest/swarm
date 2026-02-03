@@ -14,6 +14,7 @@ public record class InputStateDTO(
     bool Pause,
     bool Save,
     bool Load,
+    bool Replay,
     bool Next,
     bool Reset
 )
@@ -35,6 +36,7 @@ public record class InputStateDTO(
         if (Pause) parts.Add("Pause");
         if (Save) parts.Add("Save");
         if (Load) parts.Add("Load");
+        if (Replay) parts.Add("Replay");
         if (Next) parts.Add("Next");
         if (Reset) parts.Add("Reset");
 

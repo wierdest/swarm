@@ -19,10 +19,10 @@ public static class HudTextBuilder
             if (ammoStock == 0)
                 return $"{weaponName} {_findAmmoHint}";
             else
-                return $"{weaponName} {_reloadHint} | S: {ammoStock}";
+                return $"{weaponName} {_reloadHint} | A: {ammoStock}";
         }
 
-        return $"{weaponName} {currentAmmo}/{maxAmmo} | S: {ammoStock}";
+        return $"{weaponName} {currentAmmo}/{maxAmmo} | A: {ammoStock}";
     }
     public static string BuildKillsText(int kills) => $"K: {kills}";
     public static string BuildEnemiesText(int enemiesAlive) => $"E: {enemiesAlive}";

@@ -6,15 +6,6 @@
     "Bottom": 500
   },
   "LevelConfig": {
-    "Weapon": {
-      "Name": "",
-      "Damage": 1,
-      "MaxAmmo": 1000,
-      "RatePerSecond": 60,
-      "ProjectileSpeed": 840,
-      "ProjectileRadius": 16,
-      "ProjectileLifetimeSeconds": 10
-    },
     "PlayerAreaConfig": {
       "X": 80,
       "Y": 80,
@@ -49,10 +40,10 @@
       ]
     },
     "GoalConfig": {
-      "GoalDescription": "You can click to shoot. Kill 50 zombies.",
-      "GameSessionPropertyIdentifier": "Kills",
+      "GoalDescription": "Zombies kill you. You are reborn. Die once.",
+      "GameSessionPropertyIdentifier": "PlayerDeaths",
       "Operator": ">=",
-      "TargetValue": 50
+      "TargetValue": 1
     }
   },
   "PlayerRadius": 12,

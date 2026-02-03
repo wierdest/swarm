@@ -17,12 +17,12 @@
       "Radius": 40
     },
     "GoalConfig": {
-      "GoalDescription": "This is a time-based game. Wait for 5 seconds.",
+      "GoalDescription": "\nÉ um jogo baseado em tempo.\nComplete um objetivo e alcance a área-alvo antes que o tempo acabe.\nNeste nível, o objetivo é simples:\nEspere 20 segundos.",
       "GameSessionPropertyIdentifier": "Timer",
       "Operator": "<=",
-      "TargetValue": 10
+      "TargetValue": 20
     }
   },
   "PlayerRadius": 12,
-  "RoundLength": 15
+  "RoundLength": 45
 }

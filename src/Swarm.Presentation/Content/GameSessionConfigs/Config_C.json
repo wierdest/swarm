@@ -16,36 +16,21 @@
       "Y": 460,
       "Radius": 40
     },
-    "Walls": [
-      { "X": 240, "Y": 120, "Radius": 40 }
-    ],
-    "ZombieConfig": {
-      "HP": 1,
-      "Radius": 10,
-      "Speed": 300,
-      "Cooldown": 0.1,
-      "Damage": 1,
-      "DodgeConfig": {
-        "Threshold": 150,
-        "SpeedMultiplier": null
-      },
-      "TargetConfig": {
-        "Threshold": 150
-      },
-      "Spawners": [
-        {
-          "CooldownSeconds": 0.2,
-          "BatchSize": 10
-        }
-      ]
+    "WallGeneratorConfig": {
+      "WallRandomSeed": null,
+      "WallSeedCount": 4,
+      "WallCellSize": 56,
+      "WallRadius": 40,
+      "WallDensity": 0.6,
+      "CorridorWidthMultiplier": 1.1
     },
     "GoalConfig": {
-      "GoalDescription": "Zombies kill you. You are reborn. Die once.",
-      "GameSessionPropertyIdentifier": "PlayerDeaths",
-      "Operator": ">=",
-      "TargetValue": 1
+      "GoalDescription": "\nOs níveis podem ter paredes definidas em uma config procedural.\nSe você reiniciar esse nível, terá sempre um mapa diferente.\nObjetivo: Aguarde 5 segundos.",
+      "GameSessionPropertyIdentifier": "Timer",
+      "Operator": "<=",
+      "TargetValue": 5
     }
   },
   "PlayerRadius": 12,
-  "RoundLength": 15
+  "RoundLength": 10
 }

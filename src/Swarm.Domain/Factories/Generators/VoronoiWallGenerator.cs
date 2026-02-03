@@ -6,7 +6,7 @@ namespace Swarm.Domain.Factories.Generators;
 public static class VoronoiWallGenerator
 {
     public static IEnumerable<Wall> Generate(
-        Vector2 start,
+        Vector2 startPos,
         Vector2 targetPos,
         Bounds levelBounds,
         int seedCount,
@@ -14,25 +14,28 @@ public static class VoronoiWallGenerator
         float wallRadius,
         float wallDensity,
         int minWallCount,
-        int? seed = null)
+        int? seed = null,
+        float? corridorWidthMultiplier = null)
     {
         const int maxAttempts = 8;
+        var requiredWallCount = Math.Max(1, minWallCount);
         int attempts = 0;
         var walls = new List<Wall>();
 
-        while (walls.Count < minWallCount && attempts < maxAttempts)
+        while (walls.Count < requiredWallCount && attempts < maxAttempts)
         {
             var attemptSeed = seed.HasValue ? seed.Value + attempts : Environment.TickCount + attempts;
             var rng = new Random(attemptSeed);
             walls.Clear();
             GenerateOnce(
-                start,
+                startPos,
                 targetPos,
                 levelBounds,
                 seedCount,
                 cellSize,
                 wallRadius,
                 wallDensity,
+                corridorWidthMultiplier,
                 rng,
                 walls);
             attempts++;
@@ -49,10 +52,14 @@ public static class VoronoiWallGenerator
         float cellSize,
         float wallRadius,
         float wallDensity,
+        float? corridorWidthMultiplier,
         Random rng,
         List<Wall> walls)
     {
-        // Step 1: generate Voronoi seed points
+        var widthMultiplier = corridorWidthMultiplier ?? 1.1f;
+        var baseWidth = wallRadius >= cellSize ? wallRadius : cellSize;
+        var corridorHalfWidth = baseWidth * widthMultiplier;
+
         var seeds = new List<Vector2>(seedCount);
         for (int i = 0; i < seedCount; i++)
         {
@@ -78,21 +85,21 @@ public static class VoronoiWallGenerator
                 if (nearestRight != nearest && rng.NextDouble() < wallDensity)
                 {
                     var pos = current + new Vector2(cellSize / 2f, 0);
-                    if (!IsNearArea(pos, start, targetPos))
+                    if (!IsNearArea(pos, start, targetPos) && !IsNearPath(pos, start, targetPos, corridorHalfWidth))
                         walls.Add(new Wall(pos, new Radius(wallRadius), null));
                 }
 
                 if (nearestDown != nearest && rng.NextDouble() < wallDensity)
                 {
                     var pos = current + new Vector2(0, cellSize / 2f);
-                    if (!IsNearArea(pos, start, targetPos))
+                    if (!IsNearArea(pos, start, targetPos) && !IsNearPath(pos, start, targetPos, corridorHalfWidth))
                         walls.Add(new Wall(pos, new Radius(wallRadius), null));
                 }
             }
         }
     }
 
-    private static Vector2 FindNearestSeed(Vector2 p, IReadOnlyList<Vector2> seeds)
+    private static Vector2 FindNearestSeed(Vector2 p, List<Vector2> seeds)
     {
         Vector2 nearest = seeds[0];
         float bestDist = Vector2.DistanceSquared(p, nearest);
@@ -110,15 +117,36 @@ public static class VoronoiWallGenerator
         return nearest;
     }
 
-    private static bool IsNearArea(Vector2 pos, Vector2? playerPos, Vector2? targetPos)
+    private static bool IsNearArea(Vector2 pos, Vector2? startPos, Vector2? targetPos)
     {
-        const float minDistanceSq = 30000f; // ~170 units
-        if (playerPos is Vector2 p && Vector2.DistanceSquared(pos, p) < minDistanceSq)
+        const float minDistanceSq = 30000f;
+        if (startPos is Vector2 p && Vector2.DistanceSquared(pos, p) < minDistanceSq)
             return true;
 
         if (targetPos is Vector2 t && Vector2.DistanceSquared(pos, t) < minDistanceSq)
             return true;
 
         return false;
+    }
+
+    private static bool IsNearPath(Vector2 pos, Vector2 start, Vector2 target, float corridorHalfWidth)
+    {
+        var distSq = DistancePointToSegmentSquared(pos, start, target);
+        return distSq <= corridorHalfWidth * corridorHalfWidth;
+    }
+
+    private static float DistancePointToSegmentSquared(Vector2 p, Vector2 a, Vector2 b)
+    {
+        var ab = b - a;
+        var ap = p - a;
+        var abLenSq = ab.LengthSquared();
+        if (abLenSq <= 0.0001f)
+            return Vector2.DistanceSquared(p, a);
+
+        var t = Vector2.Dot(ap, ab) / abLenSq;
+        if (t < 0f) t = 0f;
+        else if (t > 1f) t = 1f;
+        var closest = a + ab * t;
+        return Vector2.DistanceSquared(p, closest);
     }
 }
