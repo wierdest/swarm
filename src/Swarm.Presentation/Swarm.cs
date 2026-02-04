@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -115,6 +116,12 @@ public class Swarm : Game
             _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
             _manifestSaved = false;
             _service.Restart(_gameConfigJson!);
+            return;
+        }
+
+        if (state.NavigateNextConfig || state.NavgatePrevConfig)
+        {
+            NavigateConfig(state.NavigateNextConfig ? 1 : -1);
             return;
         }
         
@@ -233,6 +240,7 @@ public class Swarm : Game
             string continueText = "PRESS R TO RUN TO THE NEXT SESSION";
             string replayText = "PRESS F6 TO REPLAY THIS SESSION";
             string resetText = "PRESS F8 TO RESET PROGRESS";
+            string navText = "PRESS F9/F10 TO PREV/NEXT CONFIG";
 
             if (snap.IsPaused) mainText = "PAUSED";
             else if (snap.IsInterrupted) mainText = "GAME OVER";
@@ -270,6 +278,13 @@ public class Swarm : Game
                 resetPos.Y + replaySize.Y + 10
             );
             _spriteBatch.DrawString(_font, replayText, replayPos, Color.White);
+
+            Vector2 navSize = _font.MeasureString(navText);
+            Vector2 navPos = new(
+                (WIDTH - navSize.X) / 2f,
+                replayPos.Y + navSize.Y + 10
+            );
+            _spriteBatch.DrawString(_font, navText, navPos, Color.White);
 
         }
         _spriteBatch.End();
@@ -388,6 +403,37 @@ public class Swarm : Game
             manifest.Entries[i].Completed = false;
         }
         _configSource.SaveManifest(Content.RootDirectory, manifest);
+    }
+
+    private void NavigateConfig(int delta)
+    {
+        var manifest = _configSource.LoadManifest(Content.RootDirectory);
+        if (manifest.Entries.Count == 0) return;
+
+        int currentIndex = manifest.ActiveIndex is int idx && idx >= 0 && idx < manifest.Entries.Count
+            ? idx
+            : _configSource.SelectEntryIndex(manifest);
+
+        int nextIndex = (currentIndex + delta) % manifest.Entries.Count;
+        if (nextIndex < 0) nextIndex += manifest.Entries.Count;
+
+        manifest.ActiveIndex = nextIndex;
+        _configSource.SaveManifest(Content.RootDirectory, manifest);
+
+        _gameConfigJson = LoadConfigJsonFromManifestEntry(manifest, nextIndex);
+        _manifestSaved = false;
+        _service.Restart(_gameConfigJson!);
+    }
+
+    private string LoadConfigJsonFromManifestEntry(GameSessionConfigManifest manifest, int index)
+    {
+        var entry = manifest.Entries[index];
+        if (string.IsNullOrWhiteSpace(entry.File))
+            throw new InvalidOperationException("Manifest entry must include a file path.");
+
+        var contentRoot = Path.Combine(AppContext.BaseDirectory, Content.RootDirectory);
+        var configPath = Path.Combine(contentRoot, entry.File);
+        return File.ReadAllText(configPath);
     }
 
 }

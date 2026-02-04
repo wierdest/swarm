@@ -61,7 +61,13 @@ public sealed class InputManager
             JustPressed(Buttons.LeftShoulder, pad, _prevPad);
         
         bool reset =
-            JustPressed(Keys.F8, kb, _prevKb);
+            JustPressed(Keys.F8, kb, _prevKb) ||
+            JustPressed(Buttons.RightShoulder, pad, _prevPad);
+        
+        bool navigateNextConfig = JustPressed(Keys.F10, kb, _prevKb);
+
+        bool navigatePrevConfig = JustPressed(Keys.F9, kb, _prevKb);
+
             
         if (pad.IsConnected)
         {
@@ -96,9 +102,11 @@ public sealed class InputManager
             pause,
             false,
             false,
-            replay,
             next,
-            reset
+            reset,
+            replay,
+            navigateNextConfig,
+            navigatePrevConfig
         );
 
         _prevKb = kb;
