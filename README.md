@@ -18,6 +18,26 @@ Usamos arquivos de configuração (GameSessionConfig) e um manifest para organiz
 dotnet run --project src/Swarm.Presentation
 ```
 
+## Publicar (Windows .exe / Linux)
+Windows (.exe, roda no Windows ou via Wine):
+```
+dotnet publish src/Swarm.Presentation/Swarm.Presentation.csproj \
+  -c Release -r win-x64 --self-contained true \
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+  -o dist/win-x64
+```
+
+Linux (binário nativo):
+```
+dotnet publish src/Swarm.Presentation/Swarm.Presentation.csproj \
+  -c Release -r linux-x64 --self-contained true \
+  -o dist/linux-x64
+```
+
+Saída:
+- `dist/win-x64/Swarm.Presentation.exe`
+- `dist/linux-x64/Swarm.Presentation`
+
 ## Resetar o manifest
 O manifest usado em runtime fica em `src/Swarm.Presentation/bin/<Debug|Release>/net8.0/Content/GameSessionConfigManifest.json`.
 
