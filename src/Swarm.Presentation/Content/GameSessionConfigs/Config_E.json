@@ -26,7 +26,7 @@
       "Radius": 40
     },
     "Walls": [
-      { "X": 240, "Y": 120, "Radius": 40 }
+      { "X": 480, "Y": 270, "Radius": 40 }
     ],
     "ZombieConfig": {
       "HP": 1,
@@ -49,7 +49,7 @@
       ]
     },
     "GoalConfig": {
-      "GoalDescription": "You can click to shoot. Kill 50 zombies.",
+      "GoalDescription": "\nO jogador tem uma arma e um estoque de munição.\nÉ possível recarregar com 'E'\nCaso precise de mais munição, é só retornar para a área do jogador.\nTodos os inimigos têm a capacidade de desviar de projéteis.\nMate 50 inimigos.",
       "GameSessionPropertyIdentifier": "Kills",
       "Operator": ">=",
       "TargetValue": 50

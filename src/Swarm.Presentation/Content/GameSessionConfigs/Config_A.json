@@ -17,7 +17,7 @@
       "Radius": 40
     },
     "GoalConfig": {
-      "GoalDescription": "\nÉ um jogo baseado em tempo.\nComplete um objetivo e alcance a área-alvo antes que o tempo acabe.\nNeste nível, o objetivo é simples:\nEspere 20 segundos.",
+      "GoalDescription": "\nÉ um jogo baseado em tempo e objetivos.\nO jogador parte sempre de sua base (em azul)\nAo completar o objetivo principal, a área-alvo (vermelha) é aberta (fica verde).\nQuando o jogador alcança a área-alvo aberta, o nível é finalizado.\nAgora o objetivo principal é simples:\nEspere 20 segundos.",
       "GameSessionPropertyIdentifier": "Timer",
       "Operator": "<=",
       "TargetValue": 20
