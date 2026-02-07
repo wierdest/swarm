@@ -26,11 +26,11 @@
       "Radius": 40
     },
     "Walls": [
-      { "X": 460, "Y": 240, "Radius": 40 }
+      { "X": 480, "Y": 240, "Radius": 40 }
     ],
     "ShooterConfig": {
       "NonPlayerEntityConfig": {
-        "HP": 5,
+        "HP": 10,
         "Radius": 12,
         "Speed": 300,
         "Cooldown": 1,
@@ -68,7 +68,7 @@
       "ZombieSpawnedOnDeathTriggerConfig": {
         "HP": 1,
         "Radius": 12,
-        "Speed": 150,
+        "Speed": 600,
         "Cooldown": 0.2,
         "Damage": 1,
         "DodgeConfig": {
@@ -82,7 +82,7 @@
       }
     },
     "GoalConfig": {
-      "GoalDescription": "Some enemies shoot back. Kill at least one.",
+      "GoalDescription": "\nExistem inimigos que conseguem atirar de volta (shooters).\nShooters podem decidir fugir para área alvo e recuperar HP\nMate um shooter e zombies aparecerão em seu lugar\nMate um shooter para completar esse objetivo",
       "GameSessionPropertyIdentifier": "Kills",
       "Operator": ">=",
       "TargetValue": 1

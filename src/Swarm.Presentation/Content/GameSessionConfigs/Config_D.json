@@ -17,7 +17,7 @@
       "Radius": 40
     },
     "Walls": [
-      { "X": 240, "Y": 120, "Radius": 40 }
+      { "X": 480, "Y": 270, "Radius": 40 }
     ],
     "ZombieConfig": {
       "HP": 1,
@@ -40,7 +40,7 @@
       ]
     },
     "GoalConfig": {
-      "GoalDescription": "Zombies kill you. You are reborn. Die once.",
+      "GoalDescription": "\nParedes podem ser um ponto de spawn\nSpawners funcionam com um intervalo de tempo\ne podem gerar múltiplos objetos de uma vez\nPor enquanto temos apenas o spawning de inimigos.\nInimigos mais simples (zombies) avançam pra cima do jogador\nInimigos não conseguem entrar totalmente na área do jogador,\na não ser que estejam em grande quantidade.\nQuando o jogador morre, respawn na sua área\nA área do jogador também é um ponto de recuperação de HP.\nO objetivo principal desse nível é morrer pelo menos uma vez.",
       "GameSessionPropertyIdentifier": "PlayerDeaths",
       "Operator": ">=",
       "TargetValue": 1

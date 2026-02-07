@@ -26,13 +26,33 @@
       "Radius": 40
     },
     "Walls": [
-      { "X": 480, "Y": 240, "Radius": 40 }
+      { "X": 660, "Y": 260, "Radius": 40 }
     ],
+    "ZombieConfig": {
+      "HP": 1,
+      "Radius": 10,
+      "Speed": 300,
+      "Cooldown": 0.1,
+      "Damage": 1,
+      "DodgeConfig": {
+        "Threshold": 150,
+        "SpeedMultiplier": null
+      },
+      "TargetConfig": {
+        "Threshold": 150
+      },
+      "Spawners": [
+        {
+          "CooldownSeconds": 0.2,
+          "BatchSize": 10
+        }
+      ]
+    },
     "HealthyConfig": {
       "NonPlayerEntityConfig": {
         "HP": 1,
         "Radius": 10,
-        "Speed": 200,
+        "Speed": 50,
         "Cooldown": 0.2,
         "Damage": 1,
         "DodgeConfig": {
@@ -54,7 +74,7 @@
       "InfectedDodgeThreshold": 150
     },
     "GoalConfig": {
-      "GoalDescription": "\nÉ possível haver entidades que são saudáveis (Healthy).\nHealthy querem sempre chegar à área do jogador.\nQuando entram na área, desaparecem e contam como salvas.\nHealthy tentam escapar de qualquer tipo de projéteis\nGarante que 20 healthy consigam ser salvos.",
+      "GoalDescription": "\nZombies podem infectar os Healthy, transformando-os em Zombies. Salve 20 Healthy.",
       "GameSessionPropertyIdentifier": "Salvations",
       "Operator": ">=",
       "TargetValue": 20
