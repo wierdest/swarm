@@ -1,6 +1,6 @@
 namespace Swarm.Application.DTOs;
 
-public record class InputStateDTO(
+public record class GameSessionControlsDTO(
     float DirX,
     float DirY,
     float MouseX,
