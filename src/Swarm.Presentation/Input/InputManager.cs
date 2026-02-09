@@ -15,7 +15,7 @@ public sealed class InputManager
     private Vector2 _smoothedRightStick = Vector2.Zero;
     private const float _aimSmoothness = 0.2f;
 
-    public InputStateDTO Update()
+    public GameSessionControlsDTO Update()
     {
         var kb = Keyboard.GetState();
         var mouse = Mouse.GetState();
@@ -88,7 +88,7 @@ public sealed class InputManager
             }
         }
 
-        var state = new InputStateDTO(
+        var state = new GameSessionControlsDTO(
             dx,
             dy,
             mouse.X,
