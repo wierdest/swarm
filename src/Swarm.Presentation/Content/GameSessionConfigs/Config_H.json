@@ -81,5 +81,6 @@
     }
   },
   "PlayerRadius": 12,
+  "PlayerSpeed": 360,
   "RoundLength": 45
 }

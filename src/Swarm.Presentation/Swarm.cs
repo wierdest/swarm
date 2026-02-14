@@ -17,28 +17,33 @@ public class Swarm : Game
     private SpriteBatch _spriteBatch = null!;
     private readonly IGameSessionService _service;
     private readonly Dictionary<int, Texture2D> _circleCache = new();
-    private readonly float _moveSpeed = 360f;
+    private float _moveSpeed;
+    private float _width;
+    private float _height;
+    private int _border;
     private HudRenderer _hud = null!;
     private SpriteFont _font = null!;
     private readonly InputManager _input;
     private string? _gameConfigJson;
     private bool _manifestSaved;
+    private bool _contentLoaded;
     private RenderTarget2D _renderTarget = null!;
     private Rectangle _drawDestination;
-    private readonly float WIDTH = 960f;
-    private readonly float HEIGHT = 540f;
-    private readonly int BORDER = 40;
     private CrosshairRenderer _crosshairRenderer = null!;
     private readonly IGameSessionConfigSource _configSource;
-    public Swarm(IGameSessionService service, IGameSessionConfigSource configSource)
+    private readonly IGameSessionConfigLoader _configLoader;
+
+    public Swarm(
+        IGameSessionService service,
+        IGameSessionConfigSource configSource,
+        IGameSessionConfigLoader configLoader)
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = false;
-        _graphics.PreferredBackBufferWidth = (int)WIDTH;
-        _graphics.PreferredBackBufferHeight = (int)HEIGHT;
         _service = service;
         _configSource = configSource ?? throw new ArgumentNullException(nameof(configSource));
+        _configLoader = configLoader ?? throw new ArgumentNullException(nameof(configLoader));
         _input = new InputManager();
         _graphics.IsFullScreen = true;
         _graphics.ApplyChanges();
@@ -50,15 +55,15 @@ public class Swarm : Game
         var screenW = GraphicsDevice.PresentationParameters.BackBufferWidth;
         var screenH = GraphicsDevice.PresentationParameters.BackBufferHeight;
 
-        // float scaleX = screenW / WIDTH;
-        // float scaleY = screenH / HEIGHT;
+        // float scaleX = screenW / _width;
+        // float scaleY = screenH / _height;
         // float scale = MathF.Min(scaleX, scaleY);
 
-        // int drawW = (int)(WIDTH * scale);
-        // int drawH = (int)(HEIGHT * scale);
+        // int drawW = (int)(_width * scale);
+        // int drawH = (int)(_height * scale);
 
-        int drawW = (int)WIDTH;
-        int drawH = (int)HEIGHT;
+        int drawW = (int)_width;
+        int drawH = (int)_height;
 
         int drawX = (screenW - drawW) / 2;
         int drawY = (screenH - drawH) / 2;
@@ -70,6 +75,7 @@ public class Swarm : Game
     {
         Window.ClientSizeChanged += (_, __) => RecalculateDestination();
         _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
+        ApplyPresentationConfig(_gameConfigJson);
         _manifestSaved = false;
         _service.StartNewSession(_gameConfigJson).GetAwaiter().GetResult();
 
@@ -87,7 +93,8 @@ public class Swarm : Game
 
         _crosshairRenderer = new CrosshairRenderer(_spriteBatch, GraphicsDevice);
 
-        _renderTarget = new RenderTarget2D(GraphicsDevice, (int) WIDTH, (int) HEIGHT);
+        _renderTarget = new RenderTarget2D(GraphicsDevice, (int)_width, (int)_height);
+        _contentLoaded = true;
 
         RecalculateDestination();
 
@@ -114,6 +121,7 @@ public class Swarm : Game
         {
             ResetManifestProgress();
             _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
+            ApplyPresentationConfig(_gameConfigJson);
             _manifestSaved = false;
             _service.Restart(_gameConfigJson!);
             return;
@@ -158,6 +166,7 @@ public class Swarm : Game
             if (state.Next)
             {
                 _gameConfigJson = _configSource.LoadConfigJson(Content.RootDirectory);
+                ApplyPresentationConfig(_gameConfigJson);
                 _manifestSaved = false;
                 _service.Restart(_gameConfigJson!);
             }
@@ -250,8 +259,8 @@ public class Swarm : Game
             {
                 Vector2 size = _font.MeasureString(mainText);
                 Vector2 pos = new(
-                    (WIDTH - size.X) / 2f,
-                    (HEIGHT - size.Y) / 2f
+                    (_width - size.X) / 2f,
+                    (_height - size.Y) / 2f
                 );
                 _spriteBatch.DrawString(_font, mainText, pos, Color.White);
             }
@@ -260,28 +269,28 @@ public class Swarm : Game
 
             Vector2 subSize = _font.MeasureString(continueText);
             Vector2 subPos = new(
-                (WIDTH - subSize.X) / 2f,
-                (HEIGHT - mainSize.Y) / 2f + mainSize.Y + 10
+                (_width - subSize.X) / 2f,
+                (_height - mainSize.Y) / 2f + mainSize.Y + 10
             );
             _spriteBatch.DrawString(_font, continueText, subPos, Color.White);
 
             Vector2 resetSize = _font.MeasureString(resetText);
             Vector2 resetPos = new(
-                (WIDTH - resetSize.X) / 2f,
+                (_width - resetSize.X) / 2f,
                 subPos.Y + resetSize.Y + 10
             );
             _spriteBatch.DrawString(_font, resetText, resetPos, Color.White);
 
             Vector2 replaySize = _font.MeasureString(replayText);
             Vector2 replayPos = new(
-                (WIDTH - replaySize.X) / 2f,
+                (_width - replaySize.X) / 2f,
                 resetPos.Y + replaySize.Y + 10
             );
             _spriteBatch.DrawString(_font, replayText, replayPos, Color.White);
 
             Vector2 navSize = _font.MeasureString(navText);
             Vector2 navPos = new(
-                (WIDTH - navSize.X) / 2f,
+                (_width - navSize.X) / 2f,
                 replayPos.Y + navSize.Y + 10
             );
             _spriteBatch.DrawString(_font, navText, navPos, Color.White);
@@ -296,7 +305,7 @@ public class Swarm : Game
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         _spriteBatch.Draw(_renderTarget, _drawDestination, Color.White);
 
-        DrawBorder(_spriteBatch, _drawDestination, BORDER, Color.Black );
+        DrawBorder(_spriteBatch, _drawDestination, _border, Color.Black);
 
         _hud.Draw(snap.GameSessionData);
 
@@ -362,7 +371,7 @@ public class Swarm : Game
     private void DrawBorder(SpriteBatch spriteBatch, Rectangle rect, int baseThickness, Color color)
     {
         // Scale thickness proportional to how much the render target was scaled
-        float scale = rect.Width / WIDTH; // since WIDTH = 960, this gives your draw scale
+        float scale = rect.Width / _width;
         int thickness = Math.Max(1, (int)(baseThickness * scale));
 
         // Top
@@ -421,8 +430,46 @@ public class Swarm : Game
         _configSource.SaveManifest(Content.RootDirectory, manifest);
 
         _gameConfigJson = LoadConfigJsonFromManifestEntry(manifest, nextIndex);
+        ApplyPresentationConfig(_gameConfigJson);
         _manifestSaved = false;
         _service.Restart(_gameConfigJson!);
+    }
+
+    private void ApplyPresentationConfig(string configJson)
+    {
+        var config = _configLoader.Load(configJson);
+        var stage = config.StageConfig;
+
+        _moveSpeed = config.PlayerSpeed;
+
+        var newWidth = stage.Right + stage.Left;
+        var newHeight = stage.Bottom + stage.Top;
+        var newBorder = (int)stage.Left;
+        if ((int)stage.Top != newBorder)
+        {
+            newBorder = (int)MathF.Min(stage.Left, stage.Top);
+        }
+
+        var sizeChanged = (int)newWidth != (int)_width || (int)newHeight != (int)_height;
+
+        _width = newWidth;
+        _height = newHeight;
+        _border = newBorder;
+
+        if (sizeChanged)
+        {
+            _graphics.PreferredBackBufferWidth = (int)_width;
+            _graphics.PreferredBackBufferHeight = (int)_height;
+            _graphics.ApplyChanges();
+
+            if (_contentLoaded)
+            {
+                _renderTarget.Dispose();
+                _renderTarget = new RenderTarget2D(GraphicsDevice, (int)_width, (int)_height);
+            }
+        }
+
+        RecalculateDestination();
     }
 
     private string LoadConfigJsonFromManifestEntry(GameSessionConfigManifest manifest, int index)
