@@ -27,6 +27,14 @@ dotnet publish src/Swarm.Presentation/Swarm.Presentation.csproj \
   -o dist/win-x64
 ```
 
+Windows portátil (pasta com `.exe` + DLLs, sem instalador; mais estável no Wine):
+```
+dotnet publish src/Swarm.Presentation/Swarm.Presentation.csproj \
+  -c Release -r win-x64 --self-contained true \
+  -p:PublishSingleFile=false \
+  -o dist/win-x64-portable
+```
+
 Linux (binário nativo):
 ```
 dotnet publish src/Swarm.Presentation/Swarm.Presentation.csproj \
