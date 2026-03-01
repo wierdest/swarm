@@ -2,6 +2,7 @@
 using Swarm.Application.DTOs;
 using Swarm.Domain.Entities;
 using Swarm.Domain.Entities.NonPlayerEntities;
+using Swarm.Domain.Entities.Projectiles;
 using Swarm.Domain.GameObjects;
 
 namespace Swarm.Application.Mappers;
@@ -19,7 +20,7 @@ static class DomainMappers
 
         var projectiles = new List<ProjectileDTO>(s.Projectiles.Count);
         foreach (var proj in s.Projectiles)
-            projectiles.Add(new ProjectileDTO(proj.Position.X, proj.Position.Y, proj.Radius));
+            projectiles.Add(new ProjectileDTO(proj.Position.X, proj.Position.Y, proj.Radius, proj.Owner is ProjectileOwnerTypes.Player));
 
         var entities = new List<NonPlayerEntityDTO>(s.NonPlayerEntities.Count);
         foreach (var e in s.NonPlayerEntities)

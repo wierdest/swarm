@@ -1,3 +1,3 @@
 ﻿namespace Swarm.Application.DTOs;
 
-public readonly record struct ProjectileDTO(float X, float Y, float Radius);
+public record ProjectileDTO(float X, float Y, float Radius, bool IsOwnedByPlayer);
